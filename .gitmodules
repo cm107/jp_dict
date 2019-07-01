@@ -1,0 +1,3 @@
+[submodule "src/lib/logger"]
+	path = src/lib/logger
+	url = https://github.com/cm107/logger.git
