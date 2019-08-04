@@ -1,3 +1,14 @@
+# Restricted Filetypes
 **/*.pyc
+**/*.mp4
+**/*.png
+**/*.pkl
+**/*.xml
+**/*.hdf5
+
+# Restricted Folders
 **/__pycache__
-**/venv
+venv
+logs
+
+# Exceptions
