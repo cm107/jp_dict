@@ -83,10 +83,13 @@ class HistoryParser:
         for item in ordered_items:
             logger.purple(f"{item[0]}: {item[1]}")
 
-    def get_urls_that_start_with(self, substring: str):
+    def get_urls_that_start_with(self, substring: str) -> (list, list):
         all_urls = [history_item.url for history_item in self.browser_history.history_items]
+        all_times = [history_item.time_usec for history_item in self.browser_history.history_items]
         relevant_urls = []
-        for url in all_urls:
+        relevant_times = []
+        for time_usec, url in zip(all_times, all_urls):
             if url.startswith(substring):
                 relevant_urls.append(url)
-        return relevant_urls
+                relevant_times.append(time_usec)
+        return relevant_times, relevant_urls
