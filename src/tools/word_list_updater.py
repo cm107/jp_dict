@@ -5,6 +5,13 @@ from ..submodules.common_utils.file_utils import file_exists
 from ..lib.history_parsing.cache import Cache, CacheHandler
 from ..lib.history_parsing.history_parser import HistoryParser
 
+class PrintTest:
+    def __init__(self):
+        pass
+
+    def test(self):
+        print("=======================This is a test.===============================")
+
 class WordListUpdater:
     def __init__(self, history_json_path: str, save_file_path: str):
         self.save_file_path = save_file_path
