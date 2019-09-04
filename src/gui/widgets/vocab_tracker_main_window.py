@@ -2,8 +2,9 @@ import sys
 from qtpy.QtCore import QSize, QPoint, QSettings, QRect
 from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import QMainWindow, QApplication, QAction, QTextEdit, QVBoxLayout
-from src.submodules.logger.logger_handler import logger
-from src.gui.widgets.browser_history_load_popup import BrowserHistoryLoadPopup, MyStream
+from ...submodules.logger.logger_handler import logger
+from .browser_history_load_popup import BrowserHistoryLoadPopup
+from ..stream import MyStream
 
 class QVocabTracker(QMainWindow):
     def __init__(self, app):
@@ -45,20 +46,15 @@ class QVocabTracker(QMainWindow):
         # Update Status Bar
         self.statusBar().showMessage(f'{self.app_name} started.')
         self.statusBar().show()
+
+        # Application
         self.app = app
 
     def update_word_list(self):
-        self.popup = BrowserHistoryLoadPopup(app)
+        self.popup = BrowserHistoryLoadPopup(self.app)
         self.popup.setGeometry(QRect(100, 100, 800, 400))
         self.popup.show()
 
         stream = MyStream()
         stream.message.connect(self.popup.on_myStream_message)
         sys.stdout = stream
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    vocabTracker = QVocabTracker(app)
-    vocabTracker.show()
-
-    sys.exit(app.exec_())

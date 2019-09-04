@@ -5,13 +5,6 @@ from ..submodules.common_utils.file_utils import file_exists
 from ..lib.history_parsing.cache import Cache, CacheHandler
 from ..lib.history_parsing.history_parser import HistoryParser
 
-class PrintTest:
-    def __init__(self):
-        pass
-
-    def test(self):
-        print("=======================This is a test.===============================")
-
 class WordListUpdater:
     def __init__(self, history_json_path: str, save_file_path: str):
         self.save_file_path = save_file_path
@@ -26,8 +19,14 @@ class WordListUpdater:
             cache_dict = pickle.load(open(save_file_path, 'rb'))
             self.search_word_cache_handler = cache_dict['search_word_cache_handler']
 
-    def run(self):
+    def run(self, app=None, flag_manager=None):
         for i, time_usec, url in zip(range(len(self.relevant_urls)), self.relevant_times, self.relevant_urls):
+            if flag_manager is not None and flag_manager.kill:
+                logger.info("Program loop terminated.")
+                if app is not None:
+                    app.processEvents()
+                break
+            print(f"==========={flag_manager.kill}================")
             found, duplicate = self.search_word_cache_handler.check_url(url=url, time_usec=time_usec)
             if not found:
                 response = requests.get(url)
@@ -48,3 +47,6 @@ class WordListUpdater:
             cache_dict = {}
             cache_dict['search_word_cache_handler'] = self.search_word_cache_handler
             pickle.dump(cache_dict, open(self.save_file_path, 'wb'))
+
+            if app is not None:
+                app.processEvents()

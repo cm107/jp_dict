@@ -1,25 +1,19 @@
+import sys
 from qtpy.QtCore import QRect, Signal, QObject, Slot
 from qtpy.QtGui import QTextCursor
 from qtpy.QtWidgets import QMessageBox, QFileDialog, QWidget, QPushButton, \
     QLineEdit, QTextEdit
-from ..tools.word_list_updater import WordListUpdater
-from ..submodules.logger.logger_handler import logger
+from ...tools.word_list_updater import WordListUpdater
+from ...submodules.logger.logger_handler import logger
+from ...gui.threads import BackgroundThread, WordListUpdaterThread
+from ...gui.stream import MyStream
 
-# TODO: Figure out how get gui to refresh while script is running, and not just when the script returns.
-# https://stackoverflow.com/questions/24371274/how-to-dynamically-update-qtextedit
-
-# Try implementing text stream in popup window as shown in link:
-# https://stackoverflow.com/questions/15637768/pyqt-how-to-capture-output-of-pythons-interpreter-and-display-it-in-qedittext
-class MyStream(QObject):
-    message = Signal(str)
-    def __init__(self, parent=None):
-        super(MyStream, self).__init__(parent)
-
-    def write(self, message):
-        self.message.emit(str(message))
+class FlagManager:
+    def __init__(self):
+        self.kill = False
 
 class BrowserHistoryLoadPopup(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, app=None):
         QWidget.__init__(self)
         self.btn1 = QPushButton("JSON File", self)
         self.btn1.setGeometry(QRect(0, 0, 100, 30))
@@ -43,22 +37,29 @@ class BrowserHistoryLoadPopup(QWidget):
         self.submit_button.clicked.connect(self.submit)
         self.submit_button.setEnabled(False)
 
+        self.stop_button = QPushButton("Stop", self)
+        self.stop_button.setGeometry(QRect(500, 85, 150, 40))
+        self.submit_button.clicked.connect(self.stop)
+        self.stop_button.setEnabled(False)
+
         self.textEdit = QTextEdit(self)
         self.textEdit.setGeometry(QRect(20, 140, 750, 230))
 
-    def test(self):
-        from src.tools.word_list_updater import PrintTest
-        PrintTest().test()
+        self.test_count = 0
+
+        self.flag_manager = FlagManager()
+
+        self.app = app
 
     def open_history_json(self):
-        import time
-        for i in range(5):
-            self.test()
-            time.sleep(1)
-
         options = QFileDialog.Options()
-        filename, _ = QFileDialog.getOpenFileName(self, 'QFileDialog.getOpenFileName()', '',
-                                                  'JSON (*.json)', options=options)
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            'QFileDialog.getOpenFileName()',
+            '/home/clayton/workspace/study/jp_dict/data/browser_history',
+            'JSON (*.json)',
+            options=options
+        )
         if filename:
             from src.submodules.common_utils.file_utils import file_exists
             if not file_exists(filename):
@@ -85,13 +86,18 @@ class BrowserHistoryLoadPopup(QWidget):
         if self.history_json_path is not None and self.save_path is not None:
             self.submit_button.setEnabled(True)
 
-    # @Slot()
     def submit(self):
-        logger.blue("Test")
+        self.submit_button.setEnabled(False)
+        self.stop_button.setEnabled(True)
         WordListUpdater(
             history_json_path=self.history_json_path,
             save_file_path=self.save_path
-        ).run()
+        ).run(self.app, self.flag_manager)
+        self.submit_button.setEnabled(True)
+
+    def stop(self):
+        self.flag_manager.kill = True
+        self.stop_button.setEnabled(False)
 
     @Slot(str)
     def on_myStream_message(self, message):
