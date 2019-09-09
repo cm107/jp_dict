@@ -8,10 +8,6 @@ from ...submodules.logger.logger_handler import logger
 from ...gui.threads import BackgroundThread, WordListUpdaterThread
 from ...gui.stream import MyStream
 
-class FlagManager:
-    def __init__(self):
-        self.kill = False
-
 class BrowserHistoryLoadPopup(QWidget):
     def __init__(self, app=None):
         QWidget.__init__(self)
@@ -41,13 +37,12 @@ class BrowserHistoryLoadPopup(QWidget):
         self.stop_button.setGeometry(QRect(500, 85, 150, 40))
         self.submit_button.clicked.connect(self.stop)
         self.stop_button.setEnabled(False)
+        self.stop_flag = False
 
         self.textEdit = QTextEdit(self)
         self.textEdit.setGeometry(QRect(20, 140, 750, 230))
 
         self.test_count = 0
-
-        self.flag_manager = FlagManager()
 
         self.app = app
 
@@ -89,15 +84,20 @@ class BrowserHistoryLoadPopup(QWidget):
     def submit(self):
         self.submit_button.setEnabled(False)
         self.stop_button.setEnabled(True)
-        WordListUpdater(
+        word_list_updater = WordListUpdater(
             history_json_path=self.history_json_path,
             save_file_path=self.save_path
-        ).run(self.app, self.flag_manager)
+        )
+        done = False
+        while not done and not self.stop_flag:
+            done = word_list_updater.step()
+            self.app.processEvents()
         self.submit_button.setEnabled(True)
 
     def stop(self):
-        self.flag_manager.kill = True
+        self.stop_flag = True
         self.stop_button.setEnabled(False)
+        self.submit_button.setEnabled(True)
 
     @Slot(str)
     def on_myStream_message(self, message):

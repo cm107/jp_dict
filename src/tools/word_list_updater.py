@@ -19,34 +19,73 @@ class WordListUpdater:
             cache_dict = pickle.load(open(save_file_path, 'rb'))
             self.search_word_cache_handler = cache_dict['search_word_cache_handler']
 
-    def run(self, app=None, flag_manager=None):
-        for i, time_usec, url in zip(range(len(self.relevant_urls)), self.relevant_times, self.relevant_urls):
-            if flag_manager is not None and flag_manager.kill:
-                logger.info("Program loop terminated.")
-                if app is not None:
-                    app.processEvents()
-                break
-            print(f"==========={flag_manager.kill}================")
-            found, duplicate = self.search_word_cache_handler.check_url(url=url, time_usec=time_usec)
-            if not found:
-                response = requests.get(url)
-                if response.status_code != 200:
-                    logger.warning(f"Encountered status_code: {response.status_code}")
-                    logger.warning(f"Skipping {url}")
-                    continue
-                soup = BeautifulSoup(response.text, 'html.parser')
-                search_word = soup.title.text.split('-')[0][:-1]
-                logger.blue(f"{i}: {search_word}")
-                url_word_pair = {'url': url, 'search_word': search_word}
-                self.search_word_cache_handler.process(item=url_word_pair, time_usec=time_usec, item_key='url')
+        self.current_index = None
+
+    def is_done(self) -> bool:
+        return self.current_index == len(self.relevant_urls)
+
+    def step(self) -> bool:
+        if self.current_index is None:
+            if len(self.relevant_urls) == 0:
+                logger.warning(f"No relevant urls found.")
+                return True
+            self.current_index = 0
+        else:
+            self.current_index += 1
+
+        time_usec, url = self.relevant_times[self.current_index], self.relevant_urls[self.current_index]
+
+        found, duplicate = self.search_word_cache_handler.check_url(url=url, time_usec=time_usec)
+        if not found:
+            response = requests.get(url)
+            if response.status_code != 200:
+                logger.warning(f"Encountered status_code: {response.status_code}")
+                logger.warning(f"Skipping {url}")
+                return self.is_done()
+            soup = BeautifulSoup(response.text, 'html.parser')
+            search_word = soup.title.text.split('-')[0][:-1]
+            logger.blue(f"{self.current_index}: {search_word}")
+            url_word_pair = {'url': url, 'search_word': search_word}
+            self.search_word_cache_handler.process(item=url_word_pair, time_usec=time_usec, item_key='url')
+        else:
+            if not duplicate:
+                logger.yellow(f"{self.current_index}: URL already in cache (hit) - {url}")
             else:
-                if not duplicate:
-                    logger.yellow(f"{i}: URL already in cache (hit) - {url}")
-                else:
-                    logger.yellow(f"{i}: Duplicate found in cache (no hit) - {url}")
-            cache_dict = {}
-            cache_dict['search_word_cache_handler'] = self.search_word_cache_handler
-            pickle.dump(cache_dict, open(self.save_file_path, 'wb'))
+                logger.yellow(f"{self.current_index}: Duplicate found in cache (no hit) - {url}")
+        cache_dict = {}
+        cache_dict['search_word_cache_handler'] = self.search_word_cache_handler
+        pickle.dump(cache_dict, open(self.save_file_path, 'wb'))
+        return self.is_done()
+
+    def run(self, app=None):
+        # for i, time_usec, url in zip(range(len(self.relevant_urls)), self.relevant_times, self.relevant_urls):
+        #     found, duplicate = self.search_word_cache_handler.check_url(url=url, time_usec=time_usec)
+        #     if not found:
+        #         response = requests.get(url)
+        #         if response.status_code != 200:
+        #             logger.warning(f"Encountered status_code: {response.status_code}")
+        #             logger.warning(f"Skipping {url}")
+        #             continue
+        #         soup = BeautifulSoup(response.text, 'html.parser')
+        #         search_word = soup.title.text.split('-')[0][:-1]
+        #         logger.blue(f"{i}: {search_word}")
+        #         url_word_pair = {'url': url, 'search_word': search_word}
+        #         self.search_word_cache_handler.process(item=url_word_pair, time_usec=time_usec, item_key='url')
+        #     else:
+        #         if not duplicate:
+        #             logger.yellow(f"{i}: URL already in cache (hit) - {url}")
+        #         else:
+        #             logger.yellow(f"{i}: Duplicate found in cache (no hit) - {url}")
+        #     cache_dict = {}
+        #     cache_dict['search_word_cache_handler'] = self.search_word_cache_handler
+        #     pickle.dump(cache_dict, open(self.save_file_path, 'wb'))
+
+        #     if app is not None:
+        #         app.processEvents()
+
+        done = False
+        while not done:
+            done = self.step()
 
             if app is not None:
                 app.processEvents()

@@ -8,6 +8,7 @@ from ..tools.word_list_updater import WordListUpdater
 from .stream import MyStream
 
 # I can't figure out how to get the multi-threading to work with sys.stderr
+# Refer to https://www.zeolearn.com/magazine/getting-started-guis-with-python-pyqt-qthread-class
 
 class BackgroundThread(QThread):
     '''Keeps the main loop responsive'''
