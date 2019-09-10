@@ -3,8 +3,7 @@ from qtpy.QtCore import QSize, QPoint, QSettings, QRect
 from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import QMainWindow, QApplication, QAction, QTextEdit, QVBoxLayout
 from ...submodules.logger.logger_handler import logger
-from .browser_history_load_popup import BrowserHistoryLoadPopup
-from ..stream import MyStream
+from ...gui.widgets.browser_history_load_popup import BrowserHistoryLoadPopup
 
 class QVocabTracker(QMainWindow):
     def __init__(self, app):
@@ -54,7 +53,3 @@ class QVocabTracker(QMainWindow):
         self.popup = BrowserHistoryLoadPopup(self.app)
         self.popup.setGeometry(QRect(100, 100, 800, 400))
         self.popup.show()
-
-        stream = MyStream()
-        stream.message.connect(self.popup.on_myStream_message)
-        sys.stdout = stream

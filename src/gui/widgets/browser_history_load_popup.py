@@ -6,13 +6,9 @@ from qtpy.QtWidgets import QMessageBox, QFileDialog, QWidget, QPushButton, \
 from ...tools.word_list_updater import WordListUpdater
 from ...submodules.logger.logger_handler import logger
 from ...gui.threads import BackgroundThread, WordListUpdaterThread
-from ...gui.stream import MyStream
-
-# TODO: Run WordListUpdater in separate thread.
-# https://nikolak.com/pyqt-threading-tutorial/
-# https://www.zeolearn.com/magazine/getting-started-guis-with-python-pyqt-qthread-class
 
 class BrowserHistoryLoadPopup(QWidget):
+    stop_sig = Signal(bool)
     def __init__(self, app=None):
         QWidget.__init__(self)
         self.btn1 = QPushButton("JSON File", self)
@@ -30,7 +26,7 @@ class BrowserHistoryLoadPopup(QWidget):
         self.textbox2.setGeometry(110, 40, 600, 30)
 
         self.history_json_path = None
-        self.save_path = None
+        self.save_file_path = None
 
         self.submit_button = QPushButton("Start", self)
         self.submit_button.setGeometry(QRect(300, 85, 150, 40))
@@ -39,7 +35,7 @@ class BrowserHistoryLoadPopup(QWidget):
 
         self.stop_button = QPushButton("Stop", self)
         self.stop_button.setGeometry(QRect(500, 85, 150, 40))
-        self.submit_button.clicked.connect(self.stop)
+        self.stop_button.clicked.connect(self.stop)
         self.stop_button.setEnabled(False)
         self.stop_flag = False
 
@@ -47,6 +43,8 @@ class BrowserHistoryLoadPopup(QWidget):
         self.textEdit.setGeometry(QRect(20, 140, 750, 230))
 
         self.test_count = 0
+
+        self.submit_thread = None
 
         self.app = app
 
@@ -76,34 +74,42 @@ class BrowserHistoryLoadPopup(QWidget):
             "/home/clayton/workspace/study/jp_dict/data/word_list_save",
             'PKL(*.pkl)'
         )
-        self.save_path = paths[0]
-        self.textbox2.setText(self.save_path)
+        self.save_file_path = paths[0]
+        self.textbox2.setText(self.save_file_path)
         self.enable_submit_if_valid()
-        logger.info(f"Opened {self.save_path}")
+        logger.info(f"Opened {self.save_file_path}")
 
     def enable_submit_if_valid(self):
-        if self.history_json_path is not None and self.save_path is not None:
+        if self.history_json_path is not None and self.save_file_path is not None:
             self.submit_button.setEnabled(True)
 
     def submit(self):
+        logger.info('BrowserHistoryLoadPopup: submit')
         self.submit_button.setEnabled(False)
         self.stop_button.setEnabled(True)
-        word_list_updater = WordListUpdater(
+        current_index = None
+        if self.submit_thread is not None and self.submit_thread.current_index is not None:
+            current_index = self.submit_thread.current_index
+        self.submit_thread = WordListUpdaterThread(
             history_json_path=self.history_json_path,
-            save_file_path=self.save_path
+            save_file_path=self.save_file_path
         )
-        done = False
-        while not done and not self.stop_flag:
-            done = word_list_updater.step()
-            self.app.processEvents()
-        self.submit_button.setEnabled(True)
+        if current_index is not None:
+            self.submit_thread.current_index = current_index
+            self.submit_thread.word_list_updater.current_index = current_index
+        self.submit_thread.start()
+        self.submit_thread.message_sig.connect(self.on_wordlist_updater_message)
+        self.stop_button.setEnabled(True)
 
     def stop(self):
+        logger.info('BrowserHistoryLoadPopup: stop')
         self.stop_flag = True
         self.stop_button.setEnabled(False)
+        self.stop_sig.connect(self.submit_thread.on_stop_flag)
+        self.stop_sig.emit(self.stop_flag)
         self.submit_button.setEnabled(True)
 
     @Slot(str)
-    def on_myStream_message(self, message):
+    def on_wordlist_updater_message(self, message):
         self.textEdit.moveCursor(QTextCursor.End)
         self.textEdit.insertPlainText(message)

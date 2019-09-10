@@ -4,6 +4,7 @@ from ..submodules.logger.logger_handler import logger
 from ..submodules.common_utils.file_utils import file_exists
 from ..lib.history_parsing.cache import Cache, CacheHandler
 from ..lib.history_parsing.history_parser import HistoryParser
+from qtpy.QtCore import Signal
 
 class WordListUpdater:
     def __init__(self, history_json_path: str, save_file_path: str):
@@ -24,10 +25,13 @@ class WordListUpdater:
     def is_done(self) -> bool:
         return self.current_index == len(self.relevant_urls) - 1
 
-    def step(self) -> bool:
+    def step(self, message_sig: Signal=None) -> bool:
         if self.current_index is None:
             if len(self.relevant_urls) == 0:
-                logger.warning(f"No relevant urls found.")
+                if message_sig is None:
+                    logger.warning(f"No relevant urls found.")
+                else:
+                    message_sig.emit(f"\nNo relevant urls found.")
                 return True
             self.current_index = 0
         else:
@@ -39,50 +43,38 @@ class WordListUpdater:
         if not found:
             response = requests.get(url)
             if response.status_code != 200:
-                logger.warning(f"Encountered status_code: {response.status_code}")
-                logger.warning(f"Skipping {url}")
+                if message_sig is None:
+                    logger.warning(f"Encountered status_code: {response.status_code}")
+                    logger.warning(f"Skipping {url}")
+                else:
+                    message_sig.emit(f"\nEncountered status_code: {response.status_code}")
+                    message_sig.emit(f"\nSkipping {url}")
                 return self.is_done()
             soup = BeautifulSoup(response.text, 'html.parser')
             search_word = soup.title.text.split('-')[0][:-1]
-            logger.blue(f"{self.current_index}: {search_word}")
+            if message_sig is None:
+                logger.blue(f"{self.current_index}: {search_word}")
+            else:
+                message_sig.emit(f"\n{self.current_index}: {search_word}")
             url_word_pair = {'url': url, 'search_word': search_word}
             self.search_word_cache_handler.process(item=url_word_pair, time_usec=time_usec, item_key='url')
         else:
             if not duplicate:
-                logger.yellow(f"{self.current_index}: URL already in cache (hit) - {url}")
+                if message_sig is None:
+                    logger.yellow(f"{self.current_index}: URL already in cache (hit) - {url}")
+                else:
+                    message_sig.emit(f"\n{self.current_index}: URL already in cache (hit) - {url}")
             else:
-                logger.yellow(f"{self.current_index}: Duplicate found in cache (no hit) - {url}")
+                if message_sig is None:
+                    logger.yellow(f"{self.current_index}: Duplicate found in cache (no hit) - {url}")
+                else:
+                    message_sig.emit(f"\n{self.current_index}: Duplicate found in cache (no hit) - {url}")
         cache_dict = {}
         cache_dict['search_word_cache_handler'] = self.search_word_cache_handler
         pickle.dump(cache_dict, open(self.save_file_path, 'wb'))
         return self.is_done()
 
     def run(self, app=None):
-        # for i, time_usec, url in zip(range(len(self.relevant_urls)), self.relevant_times, self.relevant_urls):
-        #     found, duplicate = self.search_word_cache_handler.check_url(url=url, time_usec=time_usec)
-        #     if not found:
-        #         response = requests.get(url)
-        #         if response.status_code != 200:
-        #             logger.warning(f"Encountered status_code: {response.status_code}")
-        #             logger.warning(f"Skipping {url}")
-        #             continue
-        #         soup = BeautifulSoup(response.text, 'html.parser')
-        #         search_word = soup.title.text.split('-')[0][:-1]
-        #         logger.blue(f"{i}: {search_word}")
-        #         url_word_pair = {'url': url, 'search_word': search_word}
-        #         self.search_word_cache_handler.process(item=url_word_pair, time_usec=time_usec, item_key='url')
-        #     else:
-        #         if not duplicate:
-        #             logger.yellow(f"{i}: URL already in cache (hit) - {url}")
-        #         else:
-        #             logger.yellow(f"{i}: Duplicate found in cache (no hit) - {url}")
-        #     cache_dict = {}
-        #     cache_dict['search_word_cache_handler'] = self.search_word_cache_handler
-        #     pickle.dump(cache_dict, open(self.save_file_path, 'wb'))
-
-        #     if app is not None:
-        #         app.processEvents()
-
         done = False
         while not done:
             done = self.step()
