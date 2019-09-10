@@ -22,7 +22,7 @@ class WordListUpdater:
         self.current_index = None
 
     def is_done(self) -> bool:
-        return self.current_index == len(self.relevant_urls)
+        return self.current_index == len(self.relevant_urls) - 1
 
     def step(self) -> bool:
         if self.current_index is None:

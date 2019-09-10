@@ -8,6 +8,10 @@ from ...submodules.logger.logger_handler import logger
 from ...gui.threads import BackgroundThread, WordListUpdaterThread
 from ...gui.stream import MyStream
 
+# TODO: Run WordListUpdater in separate thread.
+# https://nikolak.com/pyqt-threading-tutorial/
+# https://www.zeolearn.com/magazine/getting-started-guis-with-python-pyqt-qthread-class
+
 class BrowserHistoryLoadPopup(QWidget):
     def __init__(self, app=None):
         QWidget.__init__(self)
