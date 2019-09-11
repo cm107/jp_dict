@@ -1,9 +1,14 @@
 import sys
 from qtpy.QtCore import QSize, QPoint, QSettings, QRect
 from qtpy.QtGui import QIcon
-from qtpy.QtWidgets import QMainWindow, QApplication, QAction, QTextEdit, QVBoxLayout
+from qtpy.QtWidgets import QMainWindow, QAction, QTabWidget, QFileDialog, \
+    QMessageBox, QLineEdit, QPushButton
 from ...submodules.logger.logger_handler import logger
+from ...submodules.common_utils.file_utils import file_exists
 from ...gui.widgets.browser_history_load_popup import BrowserHistoryLoadPopup
+from ...gui.widgets.tabed_window import VocabTrackerTabbedWindow
+
+# TODO: Implement VocabTrackerTabedWindow
 
 class QVocabTracker(QMainWindow):
     def __init__(self, app):
@@ -49,7 +54,50 @@ class QVocabTracker(QMainWindow):
         # Application
         self.app = app
 
+        # QMainWindow UI
+        load_section_y = 30
+        tabbed_window_y = 60
+
+        self.load_button = QPushButton("Load", self)
+        self.load_button.setGeometry(QRect(0, load_section_y, 100, 30))
+        self.load_button.clicked.connect(self.load_vocab_list)
+        self.load_button.setEnabled(True)
+
+        self.load_button_textbox = QLineEdit(self)
+        self.load_button_textbox.setGeometry(110, load_section_y, 600, 30)
+
+        self.vocab_tracker_tabbed_window = VocabTrackerTabbedWindow(self)
+        self.vocab_tracker_tabbed_window.move(10, tabbed_window_y)
+        self.vocab_tracker_tabbed_window.resize(400, 400)
+        # self.setCentralWidget(self.vocab_tracker_tabbed_window)
+
+        # QMainWindow UI related variables
+        self.vocab_list_path = None
+
     def update_word_list(self):
         self.popup = BrowserHistoryLoadPopup(self.app)
         self.popup.setGeometry(QRect(100, 100, 800, 400))
         self.popup.show()
+
+    def load_vocab_list(self):
+        options = QFileDialog.Options()
+        filename, _ = QFileDialog.getOpenFileName(
+            self,
+            'Load Vocab List',
+            "/home/clayton/workspace/study/jp_dict/data/word_list_save",
+            'PKL(*.pkl)',
+            options=options
+        )
+        if filename:
+            if not file_exists(filename):
+                QMessageBox.information(self, "Vocab Tracker", f"Cannot find {filename}")
+                return
+            self.vocab_list_path = filename
+            logger.info(f"Opened {filename}")
+            self.load_button_textbox.setText(filename)
+            self.enable_stuff_if_vocab_list_is_valid()
+
+    def enable_stuff_if_vocab_list_is_valid(self):
+        pass
+            
+        

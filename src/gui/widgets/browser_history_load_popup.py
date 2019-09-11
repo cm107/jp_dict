@@ -6,6 +6,7 @@ from qtpy.QtWidgets import QMessageBox, QFileDialog, QWidget, QPushButton, \
 from ...tools.word_list_updater import WordListUpdater
 from ...submodules.logger.logger_handler import logger
 from ...gui.threads import BackgroundThread, WordListUpdaterThread
+from src.submodules.common_utils.file_utils import file_exists
 
 class BrowserHistoryLoadPopup(QWidget):
     stop_sig = Signal(bool)
@@ -58,9 +59,8 @@ class BrowserHistoryLoadPopup(QWidget):
             options=options
         )
         if filename:
-            from src.submodules.common_utils.file_utils import file_exists
             if not file_exists(filename):
-                QMessageBox.information(self, "Vocab Tracker", "Cannot find %s." % filename)
+                QMessageBox.information(self, "Vocab Tracker", f"Cannot find {filename}")
                 return
             logger.info(f"Opened {filename}")
         self.history_json_path = filename

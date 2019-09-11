@@ -59,8 +59,6 @@ class CacheHandler:
         return not found
 
     def print_cache_summary(self):
-        # logger.cyan("Cache Hits:")
         print("Cache Hits:")
         for cache in self.cache_list:
-            # logger.blue(f"{cache.hit_count}: {cache.item}")
             print(f"{cache.hit_count}: {cache.item}")
