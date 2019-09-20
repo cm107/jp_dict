@@ -6,7 +6,7 @@ from qtpy.QtWidgets import QMainWindow, QAction, QTabWidget, QFileDialog, \
 from ...submodules.logger.logger_handler import logger
 from ...submodules.common_utils.file_utils import file_exists
 from ...gui.widgets.browser_history_load_popup import BrowserHistoryLoadPopup
-from ...gui.widgets.tabed_window import VocabTrackerTabbedWindow
+from ...gui.widgets.tabbed_window import VocabTrackerTabbedWindow
 
 # TODO: Implement VocabTrackerTabedWindow
 

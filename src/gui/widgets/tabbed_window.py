@@ -37,8 +37,8 @@ class VocabTrackerTabbedWindow(QWidget):
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
 
-    @Slot()
-    def on_click(self):
-        print("\n")
-        for current_tabbed_window in self.vocab_tracker_tabbed_window.selectedItems():
-            print(current_tabbed_window.row(), current_tabbed_window.column(), current_tabbed_window.text())
+    # @Slot()
+    # def on_click(self):
+    #     print("\n")
+    #     for current_tabbed_window in self.vocab_tracker_tabbed_window.selectedItems():
+    #         print(current_tabbed_window.row(), current_tabbed_window.column(), current_tabbed_window.text())

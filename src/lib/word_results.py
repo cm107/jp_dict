@@ -68,4 +68,4 @@ class WordResultHandler:
             print(print_str)
         self.display_queue = []
 
-word_result_handler = WordResultHandler()
+# word_result_handler = WordResultHandler()

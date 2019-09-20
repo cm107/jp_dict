@@ -15,7 +15,7 @@ from ..lib.vocab_entry import VocabularyEntry
 from ..lib.supplemental_info import SupplementalInfo, CategoryLabel, SeeAlsoLink, \
     RestrictionInfo, AdditionalInfo, AntonymLink, SourceInfo
 from ..lib.concept import ConceptLabels
-from ..lib.word_results import WordResult, word_result_handler
+from ..lib.word_results import WordResult, WordResultHandler
 
 class WordSearch:
     def __init__(self):
@@ -32,6 +32,9 @@ class WordSearch:
         # word_exact_matches
         self.word_result_count = None
 
+        # Word Result Handler
+        self.word_result_handler = WordResultHandler()
+
     def search(self, search_word: str, page_limit: int=None):
         url = 'https://jisho.org/search/{}'.format(search_word)
         page_number = 1
@@ -47,7 +50,7 @@ class WordSearch:
             if self.word_other_matches is not None:
                 self.parse_word_matches(self.word_other_matches, category='other_matches')
             
-            word_result_handler.print_display_queue()
+            self.word_result_handler.print_display_queue()
 
             url = self.parse_more_words_link_url(self.word_other_matches)
             if url is not None:
@@ -68,7 +71,7 @@ class WordSearch:
         else:
             word_result_count = str(get_html_nested_tag_child(self.word_other_matches, [1, 1, 0]))
         self.word_result_count = int(word_result_count.replace(' — ', '').replace(' found', ''))
-        word_result_handler.specify_num_results(self.word_result_count)
+        self.word_result_handler.specify_num_results(self.word_result_count)
 
     def parse_word_matches(self, matches: Tag, category: str=None):
         entry_results = matches.find_all('div', 'concept_light clearfix')
@@ -95,7 +98,7 @@ class WordSearch:
                     concept_labels=None,
                     vocab_entry=vocab_entry)
             
-            word_result_handler.add(word_result, category)
+            self.word_result_handler.add(word_result, category)
 
     def get_concept_labels(self, concept_status: Tag) -> ConceptLabels:
         use_concept_labels = False
