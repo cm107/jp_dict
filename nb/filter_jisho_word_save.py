@@ -52,8 +52,29 @@ for i, word in zip(range(len(words)), words):
     logger.yellow(f"------------{i}------------")
     logger.blue(word)
 #%%
+words = word_filter.get_garbage_char_results()
+logger.cyan(f"Garbage Character word count: {len(words)}/{len(tagged_word_cache_list)}")
+#%%
+for i, word in zip(range(len(words)), words):
+    logger.yellow(f"------------{i}------------")
+    logger.blue(word)
+#%%
+words = word_filter.get_hiragana_tag_results(tag='partial')
+logger.cyan(f"Partial Hiragana word count: {len(words)}/{relevant_count}")
+#%%
+for i, word in zip(range(len(words)), words):
+    logger.yellow(f"------------{i}------------")
+    logger.blue(word)
+#%%
 words = word_filter.get_hiragana_tag_results(tag='all')
 logger.cyan(f"All Hiragana word count: {len(words)}/{relevant_count}")
+#%%
+for i, word in zip(range(len(words)), words):
+    logger.yellow(f"------------{i}------------")
+    logger.blue(word)
+#%%
+words = word_filter.get_katakana_tag_results(tag='partial')
+logger.cyan(f"Partial Katakana word count: {len(words)}/{relevant_count}")
 #%%
 for i, word in zip(range(len(words)), words):
     logger.yellow(f"------------{i}------------")
@@ -66,7 +87,14 @@ for i, word in zip(range(len(words)), words):
     logger.yellow(f"------------{i}------------")
     logger.blue(word)
 #%%
-words = word_filter.get_all_kanji_results()
+words = word_filter.get_kanji_tag_results(tag='partial')
+logger.cyan(f"Partial Kanji word count: {len(words)}/{relevant_count}")
+#%%
+for i, word in zip(range(len(words)), words):
+    logger.yellow(f"------------{i}------------")
+    logger.blue(word)
+#%%
+words = word_filter.get_kanji_tag_results(tag='all')
 logger.cyan(f"All Kanji word count: {len(words)}/{relevant_count}")
 #%%
 for i, word in zip(range(len(words)), words):
