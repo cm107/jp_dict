@@ -7,6 +7,14 @@ class Cache:
         self.hit_count = 0
         self.times_usec = []
 
+    def __str__(self):
+        print_str = f'item: {self.item}'
+        print_str += f'\nhit_count: {self.hit_count}'
+        return print_str
+
+    def __repr__(self):
+        return self.__str__()
+
     def hit(self, time_usec: int):
         self.hit_count += 1
         self.times_usec.append(time_usec)
