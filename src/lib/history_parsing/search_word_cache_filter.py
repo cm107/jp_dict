@@ -2,7 +2,7 @@ from ...submodules.logger.logger_handler import logger
 from ...submodules.common_utils.check_utils import check_type_from_list
 from .cache import Cache
 from ...util.char_lists import wild_cards, eng_chars, typo_chars, \
-    hiragana_chars, katakana_chars
+    hiragana_chars, katakana_chars, misc_kana_chars
 
 class TaggedWordCache:
     def __init__(self, word_cache: Cache):
@@ -118,14 +118,29 @@ class TaggedWordCacheHandler:
             hiragana_count = 0
             katakana_count = 0
             kanji_count = 0
+            prev_char = None
             for char in tagged_word_cache.search_word:
                 if char in hiragana_chars:
                     hiragana_count += 1
                 elif char in katakana_chars:
                     katakana_count += 1
+                elif char in misc_kana_chars:
+                    if prev_char is None:
+                        logger.error(f"Encountered miscellaneous character {char} with no preceeding character.")
+                        logger.error(tagged_word_cache.search_word)
+                        raise Exception
+                    if prev_char in hiragana_chars:
+                        hiragana_count += 1
+                    elif prev_char in katakana_chars:
+                        katakana_count += 1
+                    else:
+                        logger.error(f"Miscellaneous character {char} follows a non-kana character:")
+                        logger.error(tagged_word_cache.search_word)
+                        raise Exception
                 else:
                     kanji_count += 1
-            
+                prev_char = char
+
             # Assign Hiragana Tag
             if hiragana_count == 0:
                 tagged_word_cache.hiragana_tag = 'none'
