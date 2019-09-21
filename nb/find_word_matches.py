@@ -11,9 +11,8 @@ word_search.search(
     page_limit=10
 )
 #%%
-matching_results = find_matches(
+matching_results = word_search.word_result_handler.find_matches(
     search_word=search_word,
-    word_result_handler=word_search.word_result_handler,
     verbose=False
 )
 #%%
