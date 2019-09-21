@@ -24,6 +24,7 @@ class WordResultHandler:
         self.num_results = None
         self.exact_word_results = []
         self.other_word_results = []
+        self.matching_results = []
 
         self.display_queue = []
         self.display_count = 0
@@ -61,12 +62,11 @@ class WordResultHandler:
 
     def print_display_queue(self):
         if self.display_count == 0:
-            print(yellow_text + 'results found: {}'.format(self.num_results) + std_text)
+            logger.yellow(f'results found: {self.num_results}')
         for word_result in self.display_queue:
             self.display_count += 1
-            print_str = yellow_text + '========================result {}======================='.format(self.display_count) + std_text + '\n'
-            print_str += green_text + '{}'.format(word_result) + std_text
-            print(print_str)
+            logger.yellow(f'========================result {self.display_count}=======================')
+            logger.green(word_result)
         self.display_queue = []
 
     def find_matches(self, search_word: str, verbose: bool=False):
@@ -104,6 +104,6 @@ class WordResultHandler:
             else:
                 if verbose:
                     logger.cyan(f"No other forms found.")
-        return matching_results
+        self.matching_results = matching_results
 
 # word_result_handler = WordResultHandler()

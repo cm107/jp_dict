@@ -1,23 +1,24 @@
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag, NavigableString, ResultSet
-from ..util.checkers import check_page_response_status
-from ..util.previews import preview_soup_nested_tag_children, preview_tag_children, \
+from ...util.checkers import check_page_response_status
+from ...util.previews import preview_soup_nested_tag_children, preview_tag_children, \
     preview_html_nested_tag_children
-from ..util.previews import blue_text, green_text, yellow_text, red_text, std_text
-from ..util.getters import get_response, get_soup, get_soup_child, get_soup_nested_tag_child, \
+from ...util.previews import blue_text, green_text, yellow_text, red_text, std_text
+from ...util.getters import get_response, get_soup, get_soup_child, get_soup_nested_tag_child, \
     get_tag_child, get_all_tag_children, get_html_nested_tag_child
-from ..util.utils import get_kana_maps
-from ..lib.jap_vocab import JapaneseVocab, OtherForm, OtherForms
-from ..lib.definition import DefinitionSection, DefinitionGroup, Definitions
-from ..lib.misc import Notes
-from ..lib.vocab_entry import VocabularyEntry
-from ..lib.supplemental_info import SupplementalInfo, CategoryLabel, SeeAlsoLink, \
+from ...util.utils import get_kana_maps
+from ...lib.jap_vocab import JapaneseVocab, OtherForm, OtherForms
+from ...lib.definition import DefinitionSection, DefinitionGroup, Definitions
+from ...lib.misc import Notes
+from ...lib.vocab_entry import VocabularyEntry
+from ...lib.supplemental_info import SupplementalInfo, CategoryLabel, SeeAlsoLink, \
     RestrictionInfo, AdditionalInfo, AntonymLink, SourceInfo
-from ..lib.concept import ConceptLabels
-from ..lib.word_results import WordResult, WordResultHandler
+from ...lib.concept import ConceptLabels
+from ...lib.word_results import WordResult, WordResultHandler
+from ...submodules.logger.logger_handler import logger
 
-class WordSearch:
+class JishoWordSearchCore:
     def __init__(self):
         # primary_results
         self.word_exact_matches = None
@@ -35,11 +36,12 @@ class WordSearch:
         # Word Result Handler
         self.word_result_handler = WordResultHandler()
 
-    def search(self, search_word: str, page_limit: int=None):
+    def search(self, search_word: str, page_limit: int=None, silent: bool=True):
         url = 'https://jisho.org/search/{}'.format(search_word)
         page_number = 1
         while True:
-            print('\033[94m' + '=========================Page {}=============================='.format(page_number) + '\033[0m')
+            if not silent:
+                logger.yellow(f'=========================Page {page_number}==============================')
             search_soup = self.get_soup(url)
             search_results = self.get_search_results(search_soup)
             self.parse_search_results(search_results)
@@ -50,7 +52,8 @@ class WordSearch:
             if self.word_other_matches is not None:
                 self.parse_word_matches(self.word_other_matches, category='other_matches')
             
-            self.word_result_handler.print_display_queue()
+            if not silent:
+                self.word_result_handler.print_display_queue()
 
             url = self.parse_more_words_link_url(self.word_other_matches)
             if url is not None:
@@ -303,5 +306,3 @@ class WordSearch:
                 source_info=source_info
             )
         return supplemental_info
-
-word_search = WordSearch()
