@@ -1,23 +1,28 @@
 #%%
-from src.tools.word_search.jisho_word_search_core import JishoWordSearchCore
+from src.tools.word_search.jisho_word_search import JishoWordSearch
 from src.submodules.logger.logger_handler import logger
 
-search_word = '日'
+search_words = ['日', '取り扱い', '未亡人', '修羅場']
+results = {}
 
-word_search = JishoWordSearchCore()
-word_search.search(
-    search_word=search_word,
-    page_limit=10,
-    silent=True
-)
+word_search = JishoWordSearch()
+for search_word in search_words:
+    matching_results = word_search.scrape_word_matches(
+        search_word=search_word,
+        page_limit=1
+    )
+    results[search_word] = matching_results
 #%%
-word_search.word_result_handler.find_matches(
-    search_word=search_word,
-    verbose=False
-)
-matching_results = word_search.word_result_handler.matching_results
-#%%
-for i, word in zip(range(len(matching_results)), matching_results):
-    logger.yellow(f"==========Matching Result {i+1}==========")
-    logger.green(word)
+for search_word, matching_words in results.items():
+    logger.yellow('================================')
+    logger.purple(search_word)
+    logger.yellow('================================')
+    if len(matching_words) > 0:
+        for i, matching_word in zip(range(len(matching_words)), matching_words):
+            if i > 0:
+                logger.yellow('--------------------------------')
+            logger.green(matching_word)
+    else:
+        logger.red("No matching results found.")
+    
 #%%

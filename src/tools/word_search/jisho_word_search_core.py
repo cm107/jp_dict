@@ -63,6 +63,9 @@ class JishoWordSearchCore:
             else:
                 break
 
+    def reset(self):
+        self.__init__()
+
     def get_soup(self, url: str):
         page = get_response(url)
         check_page_response_status(page)
