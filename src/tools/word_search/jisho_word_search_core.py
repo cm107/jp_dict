@@ -145,6 +145,11 @@ class JishoWordSearchCore:
         return 'https:' + more_words_url
 
     def get_search_results(self, soup: BeautifulSoup):
+        html = soup.find_all(name='div')
+        # print(html)
+        # preview_soup_nested_tag_children(soup=soup, nest_map=[], hidden_children=[])
+        preview_tag_children(soup, [0, 1, 3])
+        # print(soup)
         return get_soup_nested_tag_child(soup, [2, 3, 7, 1, 1, 3])
 
     def parse_search_results(self, search_results: Tag):

@@ -15,7 +15,6 @@ search_word_cache_handler = load_search_word_cache_handler(PathConf.jisho_histor
 #%%
 word_filter = SearchWordCacheFilter(
     cache_list=search_word_cache_handler.cache_list,
-
 )
 word_filter.apply_tags()
 
@@ -27,7 +26,8 @@ words = word_filter.get_eng_char_results()
 #%%
 words = word_filter.get_filtered_results(
     no_wildcards=True,
-    no_eng_chars=True
+    no_eng_chars=True,
+    no_typo_chars=True
 )
 relevant_count = len(words)
 f = open(f"{dump_dir}/relevant.txt", "w+")
