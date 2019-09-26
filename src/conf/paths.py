@@ -11,4 +11,5 @@ class PathConf:
     favicon_dir = f'{data_dir}/favicon'
     word_list_save_dir = f"{data_dir}/word_list_save"
     jisho_history_word_list_save_path = f"{word_list_save_dir}/jisho_history_word_list.pkl"
+    word_matches_save_dir = f"{data_dir}/word_matches"
     
