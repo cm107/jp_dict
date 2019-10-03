@@ -1,13 +1,18 @@
 from src.submodules.logger.logger_handler import logger
 from src.tools.word_search.jisho_word_search import JishoWordSearch
 
+nominal_word = '日常'
+no_results_word = 'おいやれる'
 problematic_word = 'ブルう'
 problematic_url = 'https://jisho.org/search/%E3%83%96%E3%83%AB%E3%81%86'
 
-word_search = JishoWordSearch()
-matching_results = word_search.scrape_word_matches(
-    search_word=problematic_word,
-    page_limit=1
-)
+test_words = [nominal_word, problematic_word, no_results_word]
 
-logger.green(matching_results)
+word_search = JishoWordSearch()
+for word in test_words:
+    logger.cyan(f"Word: {word}")
+    matching_results = word_search.scrape_word_matches(
+        search_word=word,
+        page_limit=1
+    )
+    logger.green(matching_results)

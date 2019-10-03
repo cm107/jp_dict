@@ -43,7 +43,11 @@ class JishoWordSearchCore:
             if not silent:
                 logger.yellow(f'=========================Page {page_number}==============================')
             search_soup = self.get_soup(url)
-            search_results = self.get_search_results(search_soup)
+            matches_exist, search_results = self.get_search_results(search_soup)
+            if not matches_exist:
+                if not silent:
+                    logger.warning(f"No matches found for {search_word}")
+                break
             self.parse_search_results(search_results)
 
             self.parse_word_result_count()
@@ -74,9 +78,9 @@ class JishoWordSearchCore:
     def parse_word_result_count(self):
         if self.word_exact_matches is not None:
             word_result_count = str(get_html_nested_tag_child(self.word_exact_matches, [1, 1, 0]))
+            self.word_result_count = int(word_result_count.replace(' — ', '').replace(' found', ''))
         else:
-            word_result_count = str(get_html_nested_tag_child(self.word_other_matches, [1, 1, 0]))
-        self.word_result_count = int(word_result_count.replace(' — ', '').replace(' found', ''))
+            self.word_result_count = 0
         self.word_result_handler.specify_num_results(self.word_result_count)
 
     def parse_word_matches(self, matches: Tag, category: str=None):
@@ -138,6 +142,8 @@ class JishoWordSearchCore:
             )
 
     def parse_more_words_link_url(self, concepts: Tag):
+        if concepts is None:
+            return None
         more_words = concepts.find('a', 'more', href=True)
         if more_words is None:
             return None
@@ -145,13 +151,19 @@ class JishoWordSearchCore:
         return 'https:' + more_words_url
 
     def get_search_results(self, soup: BeautifulSoup):
-        html = (
+        main_results_html = (
             soup.find(name='div', id='page_container')
             .find(name='div', class_='large-12 columns')
             .find(name='div', id="main_results")
-            .find(name='div', class_='row')
         )
-        return html
+        no_matches_html = (
+            main_results_html
+            .find(name='div', id='result_area')
+            .find(name='div', id='no-matches')
+        )
+        matches_exist = no_matches_html is None
+        main_results_row_html = main_results_html.find(name='div', class_='row')
+        return matches_exist, main_results_row_html
 
     def parse_search_results(self, search_results: Tag):
         primary_results = search_results.find(name='div', id='primary')
