@@ -15,48 +15,16 @@ multiple_match_count = 0
 def get_match_data(word: WordResult) -> (JapaneseVocab, ConceptLabels, VocabularyEntry):
     return word.jap_vocab, word.concept_labels, word.vocab_entry
 
-resolved_results = []
-unresolved_results = []
+from src.lib.history_parsing.word_match_filter import WordMatchFilter
+matching_results_dict = WordMatchFilter.filter_by_match_count(matching_results_dict, target=1, ineq='>')
+matching_results_dict = WordMatchFilter.filter_by_jlpt_level(matching_results_dict, target=5, ineq='<=')
+matching_results_dict = WordMatchFilter.filter_by_common_words(matching_results_dict, target=True)
 
-for i, key, matching_results in zip(
-    range(len(matching_results_dict.keys())),
-    matching_results_dict.keys(),
-    matching_results_dict.values()
-):
-    if len(matching_results) > 1:
-        logger.yellow(f"{i}: {key}")
-        # logger.purple(f"matching_results:\n{matching_results}")
-        multiple_match_count += 1
-        logger.purple(f"Multiple Match Count: {multiple_match_count}")
-        logger.cyan(matching_results)
-        concept_hits = []
-        concept_non_hits = []
-        for word in matching_results:
-            logger.purple(f"word:\n{word}")
-            jap_vocab, concept_labels, vocab_entry = get_match_data(word)
-            if concept_labels is not None:
-                logger.blue(f"is_common_word: {concept_labels.is_common_word}")
-                logger.blue(f"jlpt_level: {concept_labels.jlpt_level}")
-                logger.blue(f"wanikani_level: {concept_labels.wanikani_level}")
-                concept_hits.append(word)
-            else:
-                logger.blue(f"No concept labels.")
-                concept_non_hits.append(word)
-        concept_results = {'hits': concept_hits, 'non_hits': concept_non_hits}
-        if len(concept_hits) == 1:
-            resolved_results.append(concept_results)
-        else:
-            unresolved_results.append(concept_results)
+logger.cyan(f"len(matching_results_dict): {len(matching_results_dict)}")
+for i, key, matching_results in zip(range(len(matching_results_dict)), matching_results_dict.keys(), matching_results_dict.values()):
+    logger.yellow(f"============{i}: {key}============")
+    for i, word in zip(range(len(matching_results)), matching_results):
+        if i > 0:
+            logger.purple(f"--------------------------")
+        logger.blue(word)
 
-# logger.yellow(f"Resolved Results:")
-# for i, concept_results in zip(range(len(resolved_results)), resolved_results):
-#     logger.cyan(i)
-#     logger.blue(concept_results)
-
-# logger.yellow(f"Unresolved Results:")
-# for i, concept_results in zip(range(len(unresolved_results)), unresolved_results):
-#     logger.cyan(i)
-#     logger.blue(concept_results)
-
-logger.yellow(f"len(resolved_results): {len(resolved_results)}")
-logger.yellow(f"len(unresolved_results): {len(unresolved_results)}")
