@@ -9,48 +9,55 @@ def get_match_data(word: WordResult) -> (JapaneseVocab, ConceptLabels, Vocabular
 
 class WordMatchFilter:
     @classmethod
-    def filter_by_match_count(self, matching_results_dict: dict, target: int, ineq: str='=='):
-        result = {}
-        for key, matching_results in matching_results_dict.items():
+    def filter_by_match_count(self, matching_results: list, target: int, ineq: str='=='):
+        result = []
+        for matching_result in matching_results:
+            search_word = matching_result['search_word']
+            matches = matching_result['matching_results']
             if ineq == '==':
-                if len(matching_results) == target:
-                    result[key] = matching_results
+                if len(matches) == target:
+                    result.append(matching_result)
             elif ineq == '>':
-                if len(matching_results) > target:
-                    result[key] = matching_results
+                if len(matches) > target:
+                    result.append(matching_result)
             elif ineq == '<':
-                if len(matching_results) < target:
-                    result[key] = matching_results
+                if len(matches) < target:
+                    result.append(matching_result)
             elif ineq == '>=':
-                if len(matching_results) >= target:
-                    result[key] = matching_results
+                if len(matches) >= target:
+                    result.append(matching_result)
             elif ineq == '<=':
-                if len(matching_results) <= target:
-                    result[key] = matching_results
+                if len(matches) <= target:
+                    result.append(matching_result)
             else:
                 logger.error(f"Invalid ineq: {ineq}")
                 raise Exception
         return result
 
     @classmethod
-    def filter_by_concept_labels_exist(self, matching_results_dict: dict):
-        result = {}
-        for key, matching_results in matching_results_dict.items():
+    def filter_by_concept_labels_exist(self, matching_results: list):
+        result = []
+        for matching_result in matching_results:
+            search_word = matching_result['search_word']
+            matches = matching_result['matching_results']
             relevant_words = []
-            for word in matching_results:
+            for word in matches:
                 jap_vocab, concept_labels, vocab_entry = get_match_data(word)
                 if concept_labels is not None:
                     relevant_words.append(word)
             if len(relevant_words) > 0:
-                result[key] = relevant_words
+                filtered_matching_result = {'search_word': search_word, 'matching_results': relevant_words}
+                result.append(filtered_matching_result)
         return result
 
     @classmethod
-    def filter_by_common_words(self, matching_results_dict: dict, target: bool=True):
-        result = {}
-        for key, matching_results in matching_results_dict.items():
+    def filter_by_common_words(self, matching_results: list, target: bool=True):
+        result = []
+        for matching_result in matching_results:
+            search_word = matching_result['search_word']
+            matches = matching_result['matching_results']
             relevant_words = []
-            for word in matching_results:
+            for word in matches:
                 jap_vocab, concept_labels, vocab_entry = get_match_data(word)
                 if concept_labels is None and target == True:
                     continue
@@ -59,17 +66,27 @@ class WordMatchFilter:
                 elif concept_labels.is_common_word == target:
                     relevant_words.append(word)
             if len(relevant_words) > 0:
-                result[key] = relevant_words
+                filtered_matching_result = {'search_word': search_word, 'matching_results': relevant_words}
+                result.append(filtered_matching_result)
         return result
 
     @classmethod
-    def filter_by_jlpt_level(self, matching_results_dict: dict, target: int, ineq: str):
-        result = {}
-        for key, matching_results in matching_results_dict.items():
+    def filter_by_jlpt_level(self, matching_results: list, target: int, ineq: str):
+        """
+        Valid jlpt targets: 1, 2, 3, 4, 5
+        Non-jlpt target: -1
+        """
+        result = []
+        for matching_result in matching_results:
             relevant_words = []
-            for word in matching_results:
+            search_word = matching_result['search_word']
+            matches = matching_result['matching_results']
+            for word in matches:
                 jap_vocab, concept_labels, vocab_entry = get_match_data(word)
-                if concept_labels is None:
+                if concept_labels is None and target != -1:
+                    continue
+                elif target == -1 and ineq == '==':
+                    relevant_words.append(word)
                     continue
                 level = concept_labels.jlpt_level
                 if ineq == '==':
@@ -91,15 +108,18 @@ class WordMatchFilter:
                     logger.error(f"Invalid ineq: {ineq}")
                     raise Exception
             if len(relevant_words) > 0:
-                result[key] = relevant_words
+                filtered_matching_result = {'search_word': search_word, 'matching_results': relevant_words}
+                result.append(filtered_matching_result)
         return result
 
     @classmethod
-    def filter_by_wanikani_level(self, matching_results_dict: dict, target: int, ineq: str):
-        result = {}
-        for key, matching_results in matching_results_dict.items():
+    def filter_by_wanikani_level(self, matching_results: list, target: int, ineq: str):
+        result = []
+        for matching_result in matching_results:
             relevant_words = []
-            for word in matching_results:
+            search_word = matching_result['search_word']
+            matches = matching_result['matching_results']
+            for word in matches:
                 jap_vocab, concept_labels, vocab_entry = get_match_data(word)
                 if concept_labels is None:
                     continue
@@ -123,36 +143,72 @@ class WordMatchFilter:
                     logger.error(f"Invalid ineq: {ineq}")
                     raise Exception
             if len(relevant_words) > 0:
-                result[key] = relevant_words
+                filtered_matching_result = {'search_word': search_word, 'matching_results': relevant_words}
+                result.append(filtered_matching_result)
         return result
 
 class WordMatchSorter:
     @classmethod
-    def sort_by_common_words(self, matching_results_dict: dict, mode: str='common_first'):
+    def sort_by_common_words(self, matching_results: list, mode: str='common_first'):
         """
         mode options: 'common_first', 'uncommon_first'
         """
-        result = {}
-        common_results = WordMatchFilter.filter_by_common_words(matching_results_dict, target=True)
-        uncommon_results = WordMatchFilter.filter_by_common_words(matching_results_dict, target=False)
+        result = []
+        common_results = WordMatchFilter.filter_by_common_words(matching_results, target=True)
+        uncommon_results = WordMatchFilter.filter_by_common_words(matching_results, target=False)
         if mode == 'common_first':
-            result.update(common_results)
-            result.update(uncommon_results)
+            result.extend(common_results)
+            result.extend(uncommon_results)
         elif mode == 'uncommon_first':
-            result.update(uncommon_results)
-            result.update(common_results)
+            result.extend(uncommon_results)
+            result.extend(common_results)
         else:
             logger.error(f"Invalid mode: {mode}")
             raise Exception
         return result
 
-    def sort_by_jlpt_level(self, matching_results_dict: dict, mode: str='ascending'):
+    @classmethod
+    def sort_by_jlpt_level(self, matching_results: list, mode: str='ascending', non_jlpt: str='second'):
         """
         mode options: 'ascending', 'descending'
+        non_jlpt options: 'first', 'second'
         """
-        pass
+        result = []
+        jlpt_results_list = []
+        level = -1
+        while True:
+            level += 1
+            jlpt_results_list.append(WordMatchFilter.filter_by_jlpt_level(matching_results, target=level, ineq='=='))
+            higher_level_results = WordMatchFilter.filter_by_jlpt_level(matching_results, target=level, ineq='>')
+            if len(higher_level_results) == 0:
+                break
 
-    def sort_by_wanikani_level(self, matching_results_dict: dict, mode: str='ascending'):
+        non_jlpt_results = WordMatchFilter.filter_by_jlpt_level(matching_results, target=-1, ineq='==')
+        jlpt_results = []
+        if mode == 'ascending':
+            pass
+        elif mode == 'decending':
+            jlpt_results_list.reverse()
+        else:
+            logger.error(f"Invalid mode: {mode}")
+            raise Exception
+        for jlpt_results_item in jlpt_results_list:
+            jlpt_results.extend(jlpt_results_item)
+        
+        if non_jlpt == 'first':
+            result.extend(non_jlpt_results)
+            result.extend(jlpt_results)
+        elif non_jlpt == 'second':
+            result.extend(jlpt_results)
+            result.extend(non_jlpt_results)
+        else:
+            logger.error(f"Invalid value for non_jlpt: {non_jlpt}")
+            raise Exception
+
+        return result
+
+    @classmethod
+    def sort_by_wanikani_level(self, matching_results: list, mode: str='ascending'):
         """
         mode options: 'ascending', 'descending'
         """

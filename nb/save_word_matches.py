@@ -16,7 +16,7 @@ words = word_filter.get_nongarbage_results()
 
 results = None
 if not file_exists(word_matches_save_path):
-    results = {}
+    results = []
 else:
     results = pickle.load(open(word_matches_save_path, 'rb'))
 
@@ -25,7 +25,7 @@ word_search = JishoWordSearch()
 for i, word in zip(range(len(words)), words):
     search_word = word.search_word
     url = word.url
-    if i < len(results) and search_word in results:
+    if i < len(results):
         logger.cyan(f"===Index: {i} - Found in cache. Skipping.===")
         continue
     else:
@@ -37,7 +37,7 @@ for i, word in zip(range(len(words)), words):
         search_word=search_word,
         page_limit=1
     )
-    results[search_word] = matching_results
+    results.append({'search_word': search_word, 'matching_results': matching_results})
 
     logger.yellow('================================')
     logger.purple(search_word)
