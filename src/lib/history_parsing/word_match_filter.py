@@ -121,7 +121,10 @@ class WordMatchFilter:
             matches = matching_result['matching_results']
             for word in matches:
                 jap_vocab, concept_labels, vocab_entry = get_match_data(word)
-                if concept_labels is None:
+                if concept_labels is None and target != -1:
+                    continue
+                elif target == -1 and ineq == '==':
+                    relevant_words.append(word)
                     continue
                 level = concept_labels.wanikani_level
                 if ineq == '==':
@@ -187,7 +190,7 @@ class WordMatchSorter:
         jlpt_results = []
         if mode == 'ascending':
             pass
-        elif mode == 'decending':
+        elif mode == 'descending':
             jlpt_results_list.reverse()
         else:
             logger.error(f"Invalid mode: {mode}")
@@ -208,8 +211,39 @@ class WordMatchSorter:
         return result
 
     @classmethod
-    def sort_by_wanikani_level(self, matching_results: list, mode: str='ascending'):
+    def sort_by_wanikani_level(self, matching_results: list, mode: str='ascending', non_wanikani: str='second'):
         """
         mode options: 'ascending', 'descending'
+        non_wanikani options: 'first', 'second'
         """
-        pass
+        result = []
+        wanikani_results_list = []
+        level = -1
+        while True:
+            level += 1
+            wanikani_results_list.append(WordMatchFilter.filter_by_wanikani_level(matching_results, target=level, ineq='=='))
+            higher_level_results = WordMatchFilter.filter_by_wanikani_level(matching_results, target=level, ineq='>')
+            if len(higher_level_results) == 0:
+                break
+        non_wanikani_results = WordMatchFilter.filter_by_wanikani_level(matching_results, target=-1, ineq='==')
+        wanikani_results = []
+        if mode == 'ascending':
+            pass
+        elif mode == 'descending':
+            wanikani_results_list.reverse()
+        else:
+            logger.error(f"Invalid mode: {mode}")
+            raise Exception
+        for wanikani_results_item in wanikani_results_list:
+            wanikani_results.extend(wanikani_results_item)
+        if non_wanikani == 'first':
+            result.extend(non_wanikani_results)
+            result.extend(wanikani_results)
+        elif non_wanikani == 'second':
+            result.extend(wanikani_results)
+            result.extend(non_wanikani_results)
+        else:
+            logger.error(f"Invalid value for non_wanikani: {non_wanikani}")
+            raise Exception
+
+        return result

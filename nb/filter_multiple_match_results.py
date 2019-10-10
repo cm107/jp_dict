@@ -21,10 +21,12 @@ from src.lib.history_parsing.word_match_filter import WordMatchFilter, WordMatch
 
 common_matching_results = WordMatchFilter.filter_by_common_words(matching_results, target=True)
 common_matching_results = WordMatchFilter.filter_by_match_count(common_matching_results, target=1, ineq='==')
-common_matching_results = WordMatchSorter.sort_by_jlpt_level(common_matching_results, mode='decending', non_jlpt='second')
+common_matching_results = WordMatchSorter.sort_by_wanikani_level(common_matching_results, mode='ascending', non_wanikani='second')
+common_matching_results = WordMatchSorter.sort_by_jlpt_level(common_matching_results, mode='descending', non_jlpt='second')
 uncommon_matching_results = WordMatchFilter.filter_by_common_words(matching_results, target=False)
 uncommon_matching_results = WordMatchFilter.filter_by_match_count(uncommon_matching_results, target=1, ineq='==')
-uncommon_matching_results = WordMatchSorter.sort_by_jlpt_level(uncommon_matching_results, mode='decending', non_jlpt='second')
+uncommon_matching_results = WordMatchSorter.sort_by_wanikani_level(uncommon_matching_results, mode='ascending', non_wanikani='second')
+uncommon_matching_results = WordMatchSorter.sort_by_jlpt_level(uncommon_matching_results, mode='descending', non_jlpt='second')
 
 results = []
 results.extend(common_matching_results)
