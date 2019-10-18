@@ -85,7 +85,7 @@ class WordMatchFilter:
                 jap_vocab, concept_labels, vocab_entry = get_match_data(word)
                 if concept_labels is None and target != -1:
                     continue
-                elif target == -1 and ineq == '==':
+                elif concept_labels is None and target == -1 and ineq == '==':
                     relevant_words.append(word)
                     continue
                 level = concept_labels.jlpt_level
@@ -123,7 +123,7 @@ class WordMatchFilter:
                 jap_vocab, concept_labels, vocab_entry = get_match_data(word)
                 if concept_labels is None and target != -1:
                     continue
-                elif target == -1 and ineq == '==':
+                elif concept_labels is None and target == -1 and ineq == '==':
                     relevant_words.append(word)
                     continue
                 level = concept_labels.wanikani_level
@@ -221,11 +221,14 @@ class WordMatchSorter:
         level = -1
         while True:
             level += 1
-            wanikani_results_list.append(WordMatchFilter.filter_by_wanikani_level(matching_results, target=level, ineq='=='))
+            current_level_results = WordMatchFilter.filter_by_wanikani_level(matching_results, target=level, ineq='==')
+            wanikani_results_list.append(current_level_results)
             higher_level_results = WordMatchFilter.filter_by_wanikani_level(matching_results, target=level, ineq='>')
             if len(higher_level_results) == 0:
                 break
+
         non_wanikani_results = WordMatchFilter.filter_by_wanikani_level(matching_results, target=-1, ineq='==')
+
         wanikani_results = []
         if mode == 'ascending':
             pass
