@@ -89,6 +89,12 @@ class WordMatchFilter:
                     relevant_words.append(word)
                     continue
                 level = concept_labels.jlpt_level
+                if level is None and target != -1:
+                    continue
+                elif level is None and target == -1 and ineq == '==':
+                    relevant_words.append(word)
+                    continue
+
                 if ineq == '==':
                     if level is not None and level == target:
                         relevant_words.append(word)
@@ -127,6 +133,12 @@ class WordMatchFilter:
                     relevant_words.append(word)
                     continue
                 level = concept_labels.wanikani_level
+                if level is None and target != -1:
+                    continue
+                elif level is None and target == -1 and ineq == '==':
+                    relevant_words.append(word)
+                    continue
+
                 if ineq == '==':
                     if level is not None and level == target:
                         relevant_words.append(word)
