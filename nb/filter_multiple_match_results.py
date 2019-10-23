@@ -1,7 +1,9 @@
 from src.conf.paths import PathConf
 from src.util.loaders import load_word_matches
 from src.submodules.logger.logger_handler import logger
-from src.lib.history_parsing.word_match_filter import WordMatchFilter, WordMatchSorter
+from src.lib.history_parsing.word_match_filter import WordMatchFilter, WordMatchSorter, LearnedFilter
+from src.lib.word_results import WordResult
+from src.lib.jap_vocab import OtherForm
 
 word_matches_save_path = f"{PathConf.word_matches_save_dir}/test.pkl"
 matching_results = load_word_matches(word_matches_save_path)
@@ -22,28 +24,10 @@ logger.purple(f"len(anime_vocab_vocab_list): {len(anime_vocab_vocab_list)}")
 
 logger.cyan(f"Before len(filtered_results): {len(filtered_results)}")
 
-not_learned_results = []
-for matching_result in filtered_results:
-    search_word = matching_result['search_word']
-    matches = matching_result['matching_results']
-    if search_word not in jlpt_all_vocab_list:
-        for word in matches:
-            if word.jap_vocab.writing not in jlpt_all_vocab_list:
-                not_learned_results.append(matching_result)
-
-filtered_results = not_learned_results
+filtered_results = LearnedFilter.get_unlearned(filtered_results, learned_list=jlpt_all_vocab_list)
 logger.cyan(f"After len(filtered_results): {len(filtered_results)}")
 
-not_learned_results = []
-for matching_result in filtered_results:
-    search_word = matching_result['search_word']
-    matches = matching_result['matching_results']
-    if search_word not in anime_vocab_vocab_list:
-        for word in matches:
-            if word.jap_vocab.writing not in anime_vocab_vocab_list:
-                not_learned_results.append(matching_result)
-
-filtered_results = not_learned_results
+filtered_results = LearnedFilter.get_unlearned(filtered_results, learned_list=anime_vocab_vocab_list)
 logger.cyan(f"After len(filtered_results): {len(filtered_results)}")
 for i, matching_result in zip(range(len(filtered_results)), filtered_results):
     search_word = matching_result['search_word']
@@ -53,4 +37,3 @@ for i, matching_result in zip(range(len(filtered_results)), filtered_results):
         if i > 0:
             logger.purple(f"--------------------------")
         logger.blue(word)
-        logger.red(word.jap_vocab.writing)

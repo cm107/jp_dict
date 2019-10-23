@@ -3,9 +3,16 @@ from ..vocab_entry import VocabularyEntry
 from ..jap_vocab import JapaneseVocab
 from ..concept import ConceptLabels
 from ..word_results import WordResult
+from ..jap_vocab import OtherForm
 
 def get_match_data(word: WordResult) -> (JapaneseVocab, ConceptLabels, VocabularyEntry):
     return word.jap_vocab, word.concept_labels, word.vocab_entry
+
+def word_result_buffer(word: WordResult) -> WordResult:
+    return word
+
+def other_form_buffer(other_form: OtherForm) -> OtherForm:
+    return other_form
 
 class WordMatchFilter:
     @classmethod
@@ -157,6 +164,31 @@ class WordMatchFilter:
                 else:
                     logger.error(f"Invalid ineq: {ineq}")
                     raise Exception
+            if len(relevant_words) > 0:
+                filtered_matching_result = {'search_word': search_word, 'matching_results': relevant_words}
+                result.append(filtered_matching_result)
+        return result
+
+class LearnedFilter:
+    @classmethod
+    def get_unlearned(self, matching_results: list, learned_list: list):
+        result = []
+        for matching_result in matching_results:
+            relevant_words = []
+            search_word = matching_result['search_word']
+            matches = matching_result['matching_results']
+            if search_word not in learned_list:
+                for word in matches:
+                    word = word_result_buffer(word)
+                    if word.jap_vocab.writing not in learned_list and word.jap_vocab.reading not in learned_list:
+                        if word.vocab_entry.other_forms is not None:
+                            for other_form in word.vocab_entry.other_forms.other_form_list:
+                                other_form = other_form_buffer(other_form)
+                                if other_form.kanji_writing not in learned_list and other_form.kana_writing not in learned_list:
+                                    relevant_words.append(word)
+                                    break
+                        else:
+                            relevant_words.append(word)
             if len(relevant_words) > 0:
                 filtered_matching_result = {'search_word': search_word, 'matching_results': relevant_words}
                 result.append(filtered_matching_result)
