@@ -1,6 +1,0 @@
-[submodule "src/submodules/logger"]
-	path = src/submodules/logger
-	url = https://github.com/cm107/logger.git
-[submodule "src/submodules/common_utils"]
-	path = src/submodules/common_utils
-	url = https://github.com/cm107/common_utils.git

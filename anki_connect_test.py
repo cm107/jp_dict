@@ -1,6 +1,6 @@
 import json
 import urllib.request
-from src.submodules.common_utils.utils import beautify_dict
+from common_utils.utils import beautify_dict
 
 class AnkiConnectTest:
     def __init__(self):

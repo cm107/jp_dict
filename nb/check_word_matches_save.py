@@ -1,6 +1,6 @@
 from src.conf.paths import PathConf
 from src.util.loaders import load_word_matches
-from src.submodules.logger.logger_handler import logger
+from logger import logger
 
 word_matches_save_path = f"{PathConf.word_matches_save_dir}/test.pkl"
 matching_results_dict = load_word_matches(word_matches_save_path)

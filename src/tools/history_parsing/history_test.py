@@ -1,6 +1,10 @@
-from src.submodules.logger.log_writer import log_writer
-from src.submodules.common_utils.path_utils import get_script_dir
 from src.lib.history_parser import HistoryParser
+import requests, pickle
+from bs4 import BeautifulSoup
+from src.lib.cache import Cache, CacheHandler
+from logger import logger
+from common_utils.file_utils import file_exists
+from common_utils.path_utils import get_script_dir
 
 script_dir = get_script_dir()
 history_json_path = f'{script_dir}/Takeout/Chrome/BrowserHistory.json'
@@ -11,11 +15,6 @@ history_json_path = f'{script_dir}/Takeout/Chrome/BrowserHistory.json'
 # # history_parser.download_all_favicon(icon_dump_dir=icon_dump_dir)
 # # history_parser.print_url_frequencies()
 # ===================
-import requests, pickle
-from bs4 import BeautifulSoup
-from src.submodules.logger.logger_handler import logger
-from src.submodules.common_utils.file_utils import file_exists
-from src.lib.cache import Cache, CacheHandler
 
 cache_file_path = 'cache.pkl'
 
@@ -54,5 +53,3 @@ for i, url in zip(range(len(relevant_urls)), relevant_urls):
     cache_dict['latest_index_completed'] = latest_index_completed
     pickle.dump(cache_dict, open(cache_file_path, 'wb'))
 # ===================
-
-log_writer.write_all_logs()

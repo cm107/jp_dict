@@ -1,7 +1,7 @@
 #%%
-from src.submodules.logger.logger_handler import logger
-from src.submodules.common_utils.path_utils import get_script_dir, rel_to_abs_path
-from src.submodules.common_utils.adv_file_utils import delete_all_files_of_extension
+from logger import logger
+from common_utils.path_utils import get_script_dir, rel_to_abs_path
+from common_utils.adv_file_utils import delete_all_files_of_extension
 from src.conf.paths import PathConf
 from src.util.loaders import load_search_word_cache_handler
 from src.lib.history_parsing.search_word_cache_filter import SearchWordCacheFilter

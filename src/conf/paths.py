@@ -1,5 +1,5 @@
-from ..submodules.common_utils.path_utils import get_script_dir, rel_to_abs_path
-from ..submodules.common_utils.file_utils import link_exists, create_softlink
+from common_utils.path_utils import get_script_dir, rel_to_abs_path
+from common_utils.file_utils import link_exists, create_softlink
 
 class PathConf:
     root_dir = rel_to_abs_path(f'{get_script_dir()}/../..')

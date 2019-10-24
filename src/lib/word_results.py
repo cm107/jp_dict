@@ -2,7 +2,7 @@ from .jap_vocab import JapaneseVocab
 from .concept import ConceptLabels
 from .vocab_entry import VocabularyEntry
 from ..util.previews import yellow_text, blue_text, green_text, std_text
-from ..submodules.logger.logger_handler import logger
+from logger import logger
 
 class WordResult:
     def __init__(self, jap_vocab: JapaneseVocab, concept_labels: ConceptLabels, vocab_entry: VocabularyEntry):

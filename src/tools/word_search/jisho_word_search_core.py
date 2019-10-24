@@ -16,7 +16,7 @@ from ...lib.supplemental_info import SupplementalInfo, CategoryLabel, SeeAlsoLin
     RestrictionInfo, AdditionalInfo, AntonymLink, SourceInfo
 from ...lib.concept import ConceptLabels
 from ...lib.word_results import WordResult, WordResultHandler
-from ...submodules.logger.logger_handler import logger
+from logger import logger
 
 class JishoWordSearchCore:
     def __init__(self):

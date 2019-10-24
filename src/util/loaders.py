@@ -1,5 +1,5 @@
 import pickle
-from ..submodules.common_utils.check_utils import check_file_exists
+from common_utils.check_utils import check_file_exists
 
 from ..lib.history_parsing.cache import CacheHandler
 

@@ -1,4 +1,4 @@
-from src.submodules.logger.logger_handler import logger
+from logger import logger
 from src.tools.word_search.jisho_word_search import JishoWordSearch
 
 nominal_word = '日常'

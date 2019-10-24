@@ -1,4 +1,4 @@
-from ...submodules.logger.logger_handler import logger
+from logger import logger
 from ..vocab_entry import VocabularyEntry
 from ..jap_vocab import JapaneseVocab
 from ..concept import ConceptLabels

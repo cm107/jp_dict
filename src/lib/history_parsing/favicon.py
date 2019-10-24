@@ -2,11 +2,11 @@ import requests, time, cv2
 from PIL import Image
 from requests.models import Response
 
-from ...submodules.logger.logger_handler import logger
-from ...submodules.common_utils.path_utils import get_extension_from_path, \
+from logger import logger
+from common_utils.path_utils import get_extension_from_path, \
     get_all_files_in_extension_list, get_rootname_from_path, \
     get_all_files_of_extension
-from ...submodules.common_utils.file_utils import delete_file
+from common_utils.file_utils import delete_file
 from .cache import CacheHandler
 
 class FaviconExtractor:

@@ -18,11 +18,10 @@ from docopt import docopt
 args = docopt(__doc__, version='Alpha 1.0')
 print(args)
 
-from src.submodules.logger.logger_handler import logger
-from src.submodules.logger.log_writer import log_writer
-from src.submodules.common_utils.file_utils import file_exists, dir_exists
-from src.submodules.common_utils.path_utils import rel_to_abs_path
-from src.submodules.common_utils.adv_file_utils import get_dirpaths_in_dir
+from logger import logger
+from common_utils.file_utils import file_exists, dir_exists
+from common_utils.path_utils import rel_to_abs_path
+from common_utils.adv_file_utils import get_dirpaths_in_dir
 from src.conf.paths import PathConf
 from src.tools.word_list_updater import WordListUpdater
 
@@ -67,5 +66,3 @@ elif history_json_dir is not None:
 else:
     logger.error(f"Oops! Something went wrong at parameter parsing.")
     raise Exception
-
-log_writer.write_all_logs()

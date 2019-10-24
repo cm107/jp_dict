@@ -16,10 +16,9 @@ from docopt import docopt
 args = docopt(__doc__, version='Alpha 1.0')
 print(args)
 
-from src.submodules.logger.logger_handler import logger
-from src.submodules.logger.log_writer import log_writer
-from src.submodules.common_utils.path_utils import rel_to_abs_path
-from src.submodules.common_utils.file_utils import init_dir, file_exists
+from logger import logger
+from common_utils.path_utils import rel_to_abs_path
+from common_utils.file_utils import init_dir, file_exists
 from src.tools.history_parsing.favicon_downloader import FaviconDownloader
 from src.conf.paths import PathConf
 
@@ -41,4 +40,4 @@ favicon_downloader = FaviconDownloader(
 )
 favicon_downloader.run()
 
-log_writer.write_all_logs()
+logger.link_log_dir(log_dir=f"{PathConf.root_dir}/logs")

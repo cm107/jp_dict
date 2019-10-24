@@ -3,8 +3,8 @@ from qtpy.QtCore import QSize, QPoint, QSettings, QRect
 from qtpy.QtGui import QIcon
 from qtpy.QtWidgets import QMainWindow, QAction, QTabWidget, QFileDialog, \
     QMessageBox, QLineEdit, QPushButton
-from ...submodules.logger.logger_handler import logger
-from ...submodules.common_utils.file_utils import file_exists
+from logger import logger
+from common_utils.file_utils import file_exists
 from ...gui.widgets.browser_history_load_popup import BrowserHistoryLoadPopup
 from ...gui.widgets.tabbed_window import VocabTrackerTabbedWindow
 

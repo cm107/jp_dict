@@ -1,7 +1,7 @@
 import requests, pickle
 from bs4 import BeautifulSoup
-from ..submodules.logger.logger_handler import logger
-from ..submodules.common_utils.file_utils import file_exists
+from logger import logger
+from common_utils.file_utils import file_exists
 from ..lib.history_parsing.cache import Cache, CacheHandler
 from ..lib.history_parsing.history_parser import HistoryParser
 from qtpy.QtCore import Signal

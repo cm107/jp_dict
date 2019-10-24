@@ -1,6 +1,6 @@
 import pickle
-from src.submodules.logger.logger_handler import logger
-from src.submodules.common_utils.file_utils import file_exists
+from logger import logger
+from common_utils.file_utils import file_exists
 from src.util.loaders import load_search_word_cache_handler
 from src.lib.history_parsing.search_word_cache_filter import SearchWordCacheFilter
 from src.tools.word_search.jisho_word_search import JishoWordSearch

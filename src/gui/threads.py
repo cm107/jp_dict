@@ -2,7 +2,7 @@ import time, sys
 from qtpy.QtCore import QThread, Signal, Slot
 from qtpy.QtWidgets import QApplication, QTextEdit
 from qtpy.QtGui import QTextCursor
-from ..submodules.logger.logger_handler import logger
+from logger import logger
 
 from ..tools.word_list_updater import WordListUpdater
 

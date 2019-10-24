@@ -1,5 +1,5 @@
 import pickle
-from src.submodules.logger.logger_handler import logger
+from logger import logger
 from src.conf.paths import PathConf
 
 suspicious_chars = list(' !"#$%&\'()~=~|`{+*}<<>?_1234567890-^\@[;:],./')

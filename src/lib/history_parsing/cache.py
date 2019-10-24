@@ -1,5 +1,5 @@
 import operator
-from ...submodules.logger.logger_handler import logger
+from logger import logger
 
 class Cache:
     def __init__(self, item):

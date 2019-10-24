@@ -1,6 +1,6 @@
 #%%
 from src.tools.word_search.jisho_word_search import JishoWordSearch
-from src.submodules.logger.logger_handler import logger
+from logger import logger
 
 search_words = ['日', '取り扱い', '未亡人', '修羅場']
 results = {}

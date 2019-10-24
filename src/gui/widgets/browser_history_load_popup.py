@@ -4,9 +4,9 @@ from qtpy.QtGui import QTextCursor
 from qtpy.QtWidgets import QMessageBox, QFileDialog, QWidget, QPushButton, \
     QLineEdit, QTextEdit
 from ...tools.word_list_updater import WordListUpdater
-from ...submodules.logger.logger_handler import logger
+from logger import logger
 from ...gui.threads import BackgroundThread, WordListUpdaterThread
-from src.submodules.common_utils.file_utils import file_exists
+from common_utils.file_utils import file_exists
 
 class BrowserHistoryLoadPopup(QWidget):
     stop_sig = Signal(bool)

@@ -1,5 +1,5 @@
-from ...submodules.logger.logger_handler import logger
-from ...submodules.common_utils.check_utils import check_type_from_list
+from logger import logger
+from common_utils.check_utils import check_type_from_list
 from .cache import Cache
 from ...util.char_lists import wild_cards, eng_chars, typo_chars, \
     hiragana_chars, katakana_chars, misc_kana_chars

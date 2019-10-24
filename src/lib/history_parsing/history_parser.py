@@ -1,9 +1,9 @@
 import json
 from .browser_history import BrowserHistory, BrowserHistoryItem
 from .favicon import FaviconExtractor
-from ...submodules.logger.logger_handler import logger
-from ...submodules.common_utils.file_utils import init_dir
-from ...submodules.common_utils.counter_utils import count_list_items
+from logger import logger
+from common_utils.file_utils import init_dir
+from common_utils.counter_utils import count_list_items
 
 class HistoryParser:
     def __init__(self, history_json_path: str):
