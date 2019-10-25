@@ -28,13 +28,6 @@ class CacheHandler:
         new_cache.hit(time_usec=time_usec)
         self.cache_list.append(new_cache)
 
-    def check_url(self, url: str, time_usec: int) -> bool:
-        found, found_index, duplicate = self.search_item(item={'url': url, 'search_word': None}, time_usec=time_usec, item_key='url')
-        if found and not duplicate:
-            self.cache_list[found_index].hit(time_usec=time_usec)
-            self.sort()
-        return found, duplicate
-
     def search_item(self, item, time_usec: int, item_key: str=None) -> (bool, int):
         found = False
         duplicate = False
@@ -70,3 +63,25 @@ class CacheHandler:
         print("Cache Hits:")
         for cache in self.cache_list:
             print(f"{cache.hit_count}: {cache.item}")
+
+class SearchWordCacheHandler(CacheHandler):
+    def __init__(self):
+        super().__init__()
+
+    def check_url(self, url: str, time_usec: int) -> bool:
+        found, found_index, duplicate = self.search_item(item={'url': url, 'search_word': None}, time_usec=time_usec, item_key='url')
+        if found and not duplicate:
+            self.cache_list[found_index].hit(time_usec=time_usec)
+            self.sort()
+        return found, duplicate
+
+class SoupCacheHandler(CacheHandler):
+    def __init__(self):
+        super().__init__()
+
+    def check_url(self, url: str, time_usec: int) -> bool:
+        found, found_index, duplicate = self.search_item(item={'url': url, 'soup': None}, time_usec=time_usec, item_key='url')
+        if found and not duplicate:
+            self.cache_list[found_index].hit(time_usec=time_usec)
+            self.sort()
+        return found, duplicate

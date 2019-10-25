@@ -1,24 +1,26 @@
+import sys
 import requests, pickle
 from bs4 import BeautifulSoup
 from logger import logger
 from common_utils.file_utils import file_exists
-from ..lib.history_parsing.cache import Cache, SearchWordCacheHandler
-from ..lib.history_parsing.history_parser import HistoryParser
+from src.lib.history_parsing.cache import Cache, SoupCacheHandler
+from src.lib.history_parsing.history_parser import HistoryParser
 from qtpy.QtCore import Signal
 
-class WordListUpdater:
-    def __init__(self, history_json_path: str, save_file_path: str):
-        self.save_file_path = save_file_path
+class SoupSaver:
+    def __init__(self, soup_save_file_path: str, history_json_path: str):
+        sys.setrecursionlimit(100000)
+        self.soup_save_file_path = soup_save_file_path
         history_parser = HistoryParser(history_json_path=history_json_path)
         history_parser.load()
         self.relevant_times, self.relevant_urls = history_parser.get_urls_that_start_with('https://jisho.org/search')
 
-        self.search_word_cache_handler = None
-        if not file_exists(save_file_path):
-            self.search_word_cache_handler = SearchWordCacheHandler()
+        self.soup_cache_handler = None
+        if not file_exists(soup_save_file_path):
+            self.soup_cache_handler = SoupCacheHandler()
         else:
-            cache_dict = pickle.load(open(save_file_path, 'rb'))
-            self.search_word_cache_handler = cache_dict['search_word_cache_handler']
+            cache_dict = pickle.load(open(soup_save_file_path, 'rb'))
+            self.soup_cache_handler = cache_dict['soup_cache_handler']
 
         self.current_index = None
 
@@ -39,7 +41,7 @@ class WordListUpdater:
 
         time_usec, url = self.relevant_times[self.current_index], self.relevant_urls[self.current_index]
 
-        found, duplicate = self.search_word_cache_handler.check_url(url=url, time_usec=time_usec)
+        found, duplicate = self.soup_cache_handler.check_url(url=url, time_usec=time_usec)
         if not found:
             response = requests.get(url)
             if response.status_code != 200:
@@ -51,13 +53,13 @@ class WordListUpdater:
                     message_sig.emit(f"\nSkipping {url}")
                 return self.is_done()
             soup = BeautifulSoup(response.text, 'html.parser')
-            search_word = soup.title.text.split('-')[0][:-1]
+            # search_word = soup.title.text.split('-')[0][:-1]
             if message_sig is None:
-                logger.blue(f"{self.current_index}: {search_word}")
+                logger.blue(f"{self.current_index}: {url}")
             else:
-                message_sig.emit(f"\n{self.current_index}: {search_word}")
-            url_word_pair = {'url': url, 'search_word': search_word}
-            self.search_word_cache_handler.process(item=url_word_pair, time_usec=time_usec, item_key='url')
+                message_sig.emit(f"\n{self.current_index}: {url}")
+            url_soup_pair = {'url': url, 'soup': soup}
+            self.soup_cache_handler.process(item=url_soup_pair, time_usec=time_usec, item_key='url')
         else:
             if not duplicate:
                 if message_sig is None:
@@ -70,8 +72,8 @@ class WordListUpdater:
                 else:
                     message_sig.emit(f"\n{self.current_index}: Duplicate found in cache (no hit) - {url}")
         cache_dict = {}
-        cache_dict['search_word_cache_handler'] = self.search_word_cache_handler
-        pickle.dump(cache_dict, open(self.save_file_path, 'wb'))
+        cache_dict['soup_cache_handler'] = self.soup_cache_handler
+        pickle.dump(cache_dict, open(self.soup_save_file_path, 'wb'))
         return self.is_done()
 
     def run(self, app=None):
@@ -81,3 +83,8 @@ class WordListUpdater:
 
             if app is not None:
                 app.processEvents()
+
+SoupSaver(
+    soup_save_file_path='soup_save.pth',
+    history_json_path='data/browser_history/new/20191009/Chrome/BrowserHistory.json'
+).run()
