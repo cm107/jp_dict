@@ -85,3 +85,25 @@ class SoupCacheHandler(CacheHandler):
             self.cache_list[found_index].hit(time_usec=time_usec)
             self.sort()
         return found, duplicate
+
+class CharCacheHandler(CacheHandler):
+    def __init__(self):
+        super().__init__()
+        self.count = 0
+
+    def add_new(self, char: str):
+        """
+        CacheHandler method overridden.
+        """
+        self.count += 1
+        new_cache = Cache(item={'char': char})
+        new_cache.hit(time_usec=self.count)
+        self.cache_list.append(new_cache)
+
+    def check_char(self, char: str) -> bool:
+        self.count += 1
+        found, found_index, duplicate = self.search_item(item={'char': char}, time_usec=self.count, item_key='char')
+        if found and not duplicate:
+            self.cache_list[found_index].hit(time_usec=self.count)
+            self.sort()
+        return found, duplicate

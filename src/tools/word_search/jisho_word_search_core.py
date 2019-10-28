@@ -6,7 +6,7 @@ from ...util.previews import preview_soup_nested_tag_children, preview_tag_child
     preview_html_nested_tag_children
 from ...util.previews import blue_text, green_text, yellow_text, red_text, std_text
 from ...util.getters import get_response, get_soup, get_soup_child, get_soup_nested_tag_child, \
-    get_tag_child, get_all_tag_children, get_html_nested_tag_child
+    get_tag_child, get_all_tag_children, get_html_nested_tag_child, get_soup_from_url
 from ...util.utils import get_kana_maps
 from ...lib.jap_vocab import JapaneseVocab, OtherForm, OtherForms
 from ...lib.definition import DefinitionSection, DefinitionGroup, Definitions
@@ -71,9 +71,7 @@ class JishoWordSearchCore:
         self.__init__()
 
     def get_soup(self, url: str):
-        page = get_response(url)
-        check_page_response_status(page)
-        return get_soup(page)
+        return get_soup_from_url(url)
 
     def parse_word_result_count(self):
         if self.word_exact_matches is not None:

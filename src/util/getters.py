@@ -1,12 +1,18 @@
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+from .checkers import check_page_response_status
 
-def get_response(url: str) -> requests.models.Response:
-    return requests.get(url)
+def get_response(url: str, params: dict=None, headers: dict=None) -> requests.models.Response:
+    return requests.get(url, params=params, headers=headers)
 
 def get_soup(page: requests.models.Response) -> BeautifulSoup:
     return BeautifulSoup(page.content, 'html.parser')
+
+def get_soup_from_url(url: str, params: dict=None, headers: dict=None):
+    page = get_response(url, params=params, headers=headers)
+    check_page_response_status(page)
+    return get_soup(page)
 
 def get_soup_child(soup: BeautifulSoup, index: int) -> list:
     return list(soup.children)[index]

@@ -294,3 +294,24 @@ class WordMatchSorter:
             raise Exception
 
         return result
+
+def default_filter(matching_results: list, learned_lists: list=None) -> list:
+    filtered_results = WordMatchFilter.filter_by_match_count(matching_results, target=1, ineq='==')
+    filtered_results = WordMatchSorter.sort_by_wanikani_level(filtered_results, mode='ascending', non_wanikani='second')
+    filtered_results = WordMatchSorter.sort_by_jlpt_level(filtered_results, mode='descending', non_jlpt='second')
+    filtered_results = WordMatchSorter.sort_by_common_words(filtered_results, mode='common_first')
+    if learned_lists is not None:
+        for learned_list in learned_lists:
+            filtered_results = LearnedFilter.get_unlearned(filtered_results, learned_list=learned_list)
+    return filtered_results
+
+def print_filtered_results(filtered_results: list):
+    logger.cyan(f"len(filtered_results): {len(filtered_results)}")
+    for i, matching_result in zip(range(len(filtered_results)), filtered_results):
+        search_word = matching_result['search_word']
+        matches = matching_result['matching_results']
+        logger.yellow(f"============{i}: {search_word}============")
+        for j, word in zip(range(len(matches)), matches):
+            if j > 0:
+                logger.purple(f"--------------------------")
+            logger.blue(word)
