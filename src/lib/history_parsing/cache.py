@@ -68,7 +68,7 @@ class SearchWordCacheHandler(CacheHandler):
     def __init__(self):
         super().__init__()
 
-    def check_url(self, url: str, time_usec: int) -> bool:
+    def check_url(self, url: str, time_usec: int) -> (bool, bool):
         found, found_index, duplicate = self.search_item(item={'url': url, 'search_word': None}, time_usec=time_usec, item_key='url')
         if found and not duplicate:
             self.cache_list[found_index].hit(time_usec=time_usec)
@@ -79,8 +79,8 @@ class SoupCacheHandler(CacheHandler):
     def __init__(self):
         super().__init__()
 
-    def check_url(self, url: str, time_usec: int) -> bool:
-        found, found_index, duplicate = self.search_item(item={'url': url, 'soup': None}, time_usec=time_usec, item_key='url')
+    def check_url(self, url: str, time_usec: int) -> (bool, bool):
+        found, found_index, duplicate = self.search_item(item={'url': url, 'soup_save_item': None}, time_usec=time_usec, item_key='url')
         if found and not duplicate:
             self.cache_list[found_index].hit(time_usec=time_usec)
             self.sort()
@@ -100,7 +100,7 @@ class CharCacheHandler(CacheHandler):
         new_cache.hit(time_usec=self.count)
         self.cache_list.append(new_cache)
 
-    def check_char(self, char: str) -> bool:
+    def check_char(self, char: str) -> (bool, bool):
         self.count += 1
         found, found_index, duplicate = self.search_item(item={'char': char}, time_usec=self.count, item_key='char')
         if found and not duplicate:
