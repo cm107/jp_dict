@@ -14,3 +14,5 @@ class PathConf:
     word_matches_save_dir = f"{data_dir}/word_matches"
     anki_dir = f"{data_dir}/anki"
     ex_sentences_dir = f"{data_dir}/ex_sentences"
+    jisho_soup_root_dir = f"{data_dir}/jisho_soup"
+    jisho_soups_dir = f"{jisho_soup_root_dir}/soups"
