@@ -17,8 +17,10 @@ from ...lib.supplemental_info import SupplementalInfo, CategoryLabel, SeeAlsoLin
 from ...lib.concept import ConceptLabels
 from ...lib.word_results import WordResult, WordResultHandler
 from logger import logger
+from abc import ABCMeta, abstractmethod
+import urllib.parse
 
-class JishoWordSearchCore:
+class JishoWordSearchCore(metaclass=ABCMeta):
     def __init__(self):
         # primary_results
         self.word_exact_matches = None
@@ -36,42 +38,18 @@ class JishoWordSearchCore:
         # Word Result Handler
         self.word_result_handler = WordResultHandler()
 
+    @abstractmethod
     def search(self, search_word: str, page_limit: int=None, silent: bool=True):
-        url = 'https://jisho.org/search/{}'.format(search_word)
-        page_number = 1
-        while True:
-            if not silent:
-                logger.yellow(f'=========================Page {page_number}==============================')
-            search_soup = self.get_soup(url)
-            matches_exist, search_results = self.get_search_results(search_soup)
-            if not matches_exist:
-                if not silent:
-                    logger.warning(f"No matches found for {search_word}")
-                break
-            self.parse_search_results(search_results)
+        ''' To override '''
+        raise NotImplementedError
 
-            self.parse_word_result_count()
-            if self.word_exact_matches is not None:
-                self.parse_word_matches(self.word_exact_matches, category='exact_matches')
-            if self.word_other_matches is not None:
-                self.parse_word_matches(self.word_other_matches, category='other_matches')
-            
-            if not silent:
-                self.word_result_handler.print_display_queue()
-
-            url = self.parse_more_words_link_url(self.word_other_matches)
-            if url is not None:
-                page_number += 1
-                if page_limit is not None and page_number > page_limit:
-                    break
-            else:
-                break
+    @abstractmethod
+    def get_soup(self, src):
+        ''' To override '''
+        raise NotImplementedError
 
     def reset(self):
         self.__init__()
-
-    def get_soup(self, url: str):
-        return get_soup_from_url(url)
 
     def parse_word_result_count(self):
         if self.word_exact_matches is not None:
@@ -325,3 +303,99 @@ class JishoWordSearchCore:
                 source_info=source_info
             )
         return supplemental_info
+
+class JishoUrlWordSearchCore(JishoWordSearchCore):
+    def __init__(self):
+        super().__init__()
+
+    def search(self, search_word: str, page_limit: int=None, silent: bool=True):
+        url = f'https://jisho.org/search/{search_word}'
+        page_number = 1
+        while True:
+            if not silent:
+                logger.yellow(f'=========================Page {page_number}==============================')
+            search_soup = self.get_soup(url)
+            matches_exist, search_results = self.get_search_results(search_soup)
+            if not matches_exist:
+                if not silent:
+                    logger.warning(f"No matches found for {search_word}")
+                break
+            self.parse_search_results(search_results)
+
+            self.parse_word_result_count()
+            if self.word_exact_matches is not None:
+                self.parse_word_matches(self.word_exact_matches, category='exact_matches')
+            if self.word_other_matches is not None:
+                self.parse_word_matches(self.word_other_matches, category='other_matches')
+            
+            if not silent:
+                self.word_result_handler.print_display_queue()
+
+            url = self.parse_more_words_link_url(self.word_other_matches)
+            if url is not None:
+                page_number += 1
+                if page_limit is not None and page_number > page_limit:
+                    break
+            else:
+                break
+
+    def get_soup(self, url: str):
+        return get_soup_from_url(url)
+
+import pickle
+from common_utils.check_utils import check_file_exists
+from ...lib.history_parsing.cache import SoupCacheHandler
+from ...lib.history_parsing.soup_saver import SoupSaveItem
+
+def soup_cache_handler_buffer(handler: SoupCacheHandler) -> SoupCacheHandler:
+    return handler
+
+def soup_save_item_buffer(soup_save_item: SoupSaveItem) -> SoupSaveItem:
+    return soup_save_item
+
+class JishoSoupWordSearchCore(JishoWordSearchCore):
+    def __init__(self):
+        super().__init__()
+
+    def search(self, search_word: str, soup_dir: str, silent: bool=True):
+        search_soup = self.get_soup(search_word=search_word, soup_dir=soup_dir)
+        matches_exist, search_results = self.get_search_results(search_soup)
+        if not matches_exist:
+            if not silent:
+                logger.warning(f"No matches found for {search_word}")
+                return
+        self.parse_search_results(search_results)
+
+        self.parse_word_result_count()
+        if self.word_exact_matches is not None:
+            self.parse_word_matches(self.word_exact_matches, category='exact_matches')
+        if self.word_other_matches is not None:
+            self.parse_word_matches(self.word_other_matches, category='other_matches')
+        
+        if not silent:
+            self.word_result_handler.print_display_queue()
+
+    def get_soup(self, search_word: str, soup_dir: str) -> BeautifulSoup:
+        search_word_encoded = urllib.parse.urlencode({'search': search_word}).replace('search=', '')
+        url = f'https://jisho.org/search/{search_word_encoded}'
+        progress_save_path = f"{soup_dir}/progress.pth"
+        check_file_exists(progress_save_path)
+        progress_dict = pickle.load(open(progress_save_path, 'rb'))
+        cache_handler = progress_dict['cache_handler']
+        cache_handler = soup_cache_handler_buffer(cache_handler)
+        found, found_index, duplicate = cache_handler.search_item(item={'url': url, 'soup_save_item': None}, time_usec=None, item_key='url')
+        if found:
+            soup_save_item = cache_handler.cache_list[found_index].item['soup_save_item']
+            soup_save_item = soup_save_item_buffer(soup_save_item)
+            if soup_save_item.save_exists():
+                soup = soup_save_item.load()
+                return soup
+            else:
+                logger.error(f"Found url in cache, but couldn't find path of saved soup.")
+                logger.error(f"search_word: {search_word}\nurl: {url}")
+                logger.error(f"Path not found: {soup_save_item.save_path}")
+                raise Exception
+        else:
+            logger.error(f"Search word couldn't been found in cache: {search_word}")
+            logger.error(f"url: {url}")
+            raise Exception

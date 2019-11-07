@@ -182,7 +182,8 @@ class SoupSaver:
             if status_code == 200:
                 soup_save_item.save(soup=soup, overwrite=False)
                 if verbose:
-                    logger.blue(f"{index_str}{url}")
+                    search_word = soup.title.text.split('-')[0][:-1]
+                    logger.blue(f"{index_str}{search_word}")
             else:
                 if verbose:
                     logger.warning(f"{index_str}Encountered status_code: {status_code}")

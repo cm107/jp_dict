@@ -34,6 +34,7 @@ class CacheHandler:
         found_index = None
         for i, cache in zip(range(len(self.cache_list)), self.cache_list):
             if item_key is None:
+                logger.purple(f"cache.item: {cache.item}, item: {item}")
                 if cache.item == item:
                     found = True
                     found_index = i
