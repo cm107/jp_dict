@@ -1,3 +1,4 @@
+from __future__ import annotations
 import sys
 import pickle
 import requests
@@ -12,6 +13,10 @@ from .history_parser import HistoryParser
 class SaveItem:
     def __init__(self, save_path: str):
         self.save_path = save_path
+
+    @classmethod
+    def buffer(self, save_item: SaveItem) -> SaveItem:
+        return save_item
 
     def save_exists(self) -> bool:
         return file_exists(self.save_path)
@@ -99,6 +104,10 @@ class SoupSaveItem(SaveItem):
     def __init__(self, url: str, save_path: str):
         super().__init__(save_path=save_path)
         self.url = url
+
+    @classmethod
+    def buffer(self, soup_save_item: SoupSaveItem) -> SoupSaveItem:
+        return soup_save_item
 
     def load(self) -> BeautifulSoup:
         return super().load()
