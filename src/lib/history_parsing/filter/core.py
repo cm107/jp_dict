@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from logger import logger
 from ..cache import Cache
 from ....util.char_lists import wild_cards, eng_chars, typo_chars, \
-    hiragana_chars, katakana_chars, misc_kana_chars
+    hiragana_chars, katakana_chars, misc_kana_chars, space_chars
 from .tag_filter import TagFilter
 
 class TaggedCache(metaclass=ABCMeta):
@@ -15,6 +15,7 @@ class TaggedCache(metaclass=ABCMeta):
         self.contains_wildcard = None
         self.contains_eng_chars = None
         self.contains_typo_chars = None
+        self.contains_space = None
 
         # Japanese Character Tags
         self.hiragana_tag = None
@@ -23,7 +24,7 @@ class TaggedCache(metaclass=ABCMeta):
 
     def __str__(self):
         print_str = f"Word: {self.search_word}, Hits: {self.hit_count}, "
-        print_str += f"Garbage: [{self.contains_wildcard}, {self.contains_eng_chars}, {self.contains_typo_chars}], "
+        print_str += f"Garbage: [{self.contains_wildcard}, {self.contains_eng_chars}, {self.contains_typo_chars}, {self.contains_space}], "
         print_str += f"Japanese: [{self.hiragana_tag}, {self.katakana_tag}, {self.kanji_tag}]"
         return print_str
 
@@ -38,10 +39,11 @@ class TaggedCache(metaclass=ABCMeta):
     def is_not_processed_for_garbage_chars_yet(self):
         return self.contains_wildcard is None \
             or self.contains_eng_chars is None \
-            or self.contains_typo_chars is None
+            or self.contains_typo_chars is None \
+            or self.contains_space is None
 
     def is_garbage_word(self):
-        return self.contains_wildcard or self.contains_eng_chars or self.contains_typo_chars
+        return self.contains_wildcard or self.contains_eng_chars or self.contains_typo_chars or self.contains_space
 
     def is_not_processed_for_japanese_chars_yet(self):
         return self.hiragana_tag is None \
@@ -62,8 +64,10 @@ class TaggedCacheHandler(metaclass=ABCMeta):
         ''' To override '''
         raise NotImplementedError
 
-    def tag_wildcards(self):
-        for tagged_cache in self.tagged_cache_list:
+    def tag_wildcards(self, start_from: int=None):
+        for i, tagged_cache in enumerate(self.tagged_cache_list):
+            if start_from is not None and i < start_from:
+                continue
             contains_wildcard = False
             for char in tagged_cache.search_word:
                 if char in wild_cards:
@@ -71,8 +75,11 @@ class TaggedCacheHandler(metaclass=ABCMeta):
                     break
             tagged_cache.contains_wildcard = contains_wildcard
 
-    def tag_eng_chars(self):
-        for tagged_cache in self.tagged_cache_list:
+
+    def tag_eng_chars(self, start_from: int=None):
+        for i, tagged_cache in enumerate(self.tagged_cache_list):
+            if start_from is not None and i < start_from:
+                continue
             contains_eng_chars = False
             for char in tagged_cache.search_word:
                 if char in eng_chars:
@@ -80,8 +87,10 @@ class TaggedCacheHandler(metaclass=ABCMeta):
                     break
             tagged_cache.contains_eng_chars = contains_eng_chars
 
-    def tag_typo_chars(self):
-        for tagged_cache in self.tagged_cache_list:
+    def tag_typo_chars(self, start_from: int=None):
+        for i, tagged_cache in enumerate(self.tagged_cache_list):
+            if start_from is not None and i < start_from:
+                continue
             contains_typo_chars = False
             for char in tagged_cache.search_word:
                 if char in typo_chars:
@@ -89,12 +98,24 @@ class TaggedCacheHandler(metaclass=ABCMeta):
                     break
             tagged_cache.contains_typo_chars = contains_typo_chars
 
-    def tag_garbage_characters(self):
-        self.tag_wildcards()
-        self.tag_eng_chars()
-        self.tag_typo_chars()
+    def tag_spaces(self, start_from: int=None):
+        for i, tagged_cache in enumerate(self.tagged_cache_list):
+            if start_from is not None and i < start_from:
+                continue
+            contains_space = False
+            for char in tagged_cache.search_word:
+                if char in space_chars:
+                    contains_space = True
+                    break
+            tagged_cache.contains_space = contains_space
 
-    def tag_japanese_chars(self):
+    def tag_garbage_characters(self, start_from: int=None):
+        self.tag_wildcards(start_from=start_from)
+        self.tag_eng_chars(start_from=start_from)
+        self.tag_typo_chars(start_from=start_from)
+        self.tag_spaces(start_from=start_from)
+
+    def tag_japanese_chars(self, start_from: int=None):
         """
         Assumes garbage tags have already been assigned.
         Ignores all garbage tagged words.
@@ -106,7 +127,9 @@ class TaggedCacheHandler(metaclass=ABCMeta):
         been accounted for in garbage tagging, they will be counted
         as kanji.
         """
-        for tagged_cache in self.tagged_cache_list:
+        for i, tagged_cache in enumerate(self.tagged_cache_list):
+            if start_from is not None and i < start_from:
+                continue
             # Confirm Word Doesn't Contain Garbage Characters
             if tagged_cache.is_not_processed_for_garbage_chars_yet():
                 logger.error(f"The following tagged_cache has not been processed for garbage yet.")
@@ -169,20 +192,32 @@ class TaggedCacheHandler(metaclass=ABCMeta):
 class CacheFilter(metaclass=ABCMeta):
     def __init__(self, cache_list: list):
         self.tagged_cache_handler = self.get_tagged_cache_handler()
-        self.load_tagged_cache_handler(cache_list)
+        self.cache_list = cache_list
+        self.load_index = -1
+        # self.load_tagged_cache_handler(self.cache_list)
 
     def get_tagged_cache_handler(self) -> TaggedCacheHandler:
         ''' To override '''
         raise NotImplementedError
 
-    def load_tagged_cache_handler(self, cache_list: list): # TODO: This is too slow for SoupCacheFilter. Needs refactoring.
-        for i, cache in enumerate(cache_list):
-            logger.purple(f"Flag0: {i+1}/{len(cache_list)}")
-            self.tagged_cache_handler.add_from_cache(cache)
+    def is_fully_loaded(self) -> bool:
+        return self.load_index == len(self.cache_list) - 1
 
-    def apply_tags(self):
-        self.tagged_cache_handler.tag_garbage_characters()
-        self.tagged_cache_handler.tag_japanese_chars()
+    def load_tagged_cache_handler(self, batch_size: int=None): # TODO: This is too slow for SoupCacheFilter. Needs refactoring.
+        batch_count = 0
+        for i, cache in enumerate(self.cache_list):
+            if batch_count == batch_size:
+                break
+            elif i <= self.load_index:
+                continue
+            logger.purple(f"Loaded {i+1}/{len(self.cache_list)}")
+            self.tagged_cache_handler.add_from_cache(cache)
+            self.load_index = i
+            batch_count += 1
+
+    def apply_tags(self, start_from: int=None):
+        self.tagged_cache_handler.tag_garbage_characters(start_from=start_from)
+        self.tagged_cache_handler.tag_japanese_chars(start_from=start_from)
 
     def get_filtered_results(
         self, no_wildcards: bool=True, no_eng_chars: bool=True, no_typo_chars: bool=True
