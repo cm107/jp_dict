@@ -11,6 +11,8 @@ from .filter.core import CacheFilter
 from .filter.soup_cache_filter import SoupCacheFilter
 from .filter.search_word_cache_filter import SearchWordCacheFilter
 from .cache import CacheHandler
+from .filter.core import TaggedCache
+
 
 class WordMatchSaver(metaclass=ABCMeta):
     def __init__(self, cache_save_path: str, word_matches_save_path: str, cache_handler_key: str):
@@ -20,7 +22,7 @@ class WordMatchSaver(metaclass=ABCMeta):
         )
 
         self.word_matches_save_path = word_matches_save_path
-        self.results, self.word_filter = self._load_checkpoint(
+        self.tagged_cache_list, self.word_filter = self._load_checkpoint(
             word_matches_save_path=self.word_matches_save_path,
             cache_handler=cache_handler
         )
@@ -33,19 +35,17 @@ class WordMatchSaver(metaclass=ABCMeta):
 
     def _load_checkpoint(self, word_matches_save_path: str, cache_handler: CacheHandler) -> (list, CacheFilter):
         if not file_exists(self.word_matches_save_path):
-            results = []
-            word_filter = CacheFilter(
-                cache_list=cache_handler.cache_list,
-            )
+            tagged_cache_list = []
+            word_filter = self._init_word_filter(cache_list=cache_handler.cache_list)
         else:
             checkpoint = pickle.load(open(word_matches_save_path, 'rb'))
-            results = checkpoint['results']
+            tagged_cache_list = checkpoint['tagged_cache_list']
             word_filter = checkpoint['word_filter']
-        return results, word_filter
+        return tagged_cache_list, word_filter
 
-    def _save_checkpoint(self, results: list, word_filter: CacheFilter):
+    def _save_checkpoint(self, tagged_cache_list: list, word_filter: CacheFilter):
         checkpoint = {
-            'results': results,
+            'tagged_cache_list': tagged_cache_list,
             'word_filter': word_filter
         }
         pickle.dump(checkpoint, open(self.word_matches_save_path, 'wb'))
@@ -56,7 +56,7 @@ class WordMatchSaver(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def get_word_filter(self) -> CacheFilter:
+    def _init_word_filter(self, cache_list: list) -> CacheFilter:
         ''' To override '''
         raise NotImplementedError
 
@@ -64,7 +64,7 @@ class WordMatchSaver(metaclass=ABCMeta):
         previous_url = None
 
         for i in range(len(self.word_filter.cache_list)):
-            if i < len(self.results):
+            if i < len(self.tagged_cache_list):
                 logger.cyan(f"===Word {i+1}/{len(self.word_filter.cache_list)} - Found in cache. Skipping.===")
                 self.word_filter.load_index = i
                 continue
@@ -72,10 +72,10 @@ class WordMatchSaver(metaclass=ABCMeta):
                 logger.cyan(f"============Word {i+1}/{len(self.word_filter.cache_list)}======================")
             self.word_filter.load_tagged_cache_handler(batch_size=1)
             self.word_filter.apply_tags(start_from=self.word_filter.load_index)
-            word = self.word_filter.tagged_cache_handler.tagged_cache_list[-1]
-            logger.green(word)
-            search_word = word.search_word
-            url = word.url
+            tagged_cache = self.word_filter.tagged_cache_handler.tagged_cache_list[-1]
+            logger.green(tagged_cache)
+            search_word = tagged_cache.search_word
+            url = tagged_cache.url
             if previous_url is None:
                 previous_url = url
             else:
@@ -87,11 +87,13 @@ class WordMatchSaver(metaclass=ABCMeta):
                     previous_url = url
             logger.cyan(f"Search Word: {search_word}")
             logger.cyan(f"URL: {url}")
-            if not word.is_garbage_word():
+            if not tagged_cache.is_garbage_word():
                 matching_results = self.scrape_word_matches(search_word=search_word)
             else:
                 matching_results = []
-            self.results.append({'search_word': search_word, 'matching_results': matching_results})
+            tagged_cache = TaggedCache.buffer(tagged_cache)
+            tagged_cache.register_word_results(word_results=matching_results)
+            self.tagged_cache_list.append(tagged_cache)
             logger.yellow('================================')
             logger.purple(search_word)
             logger.yellow('================================')
@@ -102,7 +104,7 @@ class WordMatchSaver(metaclass=ABCMeta):
                     logger.green(matching_word)
             else:
                 logger.red("No matching results found.")
-            self._save_checkpoint(results=self.results, word_filter=self.word_filter)
+            self._save_checkpoint(tagged_cache_list=self.tagged_cache_list, word_filter=self.word_filter)
 
 class SoupWordMatchSaver(WordMatchSaver):
     def __init__(
@@ -123,8 +125,8 @@ class SoupWordMatchSaver(WordMatchSaver):
             soup_dir=PathConf.jisho_soup_root_dir
         )
 
-    def get_word_filter(self) -> SoupCacheFilter:
-        return self.word_filter
+    def _init_word_filter(self, cache_list: list) -> SoupCacheFilter:
+        return SoupCacheFilter(cache_list=cache_list)
 
 class SearchWordMatchSaver(WordMatchSaver):
     def __init__(
@@ -145,5 +147,5 @@ class SearchWordMatchSaver(WordMatchSaver):
             page_limit=1
         )
 
-    def get_word_filter(self) -> SearchWordCacheFilter:
-        return self.word_filter
+    def _init_word_filter(self, cache_list: list) -> SearchWordCacheFilter:
+        return SearchWordCacheFilter(cache_list=cache_list)

@@ -1,9 +1,11 @@
+from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from logger import logger
 from ..cache import Cache
 from ....util.char_lists import wild_cards, eng_chars, typo_chars, \
     hiragana_chars, katakana_chars, misc_kana_chars, space_chars
 from .tag_filter import TagFilter
+from ...word_results import WordResult
 
 class TaggedCache(metaclass=ABCMeta):
     def __init__(self, cache: Cache):
@@ -22,6 +24,9 @@ class TaggedCache(metaclass=ABCMeta):
         self.katakana_tag = None
         self.kanji_tag = None
 
+        # Word Results
+        self.word_results = []
+
     def __str__(self):
         print_str = f"Word: {self.search_word}, Hits: {self.hit_count}, "
         print_str += f"Garbage: [{self.contains_wildcard}, {self.contains_eng_chars}, {self.contains_typo_chars}, {self.contains_space}], "
@@ -31,24 +36,34 @@ class TaggedCache(metaclass=ABCMeta):
     def __repr__(self):
         return self.__str__()
 
+    @classmethod
+    def buffer(self, tagged_cache: TaggedCache) -> TaggedCache:
+        return tagged_cache
+
     @abstractmethod
     def get_search_word_and_url(self, cache: Cache) -> (str, str):
         ''' To override '''
         raise NotImplementedError
 
-    def is_not_processed_for_garbage_chars_yet(self):
+    def is_not_processed_for_garbage_chars_yet(self) -> bool:
         return self.contains_wildcard is None \
             or self.contains_eng_chars is None \
             or self.contains_typo_chars is None \
             or self.contains_space is None
 
-    def is_garbage_word(self):
+    def is_garbage_word(self) -> bool:
         return self.contains_wildcard or self.contains_eng_chars or self.contains_typo_chars or self.contains_space
 
-    def is_not_processed_for_japanese_chars_yet(self):
+    def is_not_processed_for_japanese_chars_yet(self) -> bool:
         return self.hiragana_tag is None \
             or self.katakana_tag is None \
             or self.kanji_tag is None
+
+    def is_not_processed_for_word_results_yet(self) -> bool:
+        return self.word_results is None
+
+    def register_word_results(self, word_results: list):
+        self.word_results = word_results
 
 class TaggedCacheHandler(metaclass=ABCMeta):
     def __init__(self):
