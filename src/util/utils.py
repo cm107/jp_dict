@@ -69,3 +69,6 @@ def recursively_get_all_matches_under_dirpath(dirpath: str, target_name: str, ta
             del dirpath_queue[dirpath_queue.index(done_dirpath)]
         done_dirpaths = []
     return matches
+
+def get_indent_str(indent: int) -> str:
+    return ' ' * indent
