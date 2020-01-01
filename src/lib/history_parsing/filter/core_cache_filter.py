@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABCMeta
-from .tag_filter import TagFilter
+from .tagged_cache_filter import TaggedCacheFilter
 from .core import TaggedCacheHandler
 
 class CacheFilter(metaclass=ABCMeta):
@@ -36,50 +36,50 @@ class CacheFilter(metaclass=ABCMeta):
     ) -> list:
         result = self.tagged_cache_handler.tagged_cache_list
         if no_wildcards:
-            result = TagFilter.filter_by_wildcard_tag(result, target='false')
+            result = TaggedCacheFilter.filter_by_wildcard_tag(result, target='false')
         if no_eng_chars:
-            result = TagFilter.filter_by_eng_chars_tag(result, target='false')
+            result = TaggedCacheFilter.filter_by_eng_chars_tag(result, target='false')
         if no_typo_chars:
-            result = TagFilter.filter_by_typo_chars_tag(result, target='false')
+            result = TaggedCacheFilter.filter_by_typo_chars_tag(result, target='false')
         return result
 
     def get_wildcard_results(self) -> list:
         result = self.tagged_cache_handler.tagged_cache_list
-        return TagFilter.filter_by_wildcard_tag(result, target='true')
+        return TaggedCacheFilter.filter_by_wildcard_tag(result, target='true')
 
     def get_eng_char_results(self) -> list:
         result = self.tagged_cache_handler.tagged_cache_list
-        return TagFilter.filter_by_eng_chars_tag(result, target='true')
+        return TaggedCacheFilter.filter_by_eng_chars_tag(result, target='true')
 
     def get_typo_char_results(self) -> list:
         result = self.tagged_cache_handler.tagged_cache_list
-        return TagFilter.filter_by_typo_chars_tag(result, target='true')
+        return TaggedCacheFilter.filter_by_typo_chars_tag(result, target='true')
 
     def get_garbage_char_results(self) -> list:
         result = self.tagged_cache_handler.tagged_cache_list
-        return TagFilter.filter_by_garbage_chars_tag_group(result, target='true')
+        return TaggedCacheFilter.filter_by_garbage_chars_tag_group(result, target='true')
 
     def get_nongarbage_results(self):
         result = self.tagged_cache_handler.tagged_cache_list
-        return TagFilter.filter_by_garbage_chars_tag_group(result, target='false')
+        return TaggedCacheFilter.filter_by_garbage_chars_tag_group(result, target='false')
 
     def get_hiragana_tag_results(self, tag: str):
         """
         tag options: 'none', 'partial', 'all'
         """
         result = self.get_nongarbage_results()
-        return TagFilter.filter_by_hiragana_tag(result, target=tag)
+        return TaggedCacheFilter.filter_by_hiragana_tag(result, target=tag)
 
     def get_katakana_tag_results(self, tag: str):
         """
         tag options: 'none', 'partial', 'all'
         """
         result = self.get_nongarbage_results()
-        return TagFilter.filter_by_katakana_tag(result, target=tag)
+        return TaggedCacheFilter.filter_by_katakana_tag(result, target=tag)
 
     def get_kanji_tag_results(self, tag: str):
         """
         tag options: 'none', 'partial', 'all'
         """
         result = self.get_nongarbage_results()
-        return TagFilter.filter_by_kanji_tag(result, target=tag)
+        return TaggedCacheFilter.filter_by_kanji_tag(result, target=tag)

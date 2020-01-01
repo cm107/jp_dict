@@ -5,7 +5,7 @@ from ...word_results import WordResult
 from .core import TaggedCache
 from ...jap_vocab import OtherForm
 
-class TagFilter:
+class TaggedCacheFilter:
     @classmethod
     def _filter_by_bool_tag(self, attr_name: str, tagged_cache_list: list, target: str, skip_empty_results: bool=False) -> list:
         check_value(target, valid_value_list=['true', 'false', 'none'])

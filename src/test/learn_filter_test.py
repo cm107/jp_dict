@@ -1,5 +1,5 @@
 from logger import logger
-from ..lib.history_parsing.filter.tag_filter import TagFilter
+from ..lib.history_parsing.filter.tagged_cache_filter import TaggedCacheFilter
 from ..lib.history_parsing.cache import Cache
 from ..lib.history_parsing.filter.core import TaggedCache
 from ..lib.history_parsing.filter.soup_cache_filter import TaggedSoupCache
@@ -23,7 +23,7 @@ class LearnFilterTest:
         return unique_list + overlap_list
 
     def filter_by_learned(self, target: str, match_search_word: str, match_jap_vocab: str, match_other_form: str, match_operator: str, exclude_empty_results=True) -> list:
-        return TagFilter.filter_by_learned(
+        return TaggedCacheFilter.filter_by_learned(
             tagged_cache_list=self.tagged_cache_list, learned_list=self.learned_list, target=target,
             match_search_word=match_search_word, match_jap_vocab=match_jap_vocab, match_other_form=match_other_form,
             match_operator=match_operator, exclude_empty_results=True
