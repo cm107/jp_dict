@@ -1,6 +1,9 @@
 from logger import logger
 from common_utils.check_utils import check_value
 from ....util.time_utils import get_days_elapsed_from_time_usec, get_years_elapsed_from_time_usec
+from ...word_results import WordResult
+from .core import TaggedCache
+from ...jap_vocab import OtherForm
 
 class TagFilter:
     @classmethod
@@ -221,4 +224,273 @@ class TagFilter:
             else:
                 logger.error(f"Invalid ineq: {ineq}")
                 raise Exception
+        return result
+
+    @classmethod
+    def filter_by_concept_labels_exist(self, tagged_cache_list: list, target: bool, exclude_empty_results: bool=True):
+        check_value(item=target, valid_value_list=[True, False])
+        result = []
+        working_tagged_cache_list = tagged_cache_list.copy()
+        for i, tagged_cache in enumerate(working_tagged_cache_list):
+            tagged_cache = TaggedCache.buffer(tagged_cache)
+            if tagged_cache.word_results is None or len(tagged_cache.word_results) == 0:
+                continue
+            relevant_word_results = []
+            for j, word_result in enumerate(tagged_cache.word_results):
+                word_result = WordResult.buffer(word_result)
+                if target == True:
+                    if word_result.concept_labels is not None:
+                        relevant_word_results.append(word_result)
+                elif target == False:
+                    if word_result.concept_labels is None:
+                        relevant_word_results.append(word_result)
+                else:
+                    raise Exception
+            if len(relevant_word_results) == 0 and exclude_empty_results:
+                continue
+            else:
+                tagged_cache.word_results = relevant_word_results
+                result.append(tagged_cache)
+        return result
+
+    @classmethod
+    def filter_by_common_words(self, tagged_cache_list: list, target: bool, exclude_empty_results: bool=True):
+        check_value(item=target, valid_value_list=[True, False])
+        result = []
+        working_tagged_cache_list = tagged_cache_list.copy()
+        for tagged_cache in working_tagged_cache_list:
+            tagged_cache = TaggedCache.buffer(tagged_cache)
+            if tagged_cache.word_results is None or len(tagged_cache.word_results) == 0:
+                continue
+            relevant_word_results = []
+            for word_result in tagged_cache.word_results:
+                word_result = WordResult.buffer(word_result)
+                if target == True:
+                    if word_result.concept_labels is not None:
+                        if word_result.concept_labels.is_common_word:
+                            relevant_word_results.append(word_result)
+                elif target == False:
+                    if word_result.concept_labels is not None:
+                        if not word_result.concept_labels.is_common_word:
+                            relevant_word_results.append(word_result)
+                    elif word_result.concept_labels is None:
+                        relevant_word_results.append(word_result)
+                else:
+                    raise Exception
+            if len(relevant_word_results) == 0 and exclude_empty_results:
+                continue
+            else:
+                tagged_cache.word_results = relevant_word_results
+                result.append(tagged_cache)
+        return result
+
+    @classmethod
+    def filter_by_jlpt_level(self, tagged_cache_list: list, target: int, ineq: str, exclude_empty_results: bool=True):
+        """
+        Valid jlpt targets: 1, 2, 3, 4, 5
+        Non-jlpt targets: -1
+        """
+        check_value(target, valid_value_list=[-1, 1, 2, 3, 4, 5])
+        check_value(ineq, valid_value_list=['==', '>', '<', '>=', '<='])
+        result = []
+        for tagged_cache in tagged_cache_list:
+            tagged_cache = TaggedCache.buffer(tagged_cache)
+            if tagged_cache.word_results is None or len(tagged_cache.word_results) == 0:
+                continue
+            relevant_word_results = []
+            for word_result in tagged_cache.word_results:
+                word_result = WordResult.buffer(word_result)
+                if target == -1 and (ineq == '==' or ineq == '>=' or ineq == '<='):
+                    if word_result.concept_labels is None or word_result.concept_labels.jlpt_level is None:
+                        relevant_word_results.append(word_result)
+                if word_result.concept_labels is not None and word_result.concept_labels.jlpt_level is not None:
+                    jlpt_level = word_result.concept_labels.jlpt_level
+                    if ineq == '==' and jlpt_level == target:
+                        relevant_word_results.append(word_result)
+                    elif ineq == '>' and jlpt_level > target:
+                        relevant_word_results.append(word_result)
+                    elif ineq == '<' and jlpt_level < target:
+                        relevant_word_results.append(word_result)
+                    elif ineq == '>=' and jlpt_level >= target:
+                        relevant_word_results.append(word_result)
+                    elif ineq == '<=' and jlpt_level <= target:
+                        relevant_word_results.append(word_result)
+            if len(relevant_word_results) == 0 and exclude_empty_results:
+                continue
+            else:
+                tagged_cache.word_results = relevant_word_results # TODO: Need to verify that this is okay. Try for tagged_cache in tagged_cache_list.copy()?
+                result.append(tagged_cache)
+        return result
+
+    @classmethod
+    def filter_by_wanikani_level(self, tagged_cache_list: list, target: int, ineq: str, exclude_empty_results: bool=True):
+        """
+        Valid wanikani targets: >=1
+        Non-wanikani targets: -1
+        """
+        check_value(ineq, valid_value_list=['==', '>', '<', '>=', '<='])
+        result = []
+        for tagged_cache in tagged_cache_list:
+            tagged_cache = TaggedCache.buffer(tagged_cache)
+            if tagged_cache.word_results is None or len(tagged_cache.word_results) == 0:
+                continue
+            relevant_word_results = []
+            for word_result in tagged_cache.word_results:
+                word_result = WordResult.buffer(word_result)
+                if target == -1 and (ineq == '==' or ineq == '>=' or ineq == '<='):
+                    if word_result.concept_labels is None or word_result.concept_labels.wanikani_level is None:
+                        relevant_word_results.append(word_result)
+                if word_result.concept_labels is not None and word_result.concept_labels.wanikani_level is not None:
+                    wanikani_level = word_result.concept_labels.wanikani_level
+                    if ineq == '==' and wanikani_level == target:
+                        relevant_word_results.append(word_result)
+                    elif ineq == '>' and wanikani_level > target:
+                        relevant_word_results.append(word_result)
+                    elif ineq == '<' and wanikani_level < target:
+                        relevant_word_results.append(word_result)
+                    elif ineq == '>=' and wanikani_level >= target:
+                        relevant_word_results.append(word_result)
+                    elif ineq == '<=' and wanikani_level <= target:
+                        relevant_word_results.append(word_result)
+            if len(relevant_word_results) == 0 and exclude_empty_results:
+                continue
+            else:
+                tagged_cache.word_results = relevant_word_results
+                result.append(tagged_cache)
+        return result
+
+    @classmethod
+    def filter_by_learned(
+        self, tagged_cache_list: list, learned_list: list, target: str,
+        match_search_word: str='off', match_jap_vocab: str='off', match_other_form: str='off',
+        match_operator: str='or', exclude_empty_results: bool=True
+    ):
+        """
+        TODO: Fix bugs
+        """
+        check_value(target, valid_value_list=['learned', 'not_learned'])
+        check_value(match_search_word, valid_value_list=['off', 'writing'])
+        check_value(match_jap_vocab, valid_value_list=['off', 'writing', 'reading', 'both'])
+        check_value(match_other_form, valid_value_list=['off', 'writing', 'reading', 'both'])
+        check_value(match_operator, valid_value_list=['or', 'and'])
+        
+        match_search_word_is_on = True if match_search_word != 'off' else False
+        match_jap_vocab_is_on = True if match_jap_vocab != 'off' else False
+        match_other_form_is_on = True if match_other_form != 'off' else False
+        search_is_off = not match_jap_vocab_is_on or not match_other_form_is_on
+
+        result = []
+        for tagged_cache in tagged_cache_list:
+            tagged_cache = TaggedCache.buffer(tagged_cache)
+            if tagged_cache.word_results is None or len(tagged_cache.word_results) == 0:
+                continue
+            relevant_word_results = []
+            is_search_word_matched = None
+            if match_search_word_is_on:
+                search_word = tagged_cache.search_word
+                if match_search_word == 'writing':
+                    if search_word in learned_list:
+                        is_search_word_matched = True if target == 'learned' else False if target == 'not_learned' else None
+                    else:
+                        is_search_word_matched = False if target == 'learned' else True if target == 'not_learned' else None
+
+            search_is_redundant = match_search_word_is_on and is_search_word_matched and match_operator == 'or'
+
+            if search_is_redundant:
+                relevant_word_results = tagged_cache.word_results.copy()
+            elif not search_is_off:
+                for word_result in tagged_cache.word_results:
+                    word_result = WordResult.buffer(word_result)
+                    if match_jap_vocab_is_on:
+                        is_jap_vocab_writing_matched = None
+                        if target == 'learned':
+                            is_jap_vocab_writing_matched = True \
+                                if word_result.jap_vocab.writing is not None and \
+                                    word_result.jap_vocab.writing in learned_list else False
+                            is_jap_vocab_reading_matched = True \
+                                if word_result.jap_vocab.reading is not None and \
+                                    word_result.jap_vocab.reading in learned_list else False
+                        elif target == 'not_learned':
+                            is_jap_vocab_writing_matched = True \
+                                if word_result.jap_vocab.writing is not None and \
+                                    word_result.jap_vocab.writing not in learned_list else False
+                            is_jap_vocab_reading_matched = True \
+                                if word_result.jap_vocab.reading is not None and \
+                                    word_result.jap_vocab.reading not in learned_list else False
+                        else:
+                            raise Exception
+                        if match_jap_vocab == 'writing':
+                            is_jap_vocab_matched = True if is_jap_vocab_writing_matched else False
+                        elif match_jap_vocab == 'reading':
+                            is_jap_vocab_matched = True if is_jap_vocab_reading_matched else False
+                        elif match_jap_vocab == 'both':
+                            is_jap_vocab_matched = True if is_jap_vocab_writing_matched and is_jap_vocab_reading_matched else False
+                        else:
+                            raise Exception
+                    if match_other_form_is_on:
+                        is_other_form_writing_matched = False
+                        is_other_form_reading_matched = False
+                        if word_result.vocab_entry.other_forms is not None:
+                            for other_form in word_result.vocab_entry.other_forms.other_form_list:
+                                other_form = OtherForm.buffer(other_form)
+                                if target == 'learned':
+                                    is_other_form_writing_matched = True if other_form.kanji_writing in learned_list else is_other_form_writing_matched
+                                    if is_other_form_writing_matched and match_other_form == 'writing':
+                                        break
+                                    is_other_form_reading_matched = True if other_form.kana_writing in learned_list else is_other_form_reading_matched
+                                    if is_other_form_reading_matched and match_other_form == 'reading':
+                                        break
+                                    if is_other_form_writing_matched and is_other_form_reading_matched and match_other_form == 'both':
+                                        break
+                                else:
+                                    is_other_form_writing_matched = True if other_form.kanji_writing not in learned_list else is_other_form_writing_matched
+                                    if is_other_form_writing_matched and match_other_form == 'writing':
+                                        break
+                                    is_other_form_reading_matched = True if other_form.kana_writing not in learned_list else is_other_form_reading_matched
+                                    if is_other_form_reading_matched and match_other_form == 'reading':
+                                        break
+                                    if is_other_form_writing_matched and is_other_form_reading_matched and match_other_form == 'both':
+                                        break
+                            if match_other_form == 'writing':
+                                is_other_form_matched = True if is_other_form_writing_matched else False
+                            elif match_other_form == 'reading':
+                                is_other_form_matched = True if is_other_form_reading_matched else False
+                            elif match_other_form == 'both':
+                                is_other_form_matched = True if is_other_form_writing_matched and is_other_form_reading_matched else False
+                            else:
+                                raise Exception
+                        else:
+                            is_other_form_matched = False
+                    is_word_result_matched = None
+                    if match_search_word_is_on:
+                        is_word_result_matched = is_search_word_matched
+                    if match_jap_vocab_is_on:
+                        if is_word_result_matched is None:
+                            is_word_result_matched = is_jap_vocab_matched
+                        else:
+                            if match_operator == 'or':
+                                is_word_result_matched = is_word_result_matched or is_jap_vocab_matched
+                            elif match_operator == 'and':
+                                is_word_result_matched = is_word_result_matched and is_jap_vocab_matched
+                            else:
+                                raise Exception
+                    if match_other_form_is_on:
+                        if is_word_result_matched is None:
+                            is_word_result_matched = is_other_form_matched
+                        else:
+                            if match_operator == 'or':
+                                is_word_result_matched = is_word_result_matched or is_other_form_matched
+                            elif match_operator == 'and':
+                                is_word_result_matched = is_word_result_matched and is_other_form_matched
+                            else:
+                                raise Exception
+                    
+                    if is_word_result_matched is not None and is_word_result_matched == True:
+                        relevant_word_results.append(word_result)
+            if len(relevant_word_results) == 0 and exclude_empty_results:
+                continue
+            else:
+                tagged_cache.word_results = relevant_word_results
+                result.append(tagged_cache)
+
         return result

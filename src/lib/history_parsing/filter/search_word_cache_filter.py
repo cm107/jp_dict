@@ -1,16 +1,25 @@
+from __future__ import annotations
 from logger import logger
 from ..cache import Cache
-from .core import TaggedCache, TaggedCacheHandler, CacheFilter
+from .core import TaggedCache, TaggedCacheHandler
+from .core_cache_filter import CacheFilter
 
 class TaggedWordCache(TaggedCache):
-    def __init__(self, word_cache: Cache):
-        super().__init__(cache=word_cache)
+    def __init__(self, cache: Cache):
+        super().__init__(cache=cache)
 
     def __str__(self):
         print_str = f"Word: {self.search_word}, Hits: {self.hit_count}, "
         print_str += f"Garbage: [{self.contains_wildcard}, {self.contains_eng_chars}, {self.contains_typo_chars}], "
         print_str += f"Japanese: [{self.hiragana_tag}, {self.katakana_tag}, {self.kanji_tag}]"
         return print_str
+
+    @classmethod
+    def buffer(self, tagged_cache: TaggedWordCache) -> TaggedWordCache:
+        return tagged_cache
+
+    def copy(self) -> TaggedWordCache:
+        return TaggedWordCache(cache=self.cache)
 
     def get_search_word_and_url(self, cache: Cache) -> (str, str):
         if 'url' not in cache.item:

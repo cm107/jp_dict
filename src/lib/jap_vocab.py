@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 class JapaneseVocab:
     def __init__(self, kana_maps: dict):
         self.kana_maps = kana_maps
@@ -15,6 +17,13 @@ class JapaneseVocab:
     def __repr__(self):
         return self.__str__()
 
+    @classmethod
+    def buffer(self, jap_vocab: JapaneseVocab) -> JapaneseVocab:
+        return jap_vocab
+
+    def copy(self) -> JapaneseVocab:
+        return JapaneseVocab(kana_maps=self.kana_maps)
+
 class OtherForm:
     def __init__(self, kanji_writing: str, kana_writing: str):
         self.kanji_writing = kanji_writing
@@ -25,6 +34,13 @@ class OtherForm:
 
     def __repr__(self):
         return self.__str__()
+
+    @classmethod
+    def buffer(self, other_form: OtherForm) -> OtherForm:
+        return other_form
+
+    def copy(self) -> OtherForm:
+        return OtherForm(kanji_writing=self.kanji_writing, kana_writing=self.kana_writing)
 
 class OtherForms:
     def __init__(self, other_form_list: list):
@@ -41,3 +57,10 @@ class OtherForms:
 
     def __repr__(self):
         return self.__str__()
+
+    @classmethod
+    def buffer(self, other_forms: OtherForms) -> OtherForms:
+        return other_forms
+
+    def copy(self) -> OtherForms:
+        return OtherForms(other_form_list=self.other_form_list)

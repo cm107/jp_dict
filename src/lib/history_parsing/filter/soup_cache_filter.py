@@ -1,12 +1,21 @@
+from __future__ import annotations
 from logger import logger
 from ..cache import Cache
 from ..soup_saver import SoupSaveItem
-from .core import TaggedCache, TaggedCacheHandler, CacheFilter
+from .core import TaggedCache, TaggedCacheHandler
+from .core_cache_filter import CacheFilter
 
 class TaggedSoupCache(TaggedCache):
-    def __init__(self, soup_cache: Cache):
-        super().__init__(cache=soup_cache)
+    def __init__(self, cache: Cache):
+        super().__init__(cache=cache)
         
+    @classmethod
+    def buffer(self, tagged_cache: TaggedSoupCache) -> TaggedSoupCache:
+        return tagged_cache
+
+    def copy(self) -> TaggedSoupCache:
+        return TaggedSoupCache(cache=self.cache)
+
     def get_search_word_and_url(self, cache: Cache) -> (str, str):
         if 'url' not in cache.item:
             logger.error(f"'url' not found in cache.item")

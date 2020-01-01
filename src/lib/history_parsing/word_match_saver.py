@@ -7,7 +7,7 @@ from common_utils.check_utils import check_file_exists
 
 from ...tools.word_search.jisho_word_search import JishoSoupWordSearch, JishoUrlWordSearch
 from ...conf.paths import PathConf
-from .filter.core import CacheFilter
+from .filter.core_cache_filter import CacheFilter
 from .filter.soup_cache_filter import SoupCacheFilter
 from .filter.search_word_cache_filter import SearchWordCacheFilter
 from .cache import CacheHandler

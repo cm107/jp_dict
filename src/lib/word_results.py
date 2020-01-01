@@ -1,3 +1,4 @@
+from __future__ import annotations
 from .jap_vocab import JapaneseVocab
 from .concept import ConceptLabels
 from .vocab_entry import VocabularyEntry
@@ -18,6 +19,17 @@ class WordResult:
 
     def __repr__(self):
         return self.__str__()
+
+    @classmethod
+    def buffer(self, word_result: WordResult) -> WordResult:
+        return word_result
+
+    def copy(self) -> WordResult:
+        return WordResult(
+            jap_vocab=self.jap_vocab,
+            concept_labels=self.concept_labels,
+            vocab_entry=self.vocab_entry
+        )
 
 class WordResultHandler:
     def __init__(self):
