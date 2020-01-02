@@ -5,4 +5,4 @@ worker = SearchWordMatchSaver(
     cache_save_path=f"{PathConf.jisho_history_word_list_save_path}",
     word_matches_save_path=f"{PathConf.word_matches_save_dir}/test.pkl"
 )
-worker.run()
+worker.run(use_bar=True)

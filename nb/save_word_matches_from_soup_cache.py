@@ -5,4 +5,4 @@ worker = SoupWordMatchSaver(
     cache_save_path=f"{PathConf.jisho_soup_root_dir}/progress.pth",
     word_matches_save_path=f"{PathConf.word_matches_save_dir}/soup_test0.pkl"
 )
-worker.run()
+worker.run(use_bar=True)

@@ -11,6 +11,8 @@ class TaggedCache(metaclass=ABCMeta):
         self.search_word, self.url = self.get_search_word_and_url(cache=cache)
         self.hit_count = cache.hit_count
         self.times_usec = cache.times_usec
+        self.newest_time_usec = max(cache.times_usec)
+        self.oldest_time_usec = min(cache.times_usec)
 
         # Garbage Character Tags
         self.contains_wildcard = None

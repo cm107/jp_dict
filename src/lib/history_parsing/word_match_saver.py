@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 import pickle
+from tqdm import tqdm
 
 from logger import logger
 from common_utils.file_utils import file_exists
@@ -60,20 +61,25 @@ class WordMatchSaver(metaclass=ABCMeta):
         ''' To override '''
         raise NotImplementedError
 
-    def run(self):
+    def run(self, use_bar: bool=False):
         previous_url = None
+        iterable = tqdm(range(len(self.word_filter.cache_list)), total=len(self.word_filter.cache_list), leave=False) \
+            if use_bar else range(len(self.word_filter.cache_list))
 
-        for i in range(len(self.word_filter.cache_list)):
+        for i in iterable:
             if i < len(self.tagged_cache_list):
-                logger.cyan(f"===Word {i+1}/{len(self.word_filter.cache_list)} - Found in cache. Skipping.===")
+                if not use_bar:
+                    logger.cyan(f"===Word {i+1}/{len(self.word_filter.cache_list)} - Found in cache. Skipping.===")
                 self.word_filter.load_index = i
                 continue
             else:
-                logger.cyan(f"============Word {i+1}/{len(self.word_filter.cache_list)}======================")
+                if not use_bar:
+                    logger.cyan(f"============Word {i+1}/{len(self.word_filter.cache_list)}======================")
             self.word_filter.load_tagged_cache_handler(batch_size=1)
             self.word_filter.apply_tags(start_from=self.word_filter.load_index)
             tagged_cache = self.word_filter.tagged_cache_handler.tagged_cache_list[-1]
-            logger.green(tagged_cache)
+            if not use_bar:
+                logger.green(tagged_cache)
             search_word = tagged_cache.search_word
             url = tagged_cache.url
             if previous_url is None:
@@ -85,8 +91,9 @@ class WordMatchSaver(metaclass=ABCMeta):
                     raise Exception
                 else:
                     previous_url = url
-            logger.cyan(f"Search Word: {search_word}")
-            logger.cyan(f"URL: {url}")
+            if not use_bar:
+                logger.cyan(f"Search Word: {search_word}")
+                logger.cyan(f"URL: {url}")
             if not tagged_cache.is_garbage_word():
                 matching_results = self.scrape_word_matches(search_word=search_word)
             else:
@@ -94,16 +101,17 @@ class WordMatchSaver(metaclass=ABCMeta):
             tagged_cache = TaggedCache.buffer(tagged_cache)
             tagged_cache.register_word_results(word_results=matching_results)
             self.tagged_cache_list.append(tagged_cache)
-            logger.yellow('================================')
-            logger.purple(search_word)
-            logger.yellow('================================')
-            if len(matching_results) > 0:
-                for i, matching_word in zip(range(len(matching_results)), matching_results):
-                    if i > 0:
-                        logger.yellow('--------------------------------')
-                    logger.green(matching_word)
-            else:
-                logger.red("No matching results found.")
+            if not use_bar:
+                logger.yellow('================================')
+                logger.purple(search_word)
+                logger.yellow('================================')
+                if len(matching_results) > 0:
+                    for i, matching_word in zip(range(len(matching_results)), matching_results):
+                        if i > 0:
+                            logger.yellow('--------------------------------')
+                        logger.green(matching_word)
+                else:
+                    logger.red("No matching results found.")
             self._save_checkpoint(tagged_cache_list=self.tagged_cache_list, word_filter=self.word_filter)
 
 class SoupWordMatchSaver(WordMatchSaver):
