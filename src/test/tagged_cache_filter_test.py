@@ -356,14 +356,11 @@ class TaggedCacheFilterTest:
         self,
         target_list: list=['learned', 'not_learned'],
         match_search_word_list: list=['off', 'writing'],
-        match_jap_vocab_list: list=['off', 'writing', 'reading', 'both'],
-        match_other_form_list: list=['off', 'writing', 'reading', 'both'],
-        match_operator_list: list=['or', 'and'],
+        match_jap_vocab_list: list=['off', 'writing', 'reading', 'both', 'either'],
+        match_other_form_list: list=['off', 'writing', 'reading', 'both', 'either'],
+        match_operator_list: list=['or', 'and', 'nor', 'nand'],
         count_only: bool=True, title_indent: int=0, contents_indent: int=0
     ):
-        """
-        TODO: Make a separate test script to better control the tests for this method.
-        """
         logger.info(f"{get_indent_str(title_indent)}Learned Unit Test")
         for target in target_list:
             for match_search_word in match_search_word_list:
@@ -393,7 +390,7 @@ class TaggedCacheFilterTest:
             self.unit_test_common_words,
             self.unit_test_jlpt_level,
             self.unit_test_wanikani_level,
-            # self.unit_test_learned # TODO: Fix this filter.
+            self.unit_test_learned
         ]
         for unit_test_method in unit_test_method_list:
             unit_test_method(title_indent=2, contents_indent=4)

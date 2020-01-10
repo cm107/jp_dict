@@ -318,7 +318,7 @@ class TaggedCacheFilter:
             if len(relevant_word_results) == 0 and exclude_empty_results:
                 continue
             else:
-                tagged_cache.word_results = relevant_word_results # TODO: Need to verify that this is okay. Try for tagged_cache in tagged_cache_list.copy()?
+                tagged_cache.word_results = relevant_word_results
                 result.append(tagged_cache)
         return result
 
@@ -365,19 +365,16 @@ class TaggedCacheFilter:
         match_search_word: str='off', match_jap_vocab: str='off', match_other_form: str='off',
         match_operator: str='or', exclude_empty_results: bool=True
     ):
-        """
-        TODO: Fix bugs
-        """
         check_value(target, valid_value_list=['learned', 'not_learned'])
         check_value(match_search_word, valid_value_list=['off', 'writing'])
-        check_value(match_jap_vocab, valid_value_list=['off', 'writing', 'reading', 'both'])
-        check_value(match_other_form, valid_value_list=['off', 'writing', 'reading', 'both'])
-        check_value(match_operator, valid_value_list=['or', 'and'])
+        check_value(match_jap_vocab, valid_value_list=['off', 'writing', 'reading', 'both', 'either'])
+        check_value(match_other_form, valid_value_list=['off', 'writing', 'reading', 'both', 'either'])
+        check_value(match_operator, valid_value_list=['or', 'and', 'nor', 'nand'])
         
         match_search_word_is_on = True if match_search_word != 'off' else False
         match_jap_vocab_is_on = True if match_jap_vocab != 'off' else False
         match_other_form_is_on = True if match_other_form != 'off' else False
-        search_is_off = not match_jap_vocab_is_on or not match_other_form_is_on
+        search_is_off = not match_jap_vocab_is_on and not match_other_form_is_on
 
         result = []
         for tagged_cache in tagged_cache_list:
@@ -394,10 +391,15 @@ class TaggedCacheFilter:
                     else:
                         is_search_word_matched = False if target == 'learned' else True if target == 'not_learned' else None
 
-            search_is_redundant = match_search_word_is_on and is_search_word_matched and match_operator == 'or'
+            search_is_redundant = match_search_word_is_on and \
+                (((match_operator == 'or' and is_search_word_matched) or (match_operator == 'nand' and not is_search_word_matched)) or \
+                ((match_operator == 'and' and is_search_word_matched) or (match_operator == 'nor' and not is_search_word_matched)) and search_is_off)
 
             if search_is_redundant:
-                relevant_word_results = tagged_cache.word_results.copy()
+                if match_operator == 'or' or match_operator == 'and':
+                    relevant_word_results = tagged_cache.word_results.copy()
+                elif match_operator == 'nand' or match_operator == 'nor':
+                    relevant_word_results = []
             elif not search_is_off:
                 for word_result in tagged_cache.word_results:
                     word_result = WordResult.buffer(word_result)
@@ -425,6 +427,8 @@ class TaggedCacheFilter:
                             is_jap_vocab_matched = True if is_jap_vocab_reading_matched else False
                         elif match_jap_vocab == 'both':
                             is_jap_vocab_matched = True if is_jap_vocab_writing_matched and is_jap_vocab_reading_matched else False
+                        elif match_jap_vocab == 'either':
+                            is_jap_vocab_matched = True if is_jap_vocab_writing_matched or is_jap_vocab_reading_matched else False
                         else:
                             raise Exception
                     if match_other_form_is_on:
@@ -440,7 +444,9 @@ class TaggedCacheFilter:
                                     is_other_form_reading_matched = True if other_form.kana_writing in learned_list else is_other_form_reading_matched
                                     if is_other_form_reading_matched and match_other_form == 'reading':
                                         break
-                                    if is_other_form_writing_matched and is_other_form_reading_matched and match_other_form == 'both':
+                                    if (is_other_form_writing_matched and is_other_form_reading_matched) and match_other_form == 'both':
+                                        break
+                                    if (is_other_form_writing_matched or is_other_form_reading_matched) and match_other_form == 'either':
                                         break
                                 else:
                                     is_other_form_writing_matched = True if other_form.kanji_writing not in learned_list else is_other_form_writing_matched
@@ -449,7 +455,9 @@ class TaggedCacheFilter:
                                     is_other_form_reading_matched = True if other_form.kana_writing not in learned_list else is_other_form_reading_matched
                                     if is_other_form_reading_matched and match_other_form == 'reading':
                                         break
-                                    if is_other_form_writing_matched and is_other_form_reading_matched and match_other_form == 'both':
+                                    if (is_other_form_writing_matched and is_other_form_reading_matched) and match_other_form == 'both':
+                                        break
+                                    if (is_other_form_writing_matched or is_other_form_reading_matched) and match_other_form == 'either':
                                         break
                             if match_other_form == 'writing':
                                 is_other_form_matched = True if is_other_form_writing_matched else False
@@ -457,31 +465,56 @@ class TaggedCacheFilter:
                                 is_other_form_matched = True if is_other_form_reading_matched else False
                             elif match_other_form == 'both':
                                 is_other_form_matched = True if is_other_form_writing_matched and is_other_form_reading_matched else False
+                            elif match_other_form == 'either':
+                                is_other_form_matched = True if is_other_form_writing_matched or is_other_form_reading_matched else False
                             else:
                                 raise Exception
                         else:
                             is_other_form_matched = False
                     is_word_result_matched = None
                     if match_search_word_is_on:
-                        is_word_result_matched = is_search_word_matched
+                        if match_operator == 'or' or match_operator == 'and':
+                            is_word_result_matched = is_search_word_matched
+                        elif match_operator == 'nor' or match_operator == 'nand':
+                            is_word_result_matched = not is_search_word_matched
+                        else:
+                            raise Exception
                     if match_jap_vocab_is_on:
                         if is_word_result_matched is None:
-                            is_word_result_matched = is_jap_vocab_matched
+                            if match_operator == 'or' or match_operator == 'and':
+                                is_word_result_matched = is_jap_vocab_matched
+                            elif match_operator == 'nor' or match_operator == 'nand':
+                                is_word_result_matched = not is_jap_vocab_writing_matched
+                            else:
+                                raise Exception
                         else:
                             if match_operator == 'or':
                                 is_word_result_matched = is_word_result_matched or is_jap_vocab_matched
                             elif match_operator == 'and':
                                 is_word_result_matched = is_word_result_matched and is_jap_vocab_matched
+                            elif match_operator == 'nor':
+                                is_word_result_matched = not (is_word_result_matched or is_jap_vocab_matched)
+                            elif match_operator == 'nand':
+                                is_word_result_matched = not (is_word_result_matched and is_jap_vocab_matched)
                             else:
                                 raise Exception
                     if match_other_form_is_on:
                         if is_word_result_matched is None:
-                            is_word_result_matched = is_other_form_matched
+                            if match_operator == 'or' or match_operator == 'and':
+                                is_word_result_matched = is_other_form_matched
+                            elif match_operator == 'nor' or match_operator == 'nand':
+                                is_word_result_matched = not is_other_form_matched
+                            else:
+                                raise Exception
                         else:
                             if match_operator == 'or':
                                 is_word_result_matched = is_word_result_matched or is_other_form_matched
                             elif match_operator == 'and':
                                 is_word_result_matched = is_word_result_matched and is_other_form_matched
+                            elif match_operator == 'nor':
+                                is_word_result_matched = not (is_word_result_matched or is_other_form_matched)
+                            elif match_operator == 'nand':
+                                is_word_result_matched = not (is_word_result_matched and is_other_form_matched)
                             else:
                                 raise Exception
                     

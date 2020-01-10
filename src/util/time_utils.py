@@ -1,9 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
 def get_utc_time_from_time_usec(time_usec: int) -> datetime:
-    """
-    TODO: Run tests on this to see if the dates are accurate.
-    """
     return datetime.utcfromtimestamp(time_usec/(10**6))
 
 def get_utc_time_elapsed_from_time_usec(time_usec: int) -> timedelta:

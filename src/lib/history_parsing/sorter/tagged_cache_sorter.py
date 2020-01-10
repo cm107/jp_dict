@@ -562,11 +562,21 @@ class DefaultTaggedCacheSorter:
 
 class SorterCompose:
     @classmethod
-    def sort0(cls, tagged_cache_list: list) -> list:
+    def sort0(cls, tagged_cache_list: list, learned_list: list=None) -> list:
+        logger.yellow(f"Flag0 len(tagged_cache_list): {len(tagged_cache_list)}")
         results = TaggedCacheFilter.filter_by_len_word_results(tagged_cache_list=tagged_cache_list, target=1, ineq='==', skip_empty_results=True)
+        logger.yellow(f"Flag1 len(results): {len(results)}")
+        if learned_list is not None:
+            results = TaggedCacheFilter.filter_by_learned(
+                tagged_cache_list=results, learned_list=learned_list, target='learned',
+                match_search_word='writing', match_jap_vocab='either', match_other_form='writing',
+                match_operator='nor', exclude_empty_results=True
+            )
+        logger.yellow(f"Flag2 len(results): {len(results)}")
         results = DefaultTaggedCacheSorter.sort_by_times_usec(tagged_cache_list=results, ref_mode='oldest', reverse=True)
         results = DefaultTaggedCacheSorter.sort_by_common_words(tagged_cache_list=results, reverse=False)
         results = DefaultTaggedCacheSorter.sort_by_wanikani_level(tagged_cache_list=results, reverse=False)
         results = DefaultTaggedCacheSorter.sort_by_jlpt_level(tagged_cache_list=results, reverse=False)
         results = DefaultTaggedCacheSorter.sort_by_hit_count(tagged_cache_list=results, reverse=False)
+        logger.yellow(f"Flag3 len(results): {len(results)}")
         return results
