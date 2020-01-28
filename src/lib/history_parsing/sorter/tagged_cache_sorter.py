@@ -573,10 +573,12 @@ class SorterCompose:
                 match_operator='nor', exclude_empty_results=True
             )
         logger.yellow(f"Flag2 len(results): {len(results)}")
+        results = TaggedCacheFilter.filter_by_duplicates(tagged_cache_list=results, target='unique', strictness=1, exclude_empty_results=True)
+        logger.yellow(f"Flag3 len(results): {len(results)}")
         results = DefaultTaggedCacheSorter.sort_by_times_usec(tagged_cache_list=results, ref_mode='oldest', reverse=True)
         results = DefaultTaggedCacheSorter.sort_by_common_words(tagged_cache_list=results, reverse=False)
         results = DefaultTaggedCacheSorter.sort_by_wanikani_level(tagged_cache_list=results, reverse=False)
         results = DefaultTaggedCacheSorter.sort_by_jlpt_level(tagged_cache_list=results, reverse=False)
         results = DefaultTaggedCacheSorter.sort_by_hit_count(tagged_cache_list=results, reverse=False)
-        logger.yellow(f"Flag3 len(results): {len(results)}")
+        logger.yellow(f"Flag4 len(results): {len(results)}")
         return results

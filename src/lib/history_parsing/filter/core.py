@@ -37,6 +37,17 @@ class TaggedCache(metaclass=ABCMeta):
     def __repr__(self):
         return self.__str__()
 
+    def __key(self) -> tuple:
+        return tuple([self.__class__] + list(self.__dict__.values()))
+
+    def __hash__(self):
+        return hash(self.__key())
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, self.__class__):
+            return self.__key() == other.__key()
+        return NotImplemented
+
     @classmethod
     @abstractmethod
     def buffer(self, tagged_cache: TaggedCache) -> TaggedCache:
@@ -44,7 +55,9 @@ class TaggedCache(metaclass=ABCMeta):
 
     @abstractmethod
     def copy(self) -> TaggedCache:
-        return TaggedCache(cache=self.cache)
+        result = TaggedCache(cache=self.cache)
+        result.__dict__ = self.__dict__
+        return result
 
     @abstractmethod
     def get_search_word_and_url(self, cache: Cache) -> (str, str):

@@ -1,20 +1,38 @@
-class Notes:
+from __future__ import annotations
+from .base import BaseParsedObject
+
+class Notes(BaseParsedObject):
     def __init__(self, text: str):
+        super().__init__()
         self.text = text
 
     def __str__(self):
         return self.text
 
-    def __repr__(self):
-        return self.__str__()
+    @classmethod
+    def buffer(self, notes: Notes) -> Notes:
+        return notes
 
-class Link:
+    @classmethod
+    def sample(self, num_samples: int=1) -> list:
+        return [Notes(text=f'Text {i}') for i in range(num_samples)]
+
+class Link(BaseParsedObject):
     def __init__(self, text: str, url: str):
+        super().__init__()
         self.text = text
         self.url = url
 
     def __str__(self):
-        return '[{}]({})'.format(self.text, self.url)
+        return f'[{self.text}]({self.url})'
 
-    def __repr__(self):
-        return self.__str__()
+    @classmethod
+    def buffer(self, link: Link) -> Link:
+        return link
+
+    @classmethod
+    def sample(self, num_samples: int=1) -> list:
+        return [
+            Link(text=f'Text {i}', url=f'URL {i}') \
+                for i in range(num_samples)
+        ]

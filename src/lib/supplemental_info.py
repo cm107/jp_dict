@@ -1,71 +1,114 @@
+from __future__ import annotations
 from .misc import Link
+from .base import BaseParsedObject
 
-class CategoryLabel:
+class CategoryLabel(BaseParsedObject):
     def __init__(self, text):
+        super().__init__()
         self.text = text
 
     def __str__(self):
         return self.text
 
-    def __repr__(self):
-        return self.__str__()
+    @classmethod
+    def buffer(self, category_label: CategoryLabel) -> CategoryLabel:
+        return category_label
 
-class SeeAlsoLink:
+    @classmethod
+    def sample(self, num_samples: int=1) -> list:
+        return [CategoryLabel(text=f'Text {i}') for i in range(num_samples)]
+
+class SeeAlsoLink(Link):
     def __init__(self, text: str, url: str):
-        self.link = Link(text, url)
+        super().__init__(text, url)
 
     def __str__(self):
-        return 'See also ' + self.link.__str__()
+        return 'See also ' + super().__str__()
 
-    def __repr__(self):
-        return self.__str__()
+    @classmethod
+    def buffer(self, see_also_link: SeeAlsoLink) -> SeeAlsoLink:
+        return see_also_link
 
-class RestrictionInfo:
+    @classmethod
+    def sample(self, num_samples: int=1) -> list:
+        return [
+            SeeAlsoLink(text=f'Text {i}', url=f'URL {i}') \
+                for i in range(num_samples)
+        ]
+
+class RestrictionInfo(BaseParsedObject):
     def __init__(self, text: str):
+        super().__init__()
         self.text = text
 
     def __str__(self):
         return self.text
 
-    def __repr__(self):
-        return self.__str__()
+    @classmethod
+    def buffer(self, restriction_info: RestrictionInfo) -> RestrictionInfo:
+        return restriction_info
 
-class AdditionalInfo:
+    @classmethod
+    def sample(self, num_samples: int=1) -> list:
+        return [RestrictionInfo(text=f'Text {i}') for i in range(num_samples)]
+
+class AdditionalInfo(BaseParsedObject):
     def __init__(self, text: str):
+        super().__init__()
         self.text = text
 
     def __str__(self):
         return self.text
 
-    def __repr__(self):
-        return self.__str__()
+    @classmethod
+    def buffer(self, additional_info: AdditionalInfo) -> AdditionalInfo:
+        return additional_info
 
-class AntonymLink:
+    @classmethod
+    def sample(self, num_samples: int=1) -> list:
+        return [AdditionalInfo(text=f'Text {i}') for i in range(num_samples)]
+
+class AntonymLink(Link):
     def __init__(self, text: str, url: str):
-        self.link = Link(text, url)
+        super().__init__(text, url)
 
     def __str__(self):
-        return self.link.__str__()
+        return super().__str__()
 
-    def __repr__(self):
-        return self.__str__()
+    @classmethod
+    def buffer(self, antonym_link: AntonymLink) -> AntonymLink:
+        return antonym_link
 
-class SourceInfo:
+    @classmethod
+    def sample(self, num_samples: int=1) -> list:
+        return [
+            AntonymLink(text=f'Text {i}', url=f'URL {i}') \
+                for i in range(num_samples)
+        ]
+
+class SourceInfo(BaseParsedObject):
     def __init__(self, text: str):
+        super().__init__()
         self.text = text
 
     def __str__(self):
         return self.text
 
-    def __repr__(self):
-        return self.__str__()
+    @classmethod
+    def buffer(self, source_info: SourceInfo) -> SourceInfo:
+        return source_info
 
-class SupplementalInfo:
+    @classmethod
+    def sample(self, num_samples: int=1) -> list:
+        return [SourceInfo(text=f'Text {i}') for i in range(num_samples)]
+
+class SupplementalInfo(BaseParsedObject):
     def __init__(
         self, category_label: CategoryLabel=None, see_also_link: SeeAlsoLink=None,
         restriction_info: RestrictionInfo=None, additional_info: AdditionalInfo=None,
         antonym_link: AntonymLink=None, source_info: SourceInfo=None
         ):
+        super().__init__()
         self.category_label = category_label
         self.see_also_link = see_also_link
         self.restriction_info = restriction_info
@@ -98,5 +141,33 @@ class SupplementalInfo:
             first, print_str = append_str(first, print_str, self.source_info)
         return print_str
 
-    def __repr__(self):
-        return self.__str__()
+    @classmethod
+    def buffer(self, supplemental_info: SupplementalInfo) -> SupplementalInfo:
+        return supplemental_info
+
+    @classmethod
+    def sample(self, num_samples: int=1) -> list:
+        # return [
+        #     SupplementalInfo(
+        #         category_label=CategoryLabel(text=f'Text {i}'),
+        #         see_also_link=SeeAlsoLink(text=f'Text {i}', url=f'URL {i}'),
+        #         restriction_info=RestrictionInfo(text=f'Text {i}'),
+        #         additional_info=AdditionalInfo(text=f'Text {i}'),
+        #         antonym_link=AntonymLink(text=f'Text {i}', url=f'URL {i}'),
+        #         source_info=SourceInfo(text=f'Text {i}')
+        #     ) \
+        #         for i in range(num_samples)
+        # ]
+
+        return [
+            SupplementalInfo(
+                category_label=category_label, see_also_link=see_also_link,
+                restriction_info=restriction_info, additional_info=additional_info,
+                antonym_link=antonym_link, source_info=source_info
+            ) for category_label, see_also_link, restriction_info, additional_info, antonym_link, source_info in \
+                zip(
+                    CategoryLabel.sample(num_samples), SeeAlsoLink.sample(num_samples),
+                    RestrictionInfo.sample(num_samples), AdditionalInfo.sample(num_samples),
+                    AntonymLink.sample(num_samples), SourceInfo.sample(num_samples)
+                )
+        ]

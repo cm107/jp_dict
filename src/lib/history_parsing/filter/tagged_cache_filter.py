@@ -527,3 +527,50 @@ class TaggedCacheFilter:
                 result.append(tagged_cache)
 
         return result
+
+    @classmethod
+    def filter_by_duplicates(
+        self, tagged_cache_list: list, target: str='unique', strictness: int=1, exclude_empty_results: bool=True
+    ) -> list:
+        check_value(target, valid_value_list=['unique', 'duplicate'])
+        result = []
+        word_result_dump = []
+        target_length = 0
+        while True:
+            target_length += 1
+            pending_tagged_cache_list = TaggedCacheFilter.filter_by_len_word_results(
+                tagged_cache_list=tagged_cache_list, target=target_length, ineq='==',
+                skip_empty_results=True
+            )
+            for tagged_cache in pending_tagged_cache_list:
+                tagged_cache = TaggedCache.buffer(tagged_cache)
+                unique_word_results = []
+                duplicate_word_results = []
+                for word_result in tagged_cache.word_results:
+                    word_result = WordResult.buffer(word_result)
+                    if not word_result in word_result_dump:
+                        unique_word_results.append(word_result)
+                    else:
+                        duplicate_word_results.append(word_result)
+                if len(unique_word_results) > 0 and len(unique_word_results) <= strictness:
+                    word_result_dump.extend(unique_word_results)
+                
+                if target == 'unique':
+                    relevant_word_results = unique_word_results
+                elif target == 'duplicate':
+                    relevant_word_results = duplicate_word_results
+                else:
+                    raise Exception
+
+                if len(relevant_word_results) == 0 and exclude_empty_results:
+                    continue
+                else:
+                    tagged_cache.word_results = relevant_word_results
+                    result.append(tagged_cache)
+            unprocessed_tagged_cache_list = TaggedCacheFilter.filter_by_len_word_results(
+                tagged_cache_list=tagged_cache_list, target=target_length, ineq='>',
+                skip_empty_results=True
+            )
+            if len(unprocessed_tagged_cache_list) == 0:
+                break
+        return result

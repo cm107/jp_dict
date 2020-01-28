@@ -69,6 +69,12 @@ class TaggedCacheFilterTest:
             match_operator=match_operator, exclude_empty_results=True
         )
 
+    def filter_by_duplicates(self, target: str='unique', strictness: int=1) -> list:
+        return TaggedCacheFilter.filter_by_duplicates(
+            tagged_cache_list=self.tagged_cache_list, target=target, strictness=strictness,
+            exclude_empty_results=True
+        )
+
     def show_results(self, name: str, results: list, count_only: bool=False, indent: int=0):
         logger.yellow(f"{get_indent_str(indent)}len({name}): {len(results)}")
         if not count_only:
@@ -152,6 +158,19 @@ class TaggedCacheFilterTest:
                 match_jap_vocab=match_jap_vocab,
                 match_other_form=match_other_form,
                 match_operator=match_operator
+            ),
+            count_only=count_only, indent=indent
+        )
+
+    def test_duplicates(
+        self, target: str='duplicates', strictness: int=1,
+        count_only: bool=False, indent: int=0
+    ):
+        self.show_results(
+            name=f"{target}(strictness={strictness})",
+            results=self.filter_by_duplicates(
+                target=target,
+                strictness=strictness
             ),
             count_only=count_only, indent=indent
         )
@@ -376,6 +395,21 @@ class TaggedCacheFilterTest:
                                 count_only=count_only, indent=contents_indent
                         )
 
+    def unit_test_duplicates(
+        self,
+        target_list: list=['unique', 'duplicate'],
+        strictness_list: list=[1, 2],
+        count_only: bool=True, title_indent: int=0, contents_indent: int=0
+    ):
+        logger.info(f"{get_indent_str(title_indent)}Duplicates Unit Test")
+        for target in target_list:
+            for strictness in strictness_list:
+                self.test_duplicates(
+                    target=target,
+                    strictness=strictness,
+                    count_only=count_only, indent=contents_indent
+                )
+
     def cumulative_unit_test(self):
         logger.info("Cumulative Unit Test")
         unit_test_method_list = [
@@ -390,7 +424,8 @@ class TaggedCacheFilterTest:
             self.unit_test_common_words,
             self.unit_test_jlpt_level,
             self.unit_test_wanikani_level,
-            self.unit_test_learned
+            self.unit_test_learned,
+            self.unit_test_duplicates
         ]
         for unit_test_method in unit_test_method_list:
-            unit_test_method(title_indent=2, contents_indent=4)
+            unit_test_method(count_only=False, title_indent=2, contents_indent=4)

@@ -169,10 +169,7 @@ class JishoWordSearchCore(metaclass=ABCMeta):
                 okurigana_parts.append(okurigana_child.text)
         text = nominal_writing.text.replace('\n', '').replace(' ', '')
         kana_maps = get_kana_maps(text, furigana_parts, okurigana_parts)
-        jap_vocab = JapaneseVocab(
-            kana_maps=kana_maps
-        )
-        return jap_vocab
+        return JapaneseVocab.from_kana_maps(kana_maps=kana_maps)
 
     def get_def_section(self, meaning_section: Tag) -> DefinitionSection:
         meaning_section_divider = meaning_section.find('span', 'meaning-definition-section_divider').text

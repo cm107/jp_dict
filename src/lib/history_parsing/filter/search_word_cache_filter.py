@@ -19,7 +19,9 @@ class TaggedWordCache(TaggedCache):
         return tagged_cache
 
     def copy(self) -> TaggedWordCache:
-        return TaggedWordCache(cache=self.cache)
+        result = TaggedWordCache(cache=self.cache)
+        result.__dict__ = self.__dict__
+        return result
 
     def get_search_word_and_url(self, cache: Cache) -> (str, str):
         if 'url' not in cache.item:

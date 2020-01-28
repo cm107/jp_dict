@@ -14,7 +14,9 @@ class TaggedSoupCache(TaggedCache):
         return tagged_cache
 
     def copy(self) -> TaggedSoupCache:
-        return TaggedSoupCache(cache=self.cache)
+        result = TaggedSoupCache(cache=self.cache)
+        result.__dict__ = self.__dict__
+        return result
 
     def get_search_word_and_url(self, cache: Cache) -> (str, str):
         if 'url' not in cache.item:

@@ -17,10 +17,7 @@ from src.lib.history_parsing.filter.tagged_cache_filter import TaggedCacheFilter
 from src.lib.history_parsing.sorter.tagged_cache_sorter import DefaultTaggedCacheSorter, SorterCompose
 from src.util.time_utils import get_days_elapsed_from_time_usec
 
-# TODO: Find and remove duplicates.
-
 results = tagged_cache_list.copy()
-
 results = SorterCompose.sort0(tagged_cache_list=results, learned_list=learned_list)
 
 for i, tagged_cache in enumerate(results):

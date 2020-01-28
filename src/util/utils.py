@@ -1,3 +1,4 @@
+import inspect
 from common_utils.path_utils import get_filename
 from common_utils.adv_file_utils import get_filepaths_in_dir, get_dirpaths_in_dir
 from common_utils.check_utils import check_value
@@ -12,7 +13,7 @@ def get_kana_maps(text: str, furigana_parts: list, okurigana_parts: list) -> lis
             else:
                 kana_map = {'written_form': character, 'reading': ''}
             kana_maps.append(kana_map)
-        else:
+        else: # len(okurigana_parts) > 0 and character == okurigana_parts[0]
             kana_map = {'written_form': character, 'reading': okurigana_parts[0]}
             okurigana_parts = okurigana_parts[1:]
             kana_maps.append(kana_map)
@@ -71,4 +72,19 @@ def recursively_get_all_matches_under_dirpath(dirpath: str, target_name: str, ta
     return matches
 
 def get_indent_str(indent: int) -> str:
+    """
+    TODO: Add this method to common_utils package.
+    """
     return ' ' * indent
+
+def get_method_name() -> str:
+    """
+    TODO: Add this method to common_utils package.
+    """
+    return inspect.getframeinfo(inspect.currentframe().f_back).function
+
+def get_method_name_through_wrapper() -> str:
+    """
+    TODO: Add this method to common_utils package.
+    """
+    return inspect.getframeinfo(inspect.currentframe().f_back.f_back).code_context[0].replace(' ', '').replace('self.', '').replace('()\n', '')

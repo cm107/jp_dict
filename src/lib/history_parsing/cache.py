@@ -1,3 +1,4 @@
+from __future__ import annotations
 import operator
 from logger import logger
 
@@ -14,6 +15,27 @@ class Cache:
 
     def __repr__(self):
         return self.__str__()
+
+    def __key(self) -> tuple:
+        return tuple([self.__class__] + list(self.__dict__.values()))
+
+    def __hash__(self):
+        return hash(self.__key())
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, self.__class__):
+            return self.__key() == other.__key()
+        return NotImplemented
+
+    @classmethod
+    def buffer(self, cache: Cache) -> Cache:
+        return cache
+
+    def copy(self) -> Cache:
+        cache = Cache(item=self.item)
+        cache.hit_count = self.hit_count
+        cache.times_usec = self.times_usec
+        return cache
 
     def hit(self, time_usec: int):
         self.hit_count += 1
