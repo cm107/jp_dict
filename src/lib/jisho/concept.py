@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .base import BaseParsedObject
+from ..base import BaseParsedObject
 import random
 
 class ConceptLabels(BaseParsedObject):

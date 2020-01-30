@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .base import BaseParsedObject
+from ..base import BaseParsedObject
 from .definition import Definitions
 from .jap_vocab import OtherForms
 from .misc import Notes

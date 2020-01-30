@@ -1,11 +1,11 @@
 from ..util.decorators import assert_test_classmethod
-from ..lib.misc import Notes, Link
-from ..lib.jap_vocab import JapaneseVocab, OtherForm, OtherForms
-from ..lib.supplemental_info import CategoryLabel, SeeAlsoLink, RestrictionInfo, AdditionalInfo, AntonymLink, SourceInfo, SupplementalInfo
-from ..lib.definition import DefinitionSection, DefinitionGroup, Definitions
-from ..lib.concept import ConceptLabels
-from ..lib.vocab_entry import VocabularyEntry
-from ..lib.word_results import WordResult, WordResultHandler
+from ..lib.jisho.misc import Notes, Link
+from ..lib.jisho.jap_vocab import JapaneseVocab, OtherForm, OtherForms
+from ..lib.jisho.supplemental_info import CategoryLabel, SeeAlsoLink, RestrictionInfo, AdditionalInfo, AntonymLink, SourceInfo, SupplementalInfo
+from ..lib.jisho.definition import DefinitionSection, DefinitionGroup, Definitions
+from ..lib.jisho.concept import ConceptLabels
+from ..lib.jisho.vocab_entry import VocabularyEntry
+from ..lib.jisho.word_results import WordResult, WordResultHandler
 
 class EqualityTest:
     def __init__(self):

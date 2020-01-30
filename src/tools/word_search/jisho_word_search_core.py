@@ -8,14 +8,14 @@ from ...util.previews import blue_text, green_text, yellow_text, red_text, std_t
 from ...util.getters import get_response, get_soup, get_soup_child, get_soup_nested_tag_child, \
     get_tag_child, get_all_tag_children, get_html_nested_tag_child, get_soup_from_url
 from ...util.utils import get_kana_maps
-from ...lib.jap_vocab import JapaneseVocab, OtherForm, OtherForms
-from ...lib.definition import DefinitionSection, DefinitionGroup, Definitions
-from ...lib.misc import Notes
-from ...lib.vocab_entry import VocabularyEntry
-from ...lib.supplemental_info import SupplementalInfo, CategoryLabel, SeeAlsoLink, \
+from ...lib.jisho.jap_vocab import JapaneseVocab, OtherForm, OtherForms
+from ...lib.jisho.definition import DefinitionSection, DefinitionGroup, Definitions
+from ...lib.jisho.misc import Notes
+from ...lib.jisho.vocab_entry import VocabularyEntry
+from ...lib.jisho.supplemental_info import SupplementalInfo, CategoryLabel, SeeAlsoLink, \
     RestrictionInfo, AdditionalInfo, AntonymLink, SourceInfo
-from ...lib.concept import ConceptLabels
-from ...lib.word_results import WordResult, WordResultHandler
+from ...lib.jisho.concept import ConceptLabels
+from ...lib.jisho.word_results import WordResult, WordResultHandler
 from logger import logger
 from abc import ABCMeta, abstractmethod
 import urllib.parse

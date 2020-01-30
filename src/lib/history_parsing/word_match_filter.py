@@ -1,9 +1,8 @@
 from logger import logger
-from ..vocab_entry import VocabularyEntry
-from ..jap_vocab import JapaneseVocab
-from ..concept import ConceptLabels
-from ..word_results import WordResult
-from ..jap_vocab import OtherForm
+from ..jisho.vocab_entry import VocabularyEntry
+from ..jisho.jap_vocab import JapaneseVocab, OtherForm
+from ..jisho.concept import ConceptLabels
+from ..jisho.word_results import WordResult
 
 def get_match_data(word: WordResult) -> (JapaneseVocab, ConceptLabels, VocabularyEntry):
     return word.jap_vocab, word.concept_labels, word.vocab_entry

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .base import BaseParsedObject
+from ..base import BaseParsedObject
 
 class JapaneseVocab(BaseParsedObject):
     def __init__(self, writing: str, reading: str):

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from .misc import Link
-from .base import BaseParsedObject
+from ..base import BaseParsedObject
 
 class CategoryLabel(BaseParsedObject):
     def __init__(self, text):
@@ -147,18 +147,6 @@ class SupplementalInfo(BaseParsedObject):
 
     @classmethod
     def sample(self, num_samples: int=1) -> list:
-        # return [
-        #     SupplementalInfo(
-        #         category_label=CategoryLabel(text=f'Text {i}'),
-        #         see_also_link=SeeAlsoLink(text=f'Text {i}', url=f'URL {i}'),
-        #         restriction_info=RestrictionInfo(text=f'Text {i}'),
-        #         additional_info=AdditionalInfo(text=f'Text {i}'),
-        #         antonym_link=AntonymLink(text=f'Text {i}', url=f'URL {i}'),
-        #         source_info=SourceInfo(text=f'Text {i}')
-        #     ) \
-        #         for i in range(num_samples)
-        # ]
-
         return [
             SupplementalInfo(
                 category_label=category_label, see_also_link=see_also_link,

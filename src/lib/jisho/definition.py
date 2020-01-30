@@ -1,6 +1,6 @@
 from __future__ import annotations
 from .supplemental_info import SupplementalInfo
-from .base import BaseParsedObject
+from ..base import BaseParsedObject
 
 class DefinitionSection(BaseParsedObject):
     def __init__(self, section_number: int, definition_text: str, supplemental_info: SupplementalInfo=None):

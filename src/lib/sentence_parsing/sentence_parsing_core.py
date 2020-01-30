@@ -4,8 +4,8 @@ from common_utils.check_utils import check_dir_exists
 from common_utils.adv_file_utils import get_dirpaths_in_dir
 from common_utils.path_utils import get_filename
 from common_utils.check_utils import check_file_exists, check_value
-from src.lib.word_results import WordResult
-from src.lib.jap_vocab import OtherForm
+from src.lib.jisho.word_results import WordResult
+from src.lib.jisho.jap_vocab import OtherForm
 
 def get_example_sentences(search_word_list: str, ex_sentence_root_dir: str, max_num_results: int=None):
     check_dir_exists(ex_sentence_root_dir)

@@ -2,7 +2,7 @@ from __future__ import annotations
 from .jap_vocab import JapaneseVocab
 from .concept import ConceptLabels
 from .vocab_entry import VocabularyEntry
-from .base import BaseParsedObject
+from ..base import BaseParsedObject
 from logger import logger
 
 class WordResult(BaseParsedObject):
