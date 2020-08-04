@@ -1,9 +1,9 @@
 from logger import logger
 from common_utils.check_utils import check_value
 from ....util.time_utils import get_days_elapsed_from_time_usec, get_years_elapsed_from_time_usec
-from ...word_results import WordResult
+from ...jisho.word_results import WordResult
 from .core import TaggedCache
-from ...jap_vocab import OtherForm
+from ...jisho.jap_vocab import OtherForm
 
 class TaggedCacheFilter:
     @classmethod
