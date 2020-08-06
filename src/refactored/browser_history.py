@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import List
+from tqdm import tqdm
 from common_utils.base.basic import BasicLoadableObject, BasicLoadableHandler, BasicHandler
 
 class BrowserHistoryItem(BasicLoadableObject['BrowserHistoryItem']):
@@ -64,6 +65,20 @@ class BrowserHistory(BasicLoadableObject['BrowserHistory']):
         return BrowserHistory(
             browser_history_item_list=BrowserHistoryItemList.from_dict_list(item_dict['Browser History'])
         )
+
+    @classmethod
+    def combine(cls, browser_history_list: List[BrowserHistory]) -> BrowserHistory:
+        result = BrowserHistory()
+        time_usec_list = []
+        combine_pbar = tqdm(total=len(browser_history_list), unit='histories')
+        combine_pbar.set_description('Combining Histories')
+        for browser_history in browser_history_list:
+            for item in browser_history.browser_history_item_list:
+                if item.time_usec not in time_usec_list:
+                    time_usec_list.append(item.time_usec)
+                    result.browser_history_item_list.append(item)
+            combine_pbar.update()
+        return result
 
 class BrowserHistoryHandler(
     BasicLoadableHandler['BrowserHistoryHandler', 'BrowserHistory'],
