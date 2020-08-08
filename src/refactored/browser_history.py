@@ -73,7 +73,7 @@ class BrowserHistoryItemList(
                 relevant_items.append(item)
         return BrowserHistoryItemList(relevant_items)
     
-    def search_by_url_base_and_group_by_url(self, url_base: str) -> List[CommonBrowserHistoryItemGroup]:
+    def search_by_url_base_and_group_by_url(self, url_base: str) -> CommonBrowserHistoryItemGroupList:
         relevant_items = self.search_by_url_base(url_base)
         common_url_dict = cast(Dict[str, List[BrowserHistoryItem]], {})
         for item in relevant_items:
@@ -81,7 +81,7 @@ class BrowserHistoryItemList(
                 common_url_dict[item.url] = [item]
             else:
                 common_url_dict[item.url].append(item)
-        return [CommonBrowserHistoryItemGroup.from_list(item_list) for title, item_list in common_url_dict.items()]
+        return CommonBrowserHistoryItemGroupList([CommonBrowserHistoryItemGroup.from_list(item_list) for title, item_list in common_url_dict.items()])
 
 class BrowserHistory(BasicLoadableObject['BrowserHistory']):
     def __init__(self, browser_history_item_list: BrowserHistoryItemList=None):
@@ -214,3 +214,15 @@ class CommonBrowserHistoryItemGroup(BasicLoadableObject['CommonBrowserHistoryIte
     @property
     def item_count(self) -> int:
         return len(self.time_usec)
+
+class CommonBrowserHistoryItemGroupList(
+    BasicLoadableHandler['CommonBrowserHistoryItemGroupList', 'CommonBrowserHistoryItemGroup'],
+    BasicHandler['CommonBrowserHistoryItemGroupList', 'CommonBrowserHistoryItemGroup']
+):
+    def __init__(self, group_list: List[CommonBrowserHistoryItemGroup]=None):
+        super().__init__(obj_type=CommonBrowserHistoryItemGroup, obj_list=group_list)
+        self.group_list = self.obj_list
+    
+    @classmethod
+    def from_dict_list(cls, dict_list: List[dict]) -> CommonBrowserHistoryItemGroupList:
+        return CommonBrowserHistoryItemGroupList([CommonBrowserHistoryItemGroup.from_dict(item_dict) for item_dict in dict_list])
