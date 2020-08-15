@@ -1,13 +1,14 @@
 from logger import logger
 from src.refactored.jisho_structs import JishoSearchHtmlParser, JishoSearchQueryHandler
 
-search_word = '日'
+# search_word = '日'
 # search_word = '落ちる'
 # search_word = 'ニヤリ'
 # search_word = '送り仮名'
 # search_word = '日記帳'
 # search_word = '学'
 # search_word = 'lsdgkj'
+search_word = '落ちていられる'
 
 from common_utils.file_utils import make_dir_if_not_exists
 query_save_dir = 'queries'

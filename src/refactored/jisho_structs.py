@@ -436,6 +436,22 @@ class MeaningTags(BasicLoadableObject['MeaningTags']):
         return 'Suffix' in self.meaning_tag_text
     
     @property
+    def is_prefix(self) -> bool:
+        return 'Prefix' in self.meaning_tag_text
+
+    @property
+    def is_conjunction(self) -> bool:
+        return 'Conjunction' in self.meaning_tag_text
+
+    @property
+    def is_particle(self) -> bool:
+        return 'Particle' in self.meaning_tag_text
+
+    @property
+    def is_auxiliary(self) -> bool:
+        return 'Auxiliary' in self.meaning_tag_text
+
+    @property
     def is_counter(self) -> bool:
         return 'Counter' in self.meaning_tag_text
     
@@ -467,6 +483,18 @@ class MeaningTags(BasicLoadableObject['MeaningTags']):
     def is_wikipedia_definition(self) -> bool:
         return 'Wikipedia definition' in self.meaning_tag_text
 
+    @property
+    def is_numeric(self) -> bool:
+        return 'Numeric' in self.meaning_tag_text
+
+    @property
+    def is_unclassified(self) -> bool:
+        return 'Unclassified' in self.meaning_tag_text
+
+    @property
+    def is_not_tagged(self) -> bool:
+        return 'No Meaning Tag' in self.meaning_tag_text
+
     # Noun Subcategories
     @property
     def is_noun(self) -> bool:
@@ -488,11 +516,31 @@ class MeaningTags(BasicLoadableObject['MeaningTags']):
     def is_temporal_noun(self) -> bool:
         return 'Temporal noun' in self.meaning_tag_text
 
+    @property
+    def is_pronoun(self) -> bool:
+        return 'Pronoun' in self.meaning_tag_text
+
     # Verb Subcategories
     @property
     def is_suru_verb(self) -> bool:
         return 'Suru verb' in self.meaning_tag_text
     
+    @property
+    def is_suru_verb_irregular(self) -> bool:
+        return 'Suru verb - irregular' in self.meaning_tag_text
+
+    @property
+    def is_suru_verb_special_class(self) -> bool:
+        return 'Suru verb - special class' in self.meaning_tag_text
+
+    @property
+    def is_su_verb_precursor_to_modern_suru(self) -> bool:
+        return 'Su verb - precursor to the modern suru' in self.meaning_tag_text
+
+    @property
+    def is_kuru_verb_special_class(self) -> bool:
+        return 'Kuru verb - special class' in self.meaning_tag_text
+
     @property
     def is_ichidan_verb(self) -> bool:
         return 'Ichidan verb' in self.meaning_tag_text
@@ -504,6 +552,10 @@ class MeaningTags(BasicLoadableObject['MeaningTags']):
     @property
     def is_intransitive_verb(self) -> bool:
         return 'intransitive verb' in self.meaning_tag_text
+
+    @property
+    def is_auxiliary_verb(self) -> bool:
+        return 'Auxiliary verb' in self.meaning_tag_text
 
     @property
     def is_godan_verb_with_bu_ending(self) -> bool:
@@ -520,6 +572,70 @@ class MeaningTags(BasicLoadableObject['MeaningTags']):
     @property
     def is_godan_verb_with_su_ending(self) -> bool:
         return 'Godan verb with su ending' in self.meaning_tag_text
+
+    @property
+    def is_godan_verb_with_ku_ending(self) -> bool:
+        return 'Godan verb with ku ending' in self.meaning_tag_text
+
+    @property
+    def is_godan_verb_with_mu_ending(self) -> bool:
+        return 'Godan verb with mu ending' in self.meaning_tag_text
+    
+    @property
+    def is_godan_verb_with_u_ending(self) -> bool:
+        return 'Godan verb with u ending' in self.meaning_tag_text
+
+    @property
+    def is_godan_verb_with_u_ending_special_class(self) -> bool:
+        return 'Godan verb with u ending (special class)' in self.meaning_tag_text
+
+    @property
+    def is_godan_verb_with_tsu_ending(self) -> bool:
+        return 'Godan verb with tsu ending' in self.meaning_tag_text
+
+    @property
+    def is_godan_verb_with_gu_ending(self) -> bool:
+        return 'Godan verb with gu ending' in self.meaning_tag_text
+
+    @property
+    def is_godan_verb_iku_yuku_special_class(self) -> bool:
+        return 'Godan verb - Iku/Yuku special class' in self.meaning_tag_text
+
+    @property
+    def is_godan_verb_with_nu_ending(self) -> bool:
+        return 'Godan verb with nu ending' in self.meaning_tag_text
+
+    @property
+    def is_godan_verb_aru_special_class(self) -> bool:
+        return 'Godan verb - aru special class' in self.meaning_tag_text
+
+    @property
+    def is_ichidan_verb_zuru_verb_alternative_form_of_jiru_verbs(self) -> bool:
+        return 'Ichidan verb - zuru verb (alternative form of -jiru verbs)' in self.meaning_tag_text
+
+    @property
+    def is_nidan_verb_upper_class_with_tsu_ending_archaic(self) -> bool:
+        return 'Nidan verb (upper class) with tsu ending (archaic)' in self.meaning_tag_text
+
+    @property
+    def is_nidan_verb_lower_class_with_yu_ending_archaic(self) -> bool:
+        return 'Nidan verb (lower class) with yu ending (archaic)' in self.meaning_tag_text
+
+    @property
+    def is_yodan_verb_with_hu_fu_ending_archaic(self) -> bool:
+        return 'Yodan verb with hu/fu ending (archaic)' in self.meaning_tag_text
+
+    @property
+    def is_yodan_verb_with_ru_ending_archaic(self) -> bool:
+        return 'Yodan verb with ru ending (archaic)' in self.meaning_tag_text
+
+    @property
+    def is_yodan_verb_with_ku_ending_archaic(self) -> bool:
+        return 'Yodan verb with ku ending (archaic)' in self.meaning_tag_text
+
+    @property
+    def is_irregular_nu_verb(self) -> bool:
+        return 'Irregular nu verb' in self.meaning_tag_text
 
     # Adverb Subcategories
     @property
@@ -540,6 +656,10 @@ class MeaningTags(BasicLoadableObject['MeaningTags']):
         return 'Na-adjective' in self.meaning_tag_text
 
     @property
+    def is_archaic_formal_form_of_na_adjective(self) -> bool:
+        return 'Archaic/formal form of na-adjective' in self.meaning_tag_text
+
+    @property
     def is_i_adjective(self) -> bool:
         return 'I-adjective' in self.meaning_tag_text
 
@@ -547,10 +667,22 @@ class MeaningTags(BasicLoadableObject['MeaningTags']):
     def is_i_adjective_yoi_ii_class(self) -> bool:
         return 'I-adjective (yoi/ii class)' in self.meaning_tag_text
 
+    @property
+    def is_taru_adjective(self) -> bool:
+        return 'Taru-adjective' in self.meaning_tag_text
+
+    @property
+    def is_shiku_adjective_archaic(self) -> bool:
+        return 'Shiku adjective (archaic)' in self.meaning_tag_text
+
     # Other
     @property
     def noun_or_verb_acting_prenominally(self) -> bool:
         return 'Noun or verb acting prenominally' in self.meaning_tag_text
+
+    @property
+    def is_prenoun_adjectival(self) -> bool:
+        return 'Pre-noun adjectival' in self.meaning_tag_text
 
     # Known/Unknown Tag Verification
     @property
@@ -559,6 +691,10 @@ class MeaningTags(BasicLoadableObject['MeaningTags']):
             'Other forms': 'is_other_forms',
             'Notes': 'is_notes',
             'Suffix': 'is_suffix',
+            'Prefix': 'is_prefix',
+            'Conjunction': 'is_conjunction',
+            'Particle': 'is_particle',
+            'Auxiliary': 'is_auxiliary',
             'Counter': 'is_counter',
             'Place': 'is_place',
             'Expression': 'is_expression',
@@ -567,26 +703,55 @@ class MeaningTags(BasicLoadableObject['MeaningTags']):
             'Company': 'is_company',
             'Train station': 'is_train_station',
             'Wikipedia definition': 'is_wikipedia_definition',
+            'Numeric': 'is_numeric',
+            'Unclassified': 'is_unclassified',
+            'No Meaning Tag': 'is_not_tagged',
             'Noun': 'is_noun',
             'Noun - used as a suffix': 'is_noun_used_as_suffix',
             'Noun - used as a prefix': 'is_noun_used_as_prefix',
             'Adverbial noun': 'is_adverbial_noun',
             'Temporal noun': 'is_temporal_noun',
+            'Pronoun': 'is_pronoun',
             'Suru verb': 'is_suru_verb',
+            'Suru verb - irregular': 'is_suru_verb_irregular',
+            'Suru verb - special class': 'is_suru_verb_special_class',
+            'Su verb - precursor to the modern suru': 'is_su_verb_precursor_to_modern_suru',
+            'Kuru verb - special class': 'is_kuru_verb_special_class',
             'Ichidan verb': 'is_ichidan_verb',
             'Transitive verb': 'is_transitive_verb',
             'intransitive verb': 'is_intransitive_verb',
+            'Auxiliary verb': 'is_auxiliary_verb',
             'Godan verb with bu ending': 'is_godan_verb_with_bu_ending',
             'Godan verb with ru ending': 'is_godan_verb_with_ru_ending',
             'Godan verb with ru ending (irregular verb)': 'is_godan_verb_with_ru_ending_irregular',
             'Godan verb with su ending': 'is_godan_verb_with_su_ending',
+            'Godan verb with ku ending': 'is_godan_verb_with_ku_ending',
+            'Godan verb with mu ending': 'is_godan_verb_with_mu_ending',
+            'Godan verb with u ending': 'is_godan_verb_with_u_ending',
+            'Godan verb with u ending (special class)': 'is_godan_verb_with_u_ending_special_class',
+            'Godan verb with tsu ending': 'is_godan_verb_with_tsu_ending',
+            'Godan verb with gu ending': 'is_godan_verb_with_gu_ending',
+            'Godan verb - Iku/Yuku special class': 'is_godan_verb_iku_yuku_special_class',
+            'Godan verb with nu ending': 'is_godan_verb_with_nu_ending',
+            'Godan verb - aru special class': 'is_godan_verb_aru_special_class',
+            'Ichidan verb - zuru verb (alternative form of -jiru verbs)': 'is_ichidan_verb_zuru_verb_alternative_form_of_jiru_verbs',
+            'Nidan verb (upper class) with tsu ending (archaic)': 'is_nidan_verb_upper_class_with_tsu_ending_archaic',
+            'Nidan verb (lower class) with yu ending (archaic)': 'is_nidan_verb_lower_class_with_yu_ending_archaic',
+            'Yodan verb with hu/fu ending (archaic)': 'is_yodan_verb_with_hu_fu_ending_archaic',
+            'Yodan verb with ru ending (archaic)': 'is_yodan_verb_with_ru_ending_archaic',
+            'Yodan verb with ku ending (archaic)': 'is_yodan_verb_with_ku_ending_archaic',
+            'Irregular nu verb': 'is_irregular_nu_verb',
             'Adverb': 'is_adverb',
             "Adverb taking the 'to' particle": 'is_adverb_taking_to_particle',
             'No-adjective': 'is_no_adjective',
             'Na-adjective': 'is_na_adjective',
+            'Archaic/formal form of na-adjective': 'is_archaic_formal_form_of_na_adjective',
             'I-adjective': 'is_i_adjective',
             'I-adjective (yoi/ii class)': 'is_i_adjective_yoi_ii_class',
-            'Noun or verb acting prenominally': 'noun_or_verb_acting_prenominally'
+            'Taru-adjective': 'is_taru_adjective',
+            'Shiku adjective (archaic)': 'is_shiku_adjective_archaic',
+            'Noun or verb acting prenominally': 'noun_or_verb_acting_prenominally',
+            'Pre-noun adjectival': 'is_prenoun_adjectival'
         }
 
     def verify_known_tag_methods(self, raise_exception_on_fail: bool=True):
@@ -634,6 +799,17 @@ class MeaningTags(BasicLoadableObject['MeaningTags']):
                 but MeaningTags('{tag.meaning_tag_text}').{self.known_tags_dict[tag.meaning_tag_text]} returned False.
                 Please check/fix the definition of MeaningTags.{self.known_tags_dict[tag.meaning_tag_text]}
                 """
+
+    @property
+    def contains_unknown_tag(self) -> bool:
+        for tag in self.tag_parts:
+            if tag.meaning_tag_text not in self.known_tags_dict.keys():
+                return True
+        return False
+    
+    @property
+    def unknown_tag_parts(self) -> List[MeaningTags]:
+        return [tag for tag in self.tag_parts if tag.meaning_tag_text not in self.known_tags_dict.keys()]
 
 class MeaningWrapper(BasicLoadableObject['MeaningWrapper']):
     def __init__(
@@ -755,12 +931,10 @@ class MeaningGroupHandler(
         self.groups = self.obj_list
 
     def custom_str(self, indent: int=0) -> str:
-        print_str = ''
+        tab = '\t' * indent
+        print_str = f'{tab}Meanings:'
         for i, group in enumerate(self):
-            if i == 0:
-                print_str += f'{group.custom_str(indent=indent)}'
-            else:
-                print_str += f'\n{group.custom_str(indent=indent)}'
+            print_str += f'\n{group.custom_str(indent=indent+1)}'
         return print_str
 
     @classmethod
@@ -1006,11 +1180,88 @@ class DictionaryEntryList(
     def from_dict_list(cls, dict_list: List[dict]) -> DictionaryEntryList:
         return DictionaryEntryList([DictionaryEntry.from_dict(item_dict) for item_dict in dict_list])
 
+class GrammarBreakdown(BasicLoadableObject['GrammarBreakdown']):
+    def __init__(self, dictionary_version_link: Link, explanation: str, form_text_list: List[str]):
+        super().__init__()
+        self.dictionary_version_link = dictionary_version_link
+        self.explanation = explanation
+        self.form_text_list = form_text_list
+
+    def custom_str(self, indent: int=0) -> str:
+        tab = '\t' * indent
+        tab1 = '\t' * (indent + 1)
+        print_str = f'{tab}{self.explanation}'
+        for form_text in self.form_text_list:
+            print_str += f'\n{tab1}{form_text}'
+        return print_str
+
+    @classmethod
+    def from_dict(cls, item_dict: dict) -> GrammarBreakdown:
+        return GrammarBreakdown(
+            dictionary_version_link=Link.from_dict(item_dict['dictionary_version_link']),
+            explanation=item_dict['explanation'],
+            form_text_list=item_dict['form_text_list']
+        )
+
+class NumberConversion(BasicLoadableObject['NumberConversion']):
+    def __init__(self, japanese_number_text: str, converted_number_text: str):
+        super().__init__()
+        self.japanese_number_text = japanese_number_text
+        self.converted_number_text = converted_number_text
+    
+    def custom_str(self, indent: int=0) -> str:
+        tab = '\t' * indent
+        return f'{tab}{self.japanese_number_text} is {self.converted_number_text}'
+
+class ResultArea(BasicLoadableObject['ResultArea']):
+    def __init__(self, grammar_breakdown: GrammarBreakdown=None, number_conversion: NumberConversion=None):
+        super().__init__()
+        self.grammar_breakdown = grammar_breakdown
+        self.number_conversion = number_conversion
+    
+    def custom_str(self, indent: int=0) -> str:
+        new_line_char = ''
+        print_str = ''
+        if self.has_grammar_breakdown:
+            print_str += f'{new_line_char}{self.grammar_breakdown.custom_str(indent=indent)}'
+            new_line_char = '\n'
+        if self.has_number_conversion:
+            print_str += f'{new_line_char}{self.number_conversion.custom_str(indent=indent)}'
+            new_line_char = '\n'
+        return print_str
+
+    @property
+    def has_grammar_breakdown(self) -> bool:
+        return self.grammar_breakdown is not None
+
+    @property
+    def has_number_conversion(self) -> bool:
+        return self.number_conversion is not None
+
+    @property
+    def is_empty(self) -> bool:
+        return not self.has_grammar_breakdown and not self.has_number_conversion
+
+    def to_dict(self) -> dict:
+        result = {}
+        if self.has_grammar_breakdown:
+            result['grammar_breakdown'] = self.grammar_breakdown.to_dict()
+        if self.has_number_conversion:
+            result['number_conversion'] = self.number_conversion.to_dict()
+        return result
+    
+    @classmethod
+    def from_dict(cls, item_dict: dict) -> ResultArea:
+        return ResultArea(
+            grammar_breakdown=item_dict['grammar_breakdown'] if 'grammar_breakdown' in item_dict else None,
+            number_conversion=item_dict['number_conversion'] if 'number_conversion' in item_dict else None
+        )
+
 class JishoSearchQuery(BasicLoadableObject['JishoSearchQuery']):
     def __init__(
         self, url: str, title: str, result_count: int,
         exact_matches: DictionaryEntryList, nonexact_matches: DictionaryEntryList,
-        more_words_link: Link=None
+        result_area: ResultArea=None, more_words_link: Link=None
     ):
         super().__init__()
         self.url = url
@@ -1018,6 +1269,7 @@ class JishoSearchQuery(BasicLoadableObject['JishoSearchQuery']):
         self.result_count = result_count
         self.exact_matches = exact_matches
         self.nonexact_matches = nonexact_matches
+        self.result_area = result_area
         self.more_words_link = more_words_link
 
     def custom_str(self, indent: int=0) -> str:
@@ -1031,6 +1283,9 @@ class JishoSearchQuery(BasicLoadableObject['JishoSearchQuery']):
         if len(self.nonexact_matches) > 0:
             print_str += f'\n{tab}Non-Exact Matches:'
             print_str += f'\n{self.nonexact_matches.custom_str(indent=indent+1)}'
+        if self.result_area is not None and not self.result_area.is_empty:
+            print_str += f'\n{tab}Result Area:'
+            print_str += f'\n{self.result_area.custom_str(indent=indent+1)}'
         if self.more_words_link is not None:
             print_str += f'\n{tab}More Words: {self.more_words_link.__str__()}'
         return print_str
@@ -1047,6 +1302,7 @@ class JishoSearchQuery(BasicLoadableObject['JishoSearchQuery']):
             result_count=item_dict['result_count'],
             exact_matches=DictionaryEntryList.from_dict_list(item_dict['exact_matches']),
             nonexact_matches=DictionaryEntryList.from_dict_list(item_dict['nonexact_matches']),
+            result_area=ResultArea.from_dict(item_dict['result_area']) if 'result_area' in item_dict and item_dict['result_area'] is not None else None,
             more_words_link=Link.from_dict(item_dict['more_words_link']) if item_dict['more_words_link'] is not None else None
         )
 
@@ -1057,6 +1313,10 @@ class JishoSearchQuery(BasicLoadableObject['JishoSearchQuery']):
     @property
     def has_more_words_link(self) -> bool:
         return self.more_words_link is not None
+
+    @property
+    def matches(self) -> DictionaryEntryList:
+        return self.exact_matches + self.nonexact_matches
 
 class JishoSearchQueryHandler(
     BasicLoadableHandler['JishoSearchQueryHandler', 'JishoSearchQuery'],
@@ -1106,16 +1366,36 @@ class JishoSearchHtmlParser:
 
     def parse(self) -> JishoSearchQuery:
         main_results_html = self._soup.find(name='div', attrs={'id': 'main_results'})
-        no_matches_html = main_results_html.find(name='div', attrs={'id': 'no-matches'})
-        matches_exist = no_matches_html is None
-    
-        if matches_exist:
-            primary_html = main_results_html.find(name='div', attrs={'id': 'primary'})
-            result_count0, exact_matches = self.parse_exact_matches(primary_html)
-            result_count1, nonexact_matches, more_words_link = self.parse_nonexact_matches(primary_html)
+        matches_exist, result_area = self.parse_result_area(main_results_html)
+        primary_html = main_results_html.find(name='div', attrs={'id': 'primary'}) if matches_exist else None
+        has_primary = primary_html is not None
+
+        if has_primary:
+            exact_block_html = primary_html.find(name='div', attrs={'class': 'exact_block'}) # Exact matches
+            concepts_html = primary_html.find(name='div', attrs={'class': 'concepts'}) # Non-exact matches
+            has_exact_block = exact_block_html is not None
+            has_concepts = concepts_html is not None
+        else:
+            exact_block_html = None
+            concepts_html = None
+            has_exact_block = False
+            has_concepts = False
+
+        is_valid_search = has_primary and (has_exact_block or has_concepts)
+
+        if matches_exist and is_valid_search:
+            (result_count0, exact_matches) = self.parse_exact_matches(exact_block_html) if has_exact_block else (None, DictionaryEntryList())
+            (result_count1, nonexact_matches, more_words_link) = self.parse_nonexact_matches(concepts_html) if has_concepts else (None, DictionaryEntryList(), None)
             result_count = result_count0 if result_count0 is not None else result_count1
             assert result_count is not None
         else:
+            if matches_exist and primary_html is None and result_area.is_empty:
+                raise Exception(
+                    f"""
+                    Failed to parse primary_html, but no explanation of the failure was found in result_area.
+                    Perhaps there is some other information in the html for result_area that hasn't been parsed yet.
+                    """
+                )
             result_count = 0
             exact_matches = DictionaryEntryList()
             nonexact_matches = DictionaryEntryList()
@@ -1127,29 +1407,89 @@ class JishoSearchHtmlParser:
             title=self.title,
             result_count=result_count,
             exact_matches=exact_matches, nonexact_matches=nonexact_matches,
-            more_words_link=more_words_link
+            result_area=result_area, more_words_link=more_words_link
         )
 
         return search_query
     
-    def parse_exact_matches(self, primary_html: Tag) -> (int, DictionaryEntryList):
-        exact_block_html = primary_html.find(name='div', attrs={'class': 'exact_block'}) # Exact matches
-        has_exact_block = exact_block_html is not None
-        if has_exact_block:
-            result_count_html = exact_block_html.find(name='span', attrs={'class': 'result_count'})
-            result_count = int(result_count_html.text.replace('—', '').replace('found', '').replace(' ', ''))
-            concept_light_clearfix_html_list = exact_block_html.find_all(name='div', attrs={'class': 'concept_light clearfix'})
-            exact_matches = DictionaryEntryList()
-            for concept_light_clearfix_html in concept_light_clearfix_html_list:
-                dictionary_entry = self.parse_concept_light_clearfix(concept_light_clearfix_html)
-                exact_matches.append(dictionary_entry)
-        else:
-            result_count = None
-            exact_matches = DictionaryEntryList()
+    def parse_result_area(self, main_results_html: Tag) -> (bool, ResultArea):
+        matches_exist = True
+        grammar_breakdown = None
+        number_conversion = None
+
+        result_area_html = main_results_html.find(name='div', attrs={'id': 'result_area'})
+        has_result_area = result_area_html is not None
+        if not has_result_area:
+            raise Exception(f"Couldn't find result area.")
+        result_area_part_html_list = result_area_html.find_all(name='div')
+        for result_area_part_html in result_area_part_html_list:
+            if 'class' in result_area_part_html.attrs:
+                if result_area_part_html['class'] == ['fact', 'grammar-breakdown']:
+                    grammar_breakdown_explanation_html = result_area_part_html.find(name='h6')
+                    grammar_breakdown_explanation_text = grammar_breakdown_explanation_html.text.strip()
+                    dictionary_version_link_html = grammar_breakdown_explanation_html.find(name='a', href=True)
+                    dictionary_version_link_text = dictionary_version_link_html.text.strip()
+                    dictionary_version_link_url = f"https://jisho.org{dictionary_version_link_html['href']}"
+                    dictionary_version_link = Link(
+                        url=dictionary_version_link_url,
+                        text=dictionary_version_link_text
+                    )
+                    grammar_breakdown_form_list_wrapper_html = result_area_part_html.find(name='ul', attrs={'class': 'no-bullet'})
+                    grammar_breakdown_form_html_list = grammar_breakdown_form_list_wrapper_html.find_all(name='li')
+                    grammar_breakdown_form_text_list = []
+                    for grammar_breakdown_form_html in grammar_breakdown_form_html_list:
+                        grammar_breakdown_form_text = grammar_breakdown_form_html.text.strip()
+                        grammar_breakdown_form_text_list.append(grammar_breakdown_form_text)
+                    grammar_breakdown = GrammarBreakdown(
+                        dictionary_version_link=dictionary_version_link,
+                        explanation=grammar_breakdown_explanation_text,
+                        form_text_list=grammar_breakdown_form_text_list
+                    )
+                elif result_area_part_html['class'] == ['fact'] and result_area_part_html['id'] == 'number_conversion':
+                    japanese_number_html = result_area_part_html.find(name='em')
+                    japanese_number_text = japanese_number_html.text.strip()
+                    converted_number_html = result_area_part_html.find(name='strong')
+                    converted_number_text = converted_number_html.text.strip()
+                    number_conversion = NumberConversion(
+                        japanese_number_text=japanese_number_text,
+                        converted_number_text=converted_number_text
+                    )
+                else:
+                    raise Exception(
+                        f"""
+                        Encountered unknown result_area_part_html['class']: {result_area_part_html['class']}
+                        url: {self.url}
+                        """
+                    )
+            elif 'id' in result_area_part_html.attrs:
+                if result_area_part_html['id'] == 'no-matches':
+                    matches_exist = False
+                else:
+                    val = result_area_part_html['id']
+                    val_str = f'{val}' if type(val) is not str else f"'{val}'"
+                    raise Exception(
+                        f"""
+                        Encountered unknown result_area_part_html['id']: {val_str}
+                        url: {self.url}
+                        """
+                    )
+        result_area = ResultArea(
+            grammar_breakdown=grammar_breakdown,
+            number_conversion=number_conversion
+        )
+        return matches_exist, result_area
+
+    def parse_exact_matches(self, exact_block_html: Tag) -> (int, DictionaryEntryList):
+        result_count_html = exact_block_html.find(name='span', attrs={'class': 'result_count'})
+        result_count = int(result_count_html.text.replace('—', '').replace('found', '').replace(' ', ''))
+        concept_light_clearfix_html_list = exact_block_html.find_all(name='div', attrs={'class': 'concept_light clearfix'})
+        exact_matches = DictionaryEntryList()
+        for concept_light_clearfix_html in concept_light_clearfix_html_list:
+            dictionary_entry = self.parse_concept_light_clearfix(concept_light_clearfix_html)
+            exact_matches.append(dictionary_entry)
         return result_count, exact_matches
 
-    def parse_nonexact_matches(self, primary_html: Tag) -> (int, DictionaryEntryList, Link):
-        concepts_html = primary_html.find(name='div', attrs={'class': 'concepts'}) # Non-exact matches
+    def parse_nonexact_matches(self, concepts_html: Tag) -> (int, DictionaryEntryList, Link):
         result_count_html = concepts_html.find(name='span', attrs={'class': 'result_count'})
         result_count = int(result_count_html.text.replace('—', '').replace('found', '').replace(' ', '')) if result_count_html is not None else None
         concept_light_clearfix_html_list = concepts_html.find_all(name='div', attrs={'class': 'concept_light clearfix'}) # Non-exact match list
@@ -1177,7 +1517,6 @@ class JishoSearchHtmlParser:
             supplementary_links=supplementary_links,
             meaning_section=meaning_section
         )
-        logger.purple(dictionary_entry.word_representation.simple_repr)
         return dictionary_entry
 
     def parse_word_representation(self, concept_light_clearfix_html: Tag) -> WordRepresentation:
@@ -1295,7 +1634,7 @@ class JishoSearchHtmlParser:
                 meaning_parser.append(meaning_tag)
                 current_meaning_tag = meaning_tag
             elif meaning_part_html['class'] == ['meaning-wrapper']:
-                if current_meaning_tag.meaning_tag_text == 'Other forms':
+                if current_meaning_tag is not None and current_meaning_tag.meaning_tag_text == 'Other forms':
                     other_form_html_list = meaning_part_html.find_all(name='span', attrs={'class': 'break-unit'})
                     other_forms = OtherFormList()
                     for other_form_html in other_form_html_list:
@@ -1310,7 +1649,7 @@ class JishoSearchHtmlParser:
                         other_form = OtherForm(writing=other_form_writing, reading=other_form_reading)
                         other_forms.append(other_form)
                     meaning_parser.append(other_forms)
-                elif current_meaning_tag.meaning_tag_text == 'Notes':
+                elif current_meaning_tag is not None and current_meaning_tag.meaning_tag_text == 'Notes':
                     note_html_list = meaning_part_html.find_all(name='div', attrs={'class': 'meaning-definition meaning-representation_notes zero-padding'})
                     notes = NoteList()
                     for note_html in note_html_list:
@@ -1366,6 +1705,10 @@ class JishoSearchHtmlParser:
                         meaning_abstract_link=meaning_abstract_link,
                         sentences=sentences
                     )
+                    if current_meaning_tag is None: # This case exists too, although not very often.
+                        meaning_parser.append(
+                            MeaningTags('No Meaning Tag')
+                        )
                     meaning_parser.append(meaning_wrapper)
             else:
                 raise Exception(f"Unexpected meaning_part_html['class']: {meaning_part_html['class']}")
