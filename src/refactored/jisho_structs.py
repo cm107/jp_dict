@@ -7,6 +7,8 @@ from common_utils.base.basic import BasicLoadableObject, BasicLoadableHandler, B
 from logger import logger
 from ..util.char_lists import hiragana_chars, katakana_chars, misc_kana_chars
 
+from .common import Link, LinkList
+
 class WordRepresentationPart(BasicLoadableObject['WordRepresentationPart']):
     def __init__(self, writing: str, reading: str=None):
         super().__init__()
@@ -224,24 +226,6 @@ class ConceptLabels(BasicLoadableObject['ConceptLabels']):
     @property
     def has_label(self) -> bool:
         return self.is_common or self.is_jlpt or self.is_wanikani
-
-class Link(BasicLoadableObject['Link']):
-    def __init__(self, url: str, text: str=None):
-        super().__init__()
-        self.url = url
-        self.text = text
-
-class LinkList(
-    BasicLoadableHandler['LinkList', 'Link'],
-    BasicHandler['LinkList', 'Link']
-):
-    def __init__(self, links: List[Link]=None):
-        super().__init__(obj_type=Link, obj_list=links)
-        self.links = self.obj_list
-    
-    @classmethod
-    def from_dict_list(cls, dict_list: List[dict]) -> LinkList:
-        return LinkList([Link.from_dict(item_dict) for item_dict in dict_list])
 
 class SupplementaryLinks(BasicLoadableObject['SupplementaryLinks']):
     def __init__(
