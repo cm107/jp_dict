@@ -1343,6 +1343,13 @@ class JishoSearchHtmlParser:
     def title(self) -> str:
         return self._soup.title.text.strip()
     
+    @property
+    def search_word(self) -> str:
+        import urllib
+        encoded_search_word = self.url.replace('https://jisho.org/search/', '')
+        decoded_search_word = urllib.parse.unquote(encoded_search_word)
+        return decoded_search_word
+
     @classmethod
     def from_search_word(cls, search_word: str) -> JishoSearchHtmlParser:
         search_url = f'https://jisho.org/search/{search_word}'

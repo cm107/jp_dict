@@ -5,10 +5,9 @@ from bs4.element import Tag, NavigableString
 from typing import List
 from logger import logger
 from common_utils.base.basic import BasicLoadableObject
+from common_utils.path_utils import get_rootname_from_path
 
 from src.refactored.common import Link, LinkList
-
-dictionary_title_text_list = []
 
 class MainTitle(BasicLoadableObject['MainTitle']):
     def __init__(self, writing: str, reading: str=None):
@@ -43,6 +42,13 @@ class KotobankWordHtmlParser:
     @property
     def title(self) -> str:
         return self._soup.title.text.strip()
+
+    @property
+    def search_word(self) -> str:
+        import urllib
+        encoded_search_word = self.url.replace('https://kotobank.jp/word/', '')
+        decoded_search_word = urllib.parse.unquote(encoded_search_word)
+        return decoded_search_word
 
     @classmethod
     def from_search_word(cls, search_word: str) -> KotobankWordHtmlParser:
@@ -114,7 +120,13 @@ class KotobankWordHtmlParser:
             )
     
     def parse_digital_daijisen(self, ex_cf_html_list: List[Tag]):
-        from common_utils.path_utils import get_rootname_from_path
+        from src.refactored.kotobank.digital_daijisen import PlainText, Gaiji, \
+            Hinshi, DefinitionNumber, OriginWord, RelatedWordLink, \
+            RelatedWordLinkList, BoldText, KigoWord, Media, MotoTsudzuri, \
+            SuperscriptText, Table, TableList, RekishiText, ItalicText, \
+            ParsedItemList, ParsedItemListHandler
+        from common_utils.file_utils import make_dir_if_not_exists
+
         gaiji_map = {
             1: '一',
             2: '二',
@@ -127,17 +139,13 @@ class KotobankWordHtmlParser:
             9: '九',
             10: '十'
         }
-        # gaiji2numeral_dict = {
-        #     '/image/dictionary/daijisen/gaiji/02539.gif': '一',
-        #     '/image/dictionary/daijisen/gaiji/02540.gif': '二',
-        #     '/image/dictionary/daijisen/gaiji/02541.gif': '三',
-        #     '/image/dictionary/daijisen/gaiji/02542.gif': '四'
-        # }
 
+        item_list_handler = ParsedItemListHandler()
         for ex_cf_html in ex_cf_html_list:
             description_html = ex_cf_html.find(name='section', attrs={'class': 'description'})
             has_description = description_html is not None
             assert has_description, 'No description found.'
+            item_list = ParsedItemList()
             for child in description_html.children:
                 # logger.yellow(f'type(child): {type(child)}')
                 # logger.white(f'child: {child}')
@@ -145,6 +153,9 @@ class KotobankWordHtmlParser:
                     logger.green('Text')
                     text = str(child)
                     logger.blue(f'\ttext: {text}')
+                    plain_text = PlainText(text)
+                    logger.blue(f'\tplain_text: {plain_text}')
+                    item_list.append(plain_text, is_obj=True)
                 elif type(child) is Tag:
                     # logger.white(f'child.text.strip(): {child.text.strip()}')
                     # logger.white(f'child.attrs: {child.attrs}')
@@ -171,35 +182,58 @@ class KotobankWordHtmlParser:
                         gaiji_str_equivalent = gaiji_map[gaiji_int_equivalent]
                         logger.blue(f'\tgaiji_str_equivalent: {gaiji_str_equivalent}')
                         logger.blue(f'\tgaiji_type: {gaiji_type}')
+                        gaiji = Gaiji(
+                            url=gaiji_url,
+                            int_equivalent=gaiji_int_equivalent,
+                            str_equivalent=gaiji_str_equivalent
+                        )
+                        logger.blue(f'\tgaiji: {gaiji}')
+                        item_list.append(gaiji, is_obj=True)
                     elif 'class' in child.attrs and child.attrs['class'] == ['hinshi']:
                         logger.green('Hinshi')
                         hinshi_text = child.text.strip()
                         logger.blue(f'\thinshi_text: {hinshi_text}')
+                        hinshi = Hinshi(text=hinshi_text)
+                        logger.blue(f'\thinshi: {hinshi}')
+                        item_list.append(hinshi, is_obj=True)
                     elif len(child.attrs) == 0 and child.text.strip() == '':
                         logger.green('Ignore 1')
                         pass # Ignore. Usually just a <br> or <br/>
                     elif len(child.attrs) == 0 and str.isdigit(child.text.strip()):
                         logger.green('Definition Number')
-                        definition_number = int(child.text.strip())
+                        definition_number_int = int(child.text.strip())
+                        logger.blue(f'\tdefinition_number_int: {definition_number_int}')
+                        definition_number = DefinitionNumber(num=definition_number_int)
                         logger.blue(f'\tdefinition_number: {definition_number}')
+                        item_list.append(definition_number, is_obj=True)
                     elif 'org' in child.attrs and child.attrs['org'] == '―':
                         logger.green('Origin Word')
                         origin_word_text = child.text.strip()
                         logger.blue(f'\torigin_word_text: {origin_word_text}')
+                        origin_word = OriginWord(origin_word_text)
+                        logger.blue(f'\torigin_word: {origin_word}')
+                        item_list.append(origin_word, is_obj=True)
                     elif 'href' in child.attrs and child.name == 'a':
                         logger.green('Related Word Link')
                         related_word_url = f"https://kotobank.jp{child['href']}"
                         related_word_text = child.text.strip()
-                        related_word_link = Link(url=related_word_url, text=related_word_text)
+                        related_word_link = RelatedWordLink(url=related_word_url, text=related_word_text)
                         logger.blue(f'\trelated_word_link: {related_word_link}')
+                        item_list.append(related_word_link, is_obj=True)
                     elif len(child.attrs) == 0 and child.name == 'b' and len(child.text.strip()) > 0:
                         logger.green('Bold Text')
-                        bold_text = child.text.strip()
+                        bold_text_str = child.text.strip()
+                        logger.blue(f'\tbold_text_str: {bold_text_str}')
+                        bold_text = BoldText(bold_text_str)
                         logger.blue(f'\tbold_text: {bold_text}')
+                        item_list.append(bold_text, is_obj=True)
                     elif child.name == 'span' and 'class' in child.attrs and child['class'] == ['kigo']:
                         logger.green('Kigo Word')
                         kigo_text = child.text.strip()
                         logger.blue(f'\tkigo_text: {kigo_text}')
+                        kigo_word = KigoWord(kigo_text)
+                        logger.blue(f'\tkigo_word: {kigo_word}')
+                        item_list.append(kigo_word, is_obj=True)
                     elif 'class' in child.attrs and child['class'] == ['media'] and child.name == 'div':
                         logger.green('Media')
                         fullsize_link_html = child.find(name='a', href=True)
@@ -215,6 +249,12 @@ class KotobankWordHtmlParser:
                         smallsize_img_link = Link(url=smallsize_img_url)
                         logger.blue(f'\tfullsize_img_link: {fullsize_img_link}')
                         logger.blue(f'\tsmallsize_img_link: {smallsize_img_link}')
+                        media = Media(
+                            fullsize_img_link=fullsize_img_link,
+                            smallsize_img_link=smallsize_img_link
+                        )
+                        logger.blue(f'\tmedia: {media}')
+                        item_list.append(media, is_obj=True)
                     elif child.name == 'br' and 'clear' in child.attrs and child.attrs['clear'] == 'all':
                         logger.green(f'Ignore 2')
                         pass # Ignore. Appears to come after a media tag.
@@ -222,35 +262,51 @@ class KotobankWordHtmlParser:
                         logger.green('元綴')
                         mototsudzuri_text = child.text.strip()
                         logger.blue(f'\tmototsudzuri_text: {mototsudzuri_text}')
+                        mototsudzuri = MotoTsudzuri(mototsudzuri_text)
+                        logger.blue(f'\tmototsudzuri: {mototsudzuri}')
+                        item_list.append(mototsudzuri, is_obj=True)
                     elif child.name == 'br' and len(child.attrs) == 0 and len(child.text.strip()) > 0 and len(child.find_all(name='a', href=True)) > 0:
                         logger.green('Related Word Link List')
                         related_word_html_list = child.find_all(name='a', href=True)
-                        related_word_link_list = LinkList()
+                        related_word_link_list = RelatedWordLinkList()
                         for related_word_html in related_word_html_list:
                             related_word_url = f"https://kotobank.jp{related_word_html['href']}"
                             related_word_text = related_word_html.text.strip()
-                            related_word_link = Link(url=related_word_url, text=related_word_text)
+                            related_word_link = RelatedWordLink(url=related_word_url, text=related_word_text)
                             related_word_link_list.append(related_word_link)
                         logger.blue(f'\trelated_word_link_list: {related_word_link_list}')
+                        item_list.append(related_word_link_list, is_obj=True)
                     elif child.name == 'sup' and len(child.attrs) == 0 and len(child.text.strip()) > 0:
                         logger.green(f'Superscript')
-                        superscript_text = child.text.strip()
+                        superscript_text_str = child.text.strip()
+                        logger.blue(f'\tsuperscript_text_str: {superscript_text_str}')
+                        superscript_text = SuperscriptText(superscript_text_str)
                         logger.blue(f'\tsuperscript_text: {superscript_text}')
+                        item_list.append(superscript_text, is_obj=True)
                     elif child.name == 'br' and len(child.attrs) == 0 and child.find(name='table') is not None:
-                        logger.green(f'Table')
+                        logger.green(f'Tables')
                         table_html = child.find(name='table')
                         import pandas as pd
                         table_dfs = pd.read_html(str(child))
                         table_dicts = [table_df.to_dict() for table_df in table_dfs]
                         logger.blue(f'\ttable_dicts: {table_dicts}')
+                        table_list = TableList([Table(item_dict) for item_dict in table_dicts])
+                        logger.blue(f'\ttable_list: {table_list}')
+                        item_list.append(table_list, is_obj=True)
                     elif child.name == 'span' and 'type' in child.attrs and child.attrs['type'] == '歴史':
                         logger.green('歴史')
-                        rekishi_text = child.text.strip()
+                        rekishi_text_str = child.text.strip()
+                        logger.blue(f'\trekishi_text_str: {rekishi_text_str}')
+                        rekishi_text = RekishiText(rekishi_text_str)
                         logger.blue(f'\trekishi_text: {rekishi_text}')
+                        item_list.append(rekishi_text, is_obj=True)
                     elif child.name == 'i' and len(child.attrs) == 0 and len(child.text.strip()) > 0:
                         logger.green('Italic Text')
-                        italic_text = child.text.strip()
+                        italic_text_str = child.text.strip()
+                        logger.blue(f'\titalic_text_str: {italic_text_str}')
+                        italic_text = ItalicText(italic_text_str)
                         logger.blue(f'\titalic_text: {italic_text}')
+                        item_list.append(italic_text, is_obj=True)
                     else:
                         logger.red(f'TODO')
                         logger.red(f'\tchild.text.strip(): {child.text.strip()}')
@@ -262,8 +318,13 @@ class KotobankWordHtmlParser:
                         raise Exception
                 else:
                     raise Exception(f'Unknown type(child): {type(child)}')
+            item_list_handler.append(item_list)
             # import sys
             # sys.exit()
+        logger.white(item_list_handler)
+        dump_dir = 'digital_daijisen_dump'
+        make_dir_if_not_exists(dump_dir)
+        item_list_handler.save_to_path(f'{dump_dir}/{self.search_word}.json', overwrite=True)
 
     def parse_dictionary(self, dictionary_title_text: str, ex_cf_html_list: List[Tag], strict: bool=True):
         if dictionary_title_text == 'デジタル大辞泉の解説':

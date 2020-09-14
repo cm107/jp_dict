@@ -7,6 +7,10 @@ class Link(BasicLoadableObject['Link']):
         super().__init__()
         self.url = url
         self.text = text
+    
+    def custom_str(self, indent: int=0) -> str:
+        tab = '\t' * indent
+        return f'{tab}[{self.text}]'
 
 class LinkList(
     BasicLoadableHandler['LinkList', 'Link'],
