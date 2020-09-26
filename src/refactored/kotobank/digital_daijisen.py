@@ -180,6 +180,10 @@ class Table(BasicLoadableObject['Table']):
         super().__init__()
         self.table_dict = table_dict
     
+    @property
+    def plain_str(self) -> str:
+        return self.to_df().to_string()
+
     def to_df(self) -> pd.DataFrame:
         return pd.DataFrame(self.table_dict)
     
@@ -195,9 +199,20 @@ class TableList(
         super().__init__(obj_type=Table, obj_list=table_list)
         self.table_list = self.obj_list
     
+    @property
+    def plain_str(self) -> str:
+        return self.to_df().to_string()
+
     @classmethod
     def from_dict_list(cls, dict_list: List[dict]) -> TableList:
         return TableList([Table.from_dict(item_dict) for item_dict in dict_list])
+
+    def to_df(self) -> pd.DataFrame:
+        return pd.DataFrame.from_records(self.to_dict_list())
+
+    @classmethod
+    def from_df(cls, df: pd.DataFrame) -> TableList:
+        return TableList.from_dict_list(df.to_records())
 
 class SpecialString:
     end_str = '\033[0m'
@@ -518,6 +533,16 @@ class ParsedItemGroup(BasicLoadableObject['ParsedItemGroup']):
     @property
     def has_contained(self) -> bool:
         return len(self.contained_groups) > 0
+    
+    def get_bounded_text(self, bound_start: str='「', bound_end: str='」') -> List[str]:
+        text = self.plain_str
+        left_split_list = text.split(bound_start)[1:]
+        result = [part.split(bound_end)[0] for part in left_split_list]
+        return [f'{bound_start}{part}{bound_end}' for part in result]
+
+    @property
+    def quotations(self) -> List[str]:
+        return self.get_bounded_text(bound_start='「', bound_end='」')
 
 class ParsedItemGroupList(
     BasicLoadableHandler['ParsedItemGroupList', 'ParsedItemGroup'],
@@ -540,6 +565,13 @@ class ParsedItemGroupList(
     @classmethod
     def from_dict_list(cls, dict_list: List[dict]) -> ParsedItemGroupList:
         return ParsedItemGroupList([ParsedItemGroup.from_dict(item_dict) for item_dict in dict_list])
+
+    @property
+    def quotations(self) -> List[str]:
+        result = []
+        for item_group in self:
+            result.extend(item_group.quotations)
+        return result
 
 class ParsedItemListHandler(
     BasicLoadableHandler['ParsedItemListHandler', 'ParsedItemList'],
