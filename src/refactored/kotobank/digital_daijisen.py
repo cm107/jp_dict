@@ -1,9 +1,11 @@
 from __future__ import annotations
 from common_utils.base.basic import BasicLoadableObject, BasicLoadableHandler, BasicHandler
+from common_utils.path_utils import get_rootname_from_path
 from ..common import Link
-from typing import List, Any
+from typing import List, Any, cast
 import pandas as pd
 from logger import logger
+from bs4.element import Tag, NavigableString
 
 # Simple Text
 class PlainText(BasicLoadableObject['PlainText']):
@@ -258,7 +260,6 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
         self.obj = obj
     
     def preview_str(self) -> str:
-        from typing import cast
         if type(self.obj) in [PlainText, Hinshi, KigoWord, MotoTsudzuri, RekishiText]:
             obj = cast(PlainText, self.obj)
             return obj.text
@@ -603,3 +604,146 @@ class ParsedItemListHandler(
     
     def contains_class_names(self, class_names: List[str], operator: str='and') -> bool:
         return any([item_list.contains_class_names(class_names, operator=operator) for item_list in self])
+
+def parse(ex_cf_html_list: List[Tag]):
+    gaiji_map = {
+        1: '一',
+        2: '二',
+        3: '三',
+        4: '四',
+        5: '五',
+        6: '六',
+        7: '七',
+        8: '八',
+        9: '九',
+        10: '十'
+    }
+
+    item_list_handler = ParsedItemListHandler()
+    for ex_cf_html in ex_cf_html_list:
+        description_html = ex_cf_html.find(name='section', attrs={'class': 'description'})
+        has_description = description_html is not None
+        assert has_description, 'No description found.'
+        item_list = ParsedItemList()
+        for child in description_html.children:
+            if type(child) is NavigableString:
+                text = str(child)
+                plain_text = PlainText(text)
+                item_list.append(plain_text, is_obj=True)
+            elif type(child) is Tag:
+                if 'class' in child.attrs and child.attrs['class'] == ['gaiji']:
+                    gaiji_url = child.attrs['src']
+                    gaiji_root_int = int(get_rootname_from_path(gaiji_url))
+                    if gaiji_root_int >= 2539 and gaiji_root_int <= 2546:
+                        gaiji_type = 'black_gaiji_number'
+                        gaiji_int_equivalent = gaiji_root_int - 2538
+                    elif gaiji_root_int >= 2531 and gaiji_root_int <= 2538:
+                        gaiji_type = 'white_gaiji_number'
+                        gaiji_int_equivalent = gaiji_root_int - 2530
+                    else:
+                        raise Exception(
+                            f"""
+                            gaiji_root_int={gaiji_root_int} is not in an acceptable range.
+                            Please check the HTML source at:
+                                {self.url}
+                                {self.title}
+                            """
+                        )
+                    assert gaiji_int_equivalent in gaiji_map, f'{gaiji_int_equivalent} not in gaiji_map.\nurl: {self.url}\ntitle: {self.title}'
+                    gaiji_str_equivalent = gaiji_map[gaiji_int_equivalent]
+                    gaiji = Gaiji(
+                        url=gaiji_url,
+                        int_equivalent=gaiji_int_equivalent,
+                        str_equivalent=gaiji_str_equivalent
+                    )
+                    item_list.append(gaiji, is_obj=True)
+                elif 'class' in child.attrs and child.attrs['class'] == ['hinshi']:
+                    hinshi_text = child.text.strip()
+                    hinshi = Hinshi(text=hinshi_text)
+                    item_list.append(hinshi, is_obj=True)
+                elif len(child.attrs) == 0 and child.text.strip() == '':
+                    pass # Ignore. Usually just a <br> or <br/>
+                elif len(child.attrs) == 0 and str.isdigit(child.text.strip()):
+                    definition_number_int = int(child.text.strip())
+                    definition_number = DefinitionNumber(num=definition_number_int)
+                    item_list.append(definition_number, is_obj=True)
+                elif 'org' in child.attrs and child.attrs['org'] == '―':
+                    origin_word_text = child.text.strip()
+                    origin_word = OriginWord(origin_word_text)
+                    item_list.append(origin_word, is_obj=True)
+                elif 'href' in child.attrs and child.name == 'a':
+                    related_word_url = f"https://kotobank.jp{child['href']}"
+                    related_word_text = child.text.strip()
+                    related_word_link = RelatedWordLink(url=related_word_url, text=related_word_text)
+                    item_list.append(related_word_link, is_obj=True)
+                elif len(child.attrs) == 0 and child.name == 'b' and len(child.text.strip()) > 0:
+                    bold_text_str = child.text.strip()
+                    bold_text = BoldText(bold_text_str)
+                    item_list.append(bold_text, is_obj=True)
+                elif child.name == 'span' and 'class' in child.attrs and child['class'] == ['kigo']:
+                    kigo_text = child.text.strip()
+                    kigo_word = KigoWord(kigo_text)
+                    item_list.append(kigo_word, is_obj=True)
+                elif 'class' in child.attrs and child['class'] == ['media'] and child.name == 'div':
+                    fullsize_link_html = child.find(name='a', href=True)
+                    assert fullsize_link_html is not None
+                    fullsize_img_url = f"https://kotobank.jp{fullsize_link_html['href']}"
+                    fullsize_img_link = Link(url=fullsize_img_url)
+                    smallsize_img_html = (
+                        fullsize_link_html
+                        .find(name='p', attrs={'class': 'image'})
+                        .find(name='img')
+                    )
+                    smallsize_img_url = f"https://kotobank.jp{smallsize_img_html['src']}"
+                    smallsize_img_link = Link(url=smallsize_img_url)
+                    media = Media(
+                        fullsize_img_link=fullsize_img_link,
+                        smallsize_img_link=smallsize_img_link
+                    )
+                    item_list.append(media, is_obj=True)
+                elif child.name == 'br' and 'clear' in child.attrs and child.attrs['clear'] == 'all':
+                    pass # Ignore. Appears to come after a media tag.
+                elif child.name == 'span' and 'type' in child.attrs and child.attrs['type'] == '原綴':
+                    mototsudzuri_text = child.text.strip()
+                    mototsudzuri = MotoTsudzuri(mototsudzuri_text)
+                    item_list.append(mototsudzuri, is_obj=True)
+                elif child.name == 'br' and len(child.attrs) == 0 and len(child.text.strip()) > 0 and len(child.find_all(name='a', href=True)) > 0:
+                    related_word_html_list = child.find_all(name='a', href=True)
+                    related_word_link_list = RelatedWordLinkList()
+                    for related_word_html in related_word_html_list:
+                        related_word_url = f"https://kotobank.jp{related_word_html['href']}"
+                        related_word_text = related_word_html.text.strip()
+                        related_word_link = RelatedWordLink(url=related_word_url, text=related_word_text)
+                        related_word_link_list.append(related_word_link)
+                    item_list.append(related_word_link_list, is_obj=True)
+                elif child.name == 'sup' and len(child.attrs) == 0 and len(child.text.strip()) > 0:
+                    superscript_text_str = child.text.strip()
+                    superscript_text = SuperscriptText(superscript_text_str)
+                    item_list.append(superscript_text, is_obj=True)
+                elif child.name == 'br' and len(child.attrs) == 0 and child.find(name='table') is not None:
+                    table_html = child.find(name='table')
+                    table_dfs = pd.read_html(str(child))
+                    table_dicts = [table_df.to_dict() for table_df in table_dfs]
+                    table_list = TableList([Table(item_dict) for item_dict in table_dicts])
+                    item_list.append(table_list, is_obj=True)
+                elif child.name == 'span' and 'type' in child.attrs and child.attrs['type'] == '歴史':
+                    rekishi_text_str = child.text.strip()
+                    rekishi_text = RekishiText(rekishi_text_str)
+                    item_list.append(rekishi_text, is_obj=True)
+                elif child.name == 'i' and len(child.attrs) == 0 and len(child.text.strip()) > 0:
+                    italic_text_str = child.text.strip()
+                    italic_text = ItalicText(italic_text_str)
+                    item_list.append(italic_text, is_obj=True)
+                else:
+                    logger.red(f'TODO')
+                    logger.red(f'\tchild.text.strip(): {child.text.strip()}')
+                    logger.red(f'\tchild.name: {child.name}')
+                    logger.red(f'\tchild.attrs: {child.attrs}')
+                    logger.red(child)
+                    logger.red(f'\tself.url: {self.url}')
+                    logger.red(f'\tself.title: {self.title}')
+                    raise Exception
+            else:
+                raise Exception(f'Unknown type(child): {type(child)}')
+        item_list_handler.append(item_list)
+    return item_list_handler
