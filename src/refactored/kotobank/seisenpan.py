@@ -183,7 +183,7 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
         elif class_name == 'StyledText':
             obj = StyledText.from_dict(item_dict['obj'])
         elif class_name == 'ParseFailed':
-            obj = StyledText.from_dict(item_dict['obj'])
+            obj = ParseFailed.from_dict(item_dict['obj'])
         elif class_name == 'KanjiImage':
             obj = KanjiImage.from_dict(item_dict['obj'])
         elif class_name == 'CaptionedImage':
@@ -375,7 +375,7 @@ def get_parsed_items(tag: Tag) -> ParsedItemList:
             raise TypeError
     return parsed_items
 
-def parse(ex_cf_html_list: List[Tag]):
+def parse(ex_cf_html_list: List[Tag]) -> ParsedArticleList:
     article_list = ParsedArticleList()
     for ex_cf_html in ex_cf_html_list:
         description_html = ex_cf_html.find(name='section', attrs={'class': 'description'})
@@ -384,39 +384,26 @@ def parse(ex_cf_html_list: List[Tag]):
         container_list = ParsedContainerList()
         for child in description_html.children:
             if type(child) is NavigableString:
-                logger.cyan(f'Plain Text')
                 text = str(child).replace(' ', '').replace('\n', '')
-                logger.purple(f'text: {text}')
                 assert len(text) == 0, f'len(text): {len(text)}'
             elif type(child) is Tag:
                 if 'data-orgtag' in child.attrs and child.attrs['data-orgtag'] == 'meaning':
-                    logger.cyan('Meaning')
                     meaning_text = child.text.strip()
-                    logger.purple(f'\tmeaning_text: {meaning_text}')
                     parsed_items = get_parsed_items(tag=child)
-                    logger.white(f'parsed_items.preview_str():\n{parsed_items.preview_str()}')
-                    logger.blue(f'parsed_items.class_name_list: {parsed_items.class_name_list}')
                     container = ParsedContainer(container_type='Meaning', parsed_items=parsed_items)
                     container_list.append(container)
                 elif 'data-orgtag' in child.attrs and child.attrs['data-orgtag'] == 'example':
-                    logger.cyan('Example')
                     example_text = child.text.strip()
-                    logger.purple(f'\texample_text: {example_text}')
                     parsed_items = get_parsed_items(tag=child)
-                    logger.white(f'parsed_items.preview_str():\n{parsed_items.preview_str()}')
-                    logger.blue(f'parsed_items.class_name_list: {parsed_items.class_name_list}')
                     container = ParsedContainer(container_type='Example', parsed_items=parsed_items)
                     container_list.append(container)
                 elif 'data-orgtag' in child.attrs and child.attrs['data-orgtag'] == 'subheadword':
                     # This is for showing the alternative of a given word. E.g. ふてぶてしい -> ふてぶてしさ
                     # So far I have only encountered the subheadword + meaning pattern.
                     parsed_items = get_parsed_items(tag=child)
-                    logger.white(f'parsed_items.preview_str():\n{parsed_items.preview_str()}')
-                    logger.blue(f'parsed_items.class_name_list: {parsed_items.class_name_list}')
                     container = ParsedContainer(container_type='SubheadWord', parsed_items=parsed_items)
                     container_list.append(container)
                 elif child.name == 'div' and len(child.attrs) == 0:
-                    logger.cyan('Irregular Div')
                     parsed_items = get_parsed_items(tag=child)
                     container = ParsedContainer(container_type='IrregularDiv', parsed_items=parsed_items)
                     container_list.append(container)
@@ -428,5 +415,4 @@ def parse(ex_cf_html_list: List[Tag]):
                     import sys
                     sys.exit()
         article_list.append(container_list)
-    print(f'article_list.container_types_list: {article_list.container_types_list}')
-    logger.green(article_list.preview_str())
+    return article_list

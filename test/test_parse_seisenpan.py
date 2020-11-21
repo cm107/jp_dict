@@ -24,9 +24,9 @@ for i, relevant_result in enumerate(relevant_results):
         continue
     pbar.set_description(relevant_result.search_word)
     parser = KotobankWordHtmlParser.from_search_word(relevant_result.search_word)
-    logger.yellow(f'search_word: {relevant_result.search_word}')
     result = parser.parse()
-    
+    result.save_to_path(f'kotobank_dump/{relevant_result.search_word}.json', overwrite=True)
+
     progress_dict['progress'] = progress_dict['progress'] + 1
     json.dump(progress_dict, open(progress_save, 'w'))
     pbar.update()

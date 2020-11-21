@@ -10,7 +10,7 @@ from typing import Any
 from collections import OrderedDict
 
 from .digital_daijisen import parse as parse_digital_daijisen, ParsedItemListHandler as DigitalDaijisenDataHandler
-from .seisenpan import parse as parse_seisenpan
+from .seisenpan import parse as parse_seisenpan, ParsedArticleList as SeisenpanDataHandler
 
 class DictionaryContent(BasicLoadableObject['DictionaryContent']):
     def __init__(self, dictionary_name: str, content: Any=None):
@@ -25,6 +25,8 @@ class DictionaryContent(BasicLoadableObject['DictionaryContent']):
         if item_dict['content'] is not None:
             if dictionary_name == 'デジタル大辞泉の解説':
                 content = DigitalDaijisenDataHandler.from_dict_list(item_dict['content'])
+            elif dictionary_name == '精選版 日本国語大辞典の解説':
+                content = SeisenpanDataHandler.from_dict_list(item_dict['content'])
             else:
                 raise Exception(f"Found non-None content for {dictionary_name}, but DictionaryContent.from_dict doesn't account for {dictionary_name}.")
         else:
@@ -316,12 +318,10 @@ class KotobankWordHtmlParser:
                 content=None
             )
         elif dictionary_title_text == '精選版 日本国語大辞典の解説': # TODO 1
-            parse_seisenpan(ex_cf_html_list)
-            if strict:
-                raise NotImplementedError
+            seisenpan_data_handler = parse_seisenpan(ex_cf_html_list)
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
-                content=None
+                content=seisenpan_data_handler
             )
         elif dictionary_title_text == 'ブリタニカ国際大百科事典 小項目事典の解説':
             if strict:
