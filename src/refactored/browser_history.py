@@ -100,17 +100,21 @@ class BrowserHistory(BasicLoadableObject['BrowserHistory']):
         )
 
     @classmethod
-    def combine(cls, browser_history_list: List[BrowserHistory]) -> BrowserHistory:
+    def combine(cls, browser_history_list: List[BrowserHistory], show_pbar: bool=True) -> BrowserHistory:
         result = BrowserHistory()
         time_usec_list = []
-        combine_pbar = tqdm(total=len(browser_history_list), unit='histories')
-        combine_pbar.set_description('Combining Histories')
+        combine_pbar = tqdm(total=len(browser_history_list), unit='histories') if show_pbar else None
+        if combine_pbar is not None:
+            combine_pbar.set_description('Combining Histories')
         for browser_history in browser_history_list:
             for item in browser_history.browser_history_item_list:
                 if item.time_usec not in time_usec_list:
                     time_usec_list.append(item.time_usec)
                     result.browser_history_item_list.append(item)
-            combine_pbar.update()
+            if combine_pbar is not None:
+                combine_pbar.update()
+        if combine_pbar is not None:
+            combine_pbar.close()
         return result
 
 class BrowserHistoryHandler(
