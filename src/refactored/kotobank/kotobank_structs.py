@@ -11,6 +11,7 @@ from collections import OrderedDict
 
 from .digital_daijisen import parse as parse_digital_daijisen, ParsedItemListHandler as DigitalDaijisenDataHandler
 from .seisenpan import parse as parse_seisenpan, ParsedArticleList as SeisenpanDataHandler
+from .nippon_daihyakka_zensho import parse as parse_ndz, ParsedItemList as NDZ_ParsedItemList
 
 class DictionaryContent(BasicLoadableObject['DictionaryContent']):
     def __init__(self, dictionary_name: str, content: Any=None):
@@ -27,6 +28,8 @@ class DictionaryContent(BasicLoadableObject['DictionaryContent']):
                 content = DigitalDaijisenDataHandler.from_dict_list(item_dict['content'])
             elif dictionary_name == '精選版 日本国語大辞典の解説':
                 content = SeisenpanDataHandler.from_dict_list(item_dict['content'])
+            elif dictionary_name == '日本大百科全書(ニッポニカ)の解説':
+                content = NDZ_ParsedItemList.from_dict_list(item_dict['content'])
             else:
                 raise Exception(f"Found non-None content for {dictionary_name}, but DictionaryContent.from_dict doesn't account for {dictionary_name}.")
         else:
@@ -310,14 +313,15 @@ class KotobankWordHtmlParser:
                 dictionary_name=dictionary_title_text,
                 content=digital_daijisen_data_handler
             )
-        elif dictionary_title_text == '大辞林 第三版の解説': # TODO 2
-            if strict:
-                raise NotImplementedError
-            return DictionaryContent(
-                dictionary_name=dictionary_title_text,
-                content=None
-            )
-        elif dictionary_title_text == '精選版 日本国語大辞典の解説': # TODO 1
+        elif dictionary_title_text == '大辞林 第三版の解説': # TODO
+            # if strict:
+            #     raise NotImplementedError
+            # return DictionaryContent(
+            #     dictionary_name=dictionary_title_text,
+            #     content=None
+            # )
+            raise NotImplementedError(f'Daijirin seems to have been removed. If that is not the case, please fix this code.')
+        elif dictionary_title_text == '精選版 日本国語大辞典の解説':
             seisenpan_data_handler = parse_seisenpan(ex_cf_html_list)
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
@@ -331,11 +335,10 @@ class KotobankWordHtmlParser:
                 content=None
             )
         elif dictionary_title_text == '日本大百科全書(ニッポニカ)の解説':
-            if strict:
-                raise NotImplementedError
+            ndz_data = parse_ndz(ex_cf_html_list)
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
-                content=None
+                content=ndz_data
             )
         elif dictionary_title_text == '百科事典マイペディアの解説':
             if strict:
