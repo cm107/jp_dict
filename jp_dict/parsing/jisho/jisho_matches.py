@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List
-from src.refactored.jisho_structs import DictionaryEntryList
+from .jisho_structs import DictionaryEntryList
 from common_utils.base.basic import BasicLoadableObject, BasicLoadableHandler, BasicHandler
 
 class SearchWordMatches(BasicLoadableObject['SearchWordMatches']):

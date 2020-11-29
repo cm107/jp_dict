@@ -11,8 +11,8 @@ from logger import logger
 
 from .browser_history import BrowserHistoryHandler, BrowserHistory, \
     CommonBrowserHistoryItemGroupList
-from .jisho_structs import JishoSearchHtmlParser, JishoSearchQuery
-from .jisho_matches import SearchWordMatchesHandler, \
+from .jisho.jisho_structs import JishoSearchHtmlParser, JishoSearchQuery
+from .jisho.jisho_matches import SearchWordMatchesHandler, \
     DictionaryEntryList, SearchWordMatches
 from .kotobank.kotobank_structs import KotobankWordHtmlParser
 

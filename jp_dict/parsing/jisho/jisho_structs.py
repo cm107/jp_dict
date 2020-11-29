@@ -6,8 +6,7 @@ from bs4.element import Tag
 from common_utils.base.basic import BasicLoadableObject, BasicLoadableHandler, BasicHandler
 from logger import logger
 from ..util.char_lists import hiragana_chars, katakana_chars, misc_kana_chars
-
-from .common import Link, LinkList
+from ..common import Link, LinkList
 
 class WordRepresentationPart(BasicLoadableObject['WordRepresentationPart']):
     def __init__(self, writing: str, reading: str=None):

@@ -1,11 +1,13 @@
 from __future__ import annotations
-from common_utils.base.basic import BasicLoadableObject, BasicLoadableHandler, BasicHandler
-from common_utils.path_utils import get_rootname_from_path
-from ..common import Link
 from typing import List, Any, cast
 import pandas as pd
-from logger import logger
 from bs4.element import Tag, NavigableString
+
+from logger import logger
+from common_utils.base.basic import BasicLoadableObject, BasicLoadableHandler, BasicHandler
+from common_utils.path_utils import get_rootname_from_path
+
+from ..common import Link
 
 # Simple Text
 class PlainText(BasicLoadableObject['PlainText']):
