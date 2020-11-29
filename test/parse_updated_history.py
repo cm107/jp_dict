@@ -1,7 +1,7 @@
 from common_utils.file_utils import make_dir_if_not_exists, file_exists
 from jp_dict.parsing.parse_manager import ParserManager
 
-parse_data_dir = 'parse_data'
+parse_data_dir = '/home/clayton/workspace/prj/data_keep/data/study/parse_data'
 make_dir_if_not_exists(parse_data_dir)
 manager_save_path = f'{parse_data_dir}/manager.json'
 
