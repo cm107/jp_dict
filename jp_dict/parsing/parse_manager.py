@@ -4,7 +4,7 @@ from typing import List
 from tqdm import tqdm
 from common_utils.base.basic import BasicLoadableObject
 from common_utils.file_utils import dir_exists, file_exists, make_dir_if_not_exists, \
-    delete_all_files_in_dir
+    delete_all_files_in_dir, delete_file_if_exists
 from common_utils.path_utils import recursively_get_all_matches_under_dirpath, \
     get_all_files_of_extension, get_rootname_from_path
 from logger import logger
@@ -14,22 +14,26 @@ from .browser_history import BrowserHistoryHandler, BrowserHistory, \
 from .jisho.jisho_structs import JishoSearchHtmlParser, JishoSearchQuery
 from .jisho.jisho_matches import SearchWordMatchesHandler, \
     DictionaryEntryList, SearchWordMatches
-from .kotobank.kotobank_structs import KotobankWordHtmlParser
+from .kotobank.kotobank_structs import KotobankWordHtmlParser, \
+    KotobankResultList
 
 class ParserManagerMetaData(BasicLoadableObject['ParserManagerMetaData']):
     def __init__(
         self, browser_history_paths: List[str]=None, requires_jisho_grouping: bool=False,
-        requires_jisho_matching: bool=False, requires_postmatching_redo: bool=False
+        requires_jisho_matching: bool=False, requires_postmatching_redo: bool=False,
+        requires_kotobank_combine: bool=False
     ):
         self.browser_history_paths = browser_history_paths if browser_history_paths is not None else []
         self.requires_jisho_grouping = requires_jisho_grouping
         self.requires_jisho_matching = requires_jisho_matching
         self.requires_postmatching_redo = requires_postmatching_redo
+        self.requires_kotobank_combine = requires_kotobank_combine
 
 class ParserManager(BasicLoadableObject['ParserManager']):
     def __init__(
         self, browser_history_dir: str, combined_history_path: str, jisho_grouped_history_path: str,
         jisho_parse_dump_dir: str, jisho_matches_path: str, kotobank_parse_dump_dir: str,
+        combined_kotobank_dump_path: str,
         manager_save_path: str
     ):
         assert dir_exists(browser_history_dir), f"Couldn't find browser history folder: {browser_history_dir}"
@@ -39,6 +43,7 @@ class ParserManager(BasicLoadableObject['ParserManager']):
         self.jisho_parse_dump_dir = jisho_parse_dump_dir
         self.jisho_matches_path = jisho_matches_path
         self.kotobank_parse_dump_dir = kotobank_parse_dump_dir
+        self.combined_kotobank_dump_path = combined_kotobank_dump_path
         self.manager_save_path = manager_save_path
 
         self._metadata = ParserManagerMetaData()
@@ -51,6 +56,7 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             'jisho_parse_dump_dir': self.jisho_parse_dump_dir,
             'jisho_matches_path': self.jisho_matches_path,
             'kotobank_parse_dump_dir': self.kotobank_parse_dump_dir,
+            'combined_kotobank_dump_path': self.combined_kotobank_dump_path,
             'manager_save_path': self.manager_save_path,
             'metadata': self._metadata.to_dict()
         }
@@ -64,6 +70,7 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             jisho_parse_dump_dir=item_dict['jisho_parse_dump_dir'],
             jisho_matches_path=item_dict['jisho_matches_path'],
             kotobank_parse_dump_dir=item_dict['kotobank_parse_dump_dir'],
+            combined_kotobank_dump_path=item_dict['combined_kotobank_dump_path'],
             manager_save_path=item_dict['manager_save_path']
         )
         manager._metadata = ParserManagerMetaData.from_dict(item_dict['metadata'])
@@ -207,13 +214,20 @@ class ParserManager(BasicLoadableObject['ParserManager']):
         assert file_exists(self.jisho_matches_path), f"Couldn't find Jisho matches path: {self.jisho_matches_path}"
         search_word_matches_handler = SearchWordMatchesHandler.load_from_path(self.jisho_matches_path)
         make_dir_if_not_exists(self.kotobank_parse_dump_dir)
-        if force or self._metadata.requires_postmatching_redo:
+        searched_words = [get_rootname_from_path(path) for path in get_all_files_of_extension(self.kotobank_parse_dump_dir, extension='json')]
+        if force:
             searched_words = []
             delete_all_files_in_dir(self.kotobank_parse_dump_dir, ask_permission=False)
             self._metadata.requires_postmatching_redo = False
             self.save_to_path(self.manager_save_path, overwrite=True)
-        else:
-            searched_words = [get_rootname_from_path(path) for path in get_all_files_of_extension(self.kotobank_parse_dump_dir, extension='json')]
+        elif self._metadata.requires_postmatching_redo:
+            matched_searched_words = search_word_matches_handler.search_words
+            for i in list(range(len(searched_words)))[::-1]:
+                if searched_words[i] not in matched_searched_words:
+                    delete_file_if_exists(f'{self.kotobank_parse_dump_dir}/{searched_words[i]}.json')
+                    del searched_words[i]
+            self._metadata.requires_postmatching_redo = False
+            self.save_to_path(self.manager_save_path, overwrite=True)
 
         pbar = tqdm(total=len(search_word_matches_handler), unit='searches') if show_pbar else None
         for search_word_matches in search_word_matches_handler:
@@ -227,23 +241,45 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             result = parser.parse()
             result.save_to_path(f'{self.kotobank_parse_dump_dir}/{search_word_matches.search_word}.json')
             searched_words.append(search_word_matches.search_word)
+            if not self._metadata.requires_kotobank_combine:
+                self._metadata.requires_kotobank_combine = True
+                self.save_to_path(self.manager_save_path, overwrite=True)
+                
             if pbar is not None:
                 pbar.update()
         if pbar is not None:
             pbar.close()
         if verbose:
             logger.cyan(f'Finished Parsing Kotobank Data')
-        self.save_to_path(self.manager_save_path, overwrite=True)
+
+    def combine_kotobank_results(self, force: bool=False, verbose: bool=False, show_pbar: bool=True):
+        if self._metadata.requires_kotobank_combine or force or not file_exists(self.combined_kotobank_dump_path):
+            kotobank_result_list = KotobankResultList.load_from_dir(self.kotobank_parse_dump_dir, show_pbar=show_pbar)
+            kotobank_result_list.save_to_path(self.combined_kotobank_dump_path, overwrite=True)
+            self._metadata.requires_kotobank_combine = False
+            self.save_to_path(self.manager_save_path, overwrite=True)
+            if verbose:
+                logger.cyan(f'Finished Combining Kotobank Data')
 
     def run(
         self,
-        force_combine_history: bool=False, force_group_jisho_history: bool=False,
-        force_parse_jisho: bool=False, force_accumulate_jisho_matches: bool=False,
-        force_parse_kotobank: bool=False,
+        force_combine_history: bool=False, ignore_combine_history: bool=False,
+        force_group_jisho_history: bool=False, ignore_group_jisho_history: bool=False,
+        force_parse_jisho: bool=False, ignore_parse_jisho: bool=False,
+        force_accumulate_jisho_matches: bool=False, ignore_accumulate_jisho_matches: bool=False,
+        force_parse_kotobank: bool=False, ignore_parse_kotobank: bool=False,
+        force_combine_kotobank: bool=False, ignore_combine_kotobank: bool=False,
         verbose: bool=False, show_pbar: bool=True
     ):
-        self.combine_history(force=force_combine_history, verbose=verbose, show_pbar=show_pbar)
-        self.group_jisho_history(force=force_group_jisho_history, verbose=verbose)
-        self.parse_jisho(force=force_parse_jisho, verbose=verbose, show_pbar=show_pbar)
-        self.accumulate_jisho_matches(force=force_accumulate_jisho_matches, verbose=verbose, show_pbar=show_pbar)
-        self.parse_kotobank(force=force_parse_kotobank, verbose=verbose, show_pbar=show_pbar)
+        if not ignore_combine_history or force_combine_history:
+            self.combine_history(force=force_combine_history, verbose=verbose, show_pbar=show_pbar)
+        if not ignore_group_jisho_history or force_group_jisho_history:
+            self.group_jisho_history(force=force_group_jisho_history, verbose=verbose)
+        if not ignore_parse_jisho or force_parse_jisho:
+            self.parse_jisho(force=force_parse_jisho, verbose=verbose, show_pbar=show_pbar)
+        if not ignore_accumulate_jisho_matches or force_accumulate_jisho_matches:
+            self.accumulate_jisho_matches(force=force_accumulate_jisho_matches, verbose=verbose, show_pbar=show_pbar)
+        if not ignore_parse_kotobank or force_parse_kotobank:
+            self.parse_kotobank(force=force_parse_kotobank, verbose=verbose, show_pbar=show_pbar)
+        if not ignore_combine_kotobank or force_combine_kotobank:
+            self.combine_kotobank_results(force=force_combine_kotobank, verbose=verbose, show_pbar=show_pbar)

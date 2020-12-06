@@ -29,6 +29,7 @@ setup(
         'pylint==2.4.4',
         'beautifulsoup4>=4.8.0',
         'pandas',
+        'lxml',
         'pyclay-common_utils @ https://github.com/cm107/common_utils/archive/master.zip',
         'pyclay-logger @ https://github.com/cm107/logger/archive/master.zip'
     ],

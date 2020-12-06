@@ -30,3 +30,7 @@ class SearchWordMatchesHandler(
 
     def get_unique(self) -> SearchWordMatchesHandler:
         return SearchWordMatchesHandler([sw_matches for sw_matches in self if len(sw_matches.matches) == 1])
+    
+    @property
+    def search_words(self) -> List[str]:
+        return [sw_matches.search_word for sw_matches in self]

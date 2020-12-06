@@ -8,6 +8,7 @@ from common_utils.path_utils import get_all_files_of_extension
 from common_utils.file_utils import dir_exists
 from typing import Any
 from collections import OrderedDict
+from tqdm import tqdm
 
 from .digital_daijisen import parse as parse_digital_daijisen, ParsedItemListHandler as DigitalDaijisenDataHandler
 from .seisenpan import parse as parse_seisenpan, ParsedArticleList as SeisenpanDataHandler
@@ -132,13 +133,20 @@ class KotobankResultList(
         return KotobankResultList([KotobankResult.from_dict(item_dict) for item_dict in dict_list])
 
     @classmethod
-    def load_from_dir(cls, dir_path: str) -> KotobankResultList:
+    def load_from_dir(cls, dir_path: str, show_pbar: bool=True) -> KotobankResultList:
         assert dir_exists(dir_path), f'Directory not found: {dir_path}'
         json_paths = get_all_files_of_extension(dir_path, extension='json')
+        pbar = tqdm(total=len(json_paths), unit='dump(s)') if show_pbar else None
+        if pbar is not None:
+            pbar.set_description('Loading Kotobank results from directory')
         results = KotobankResultList()
         for json_path in json_paths:
             result = KotobankResult.load_from_path(json_path)
             results.append(result)
+            if pbar is not None:
+                pbar.update()
+        if pbar is not None:
+            pbar.close()
         return results
 
     def get_dictionary_count(self, exclude_results_containing: List[str]=None) -> OrderedDict:

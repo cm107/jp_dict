@@ -7,12 +7,13 @@ manager_save_path = f'{parse_data_dir}/manager.json'
 
 if not file_exists(manager_save_path):
     manager = ParserManager(
-        browser_history_dir='/home/clayton/workspace/study/jp_dict/data/browser_history',
+        browser_history_dir='/home/clayton/workspace/prj/data_keep/data/study/jp_dict_data/browser_history',
         combined_history_path=f'{parse_data_dir}/combined_history.json',
         jisho_grouped_history_path=f'{parse_data_dir}/jisho_grouped_history.json',
         jisho_parse_dump_dir=f'{parse_data_dir}/jisho_parse_dump',
         jisho_matches_path=f'{parse_data_dir}/jisho_matches.json',
         kotobank_parse_dump_dir=f'{parse_data_dir}/kotobank_parse_dump',
+        combined_kotobank_dump_path=f'{parse_data_dir}/kotobank_combined.json',
         manager_save_path=manager_save_path
     )
 else:
