@@ -13,8 +13,15 @@ from ..common import Link
 class PlainText(BasicLoadableObject['PlainText']):
     def __init__(self, text: str):
         super().__init__()
+        text = text.replace('　', 'X')
+        text = text.replace('  ', '')
+        text = text.replace('\n', '').replace('\t', '')
         self.text = text
     
+    @property
+    def is_empty(self) -> bool:
+        return len(self.text) == 0
+
     def custom_str(self, indent: int=0) -> str:
         tab = '\t' * indent
         return f'{tab}{self.text}'
@@ -261,6 +268,7 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
         assert hasattr(obj, 'from_dict') or hasattr(obj, 'from_dict_list')
         self.obj = obj
     
+    @property
     def preview_str(self) -> str:
         if type(self.obj) in [PlainText, Hinshi, KigoWord, MotoTsudzuri, RekishiText]:
             obj = cast(PlainText, self.obj)
@@ -306,6 +314,112 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
             return print_str
         else:
             return f'TODO ({self.obj.__class__.__name__})'
+
+    @property
+    def plain_str(self) -> str:
+        if type(self.obj) in [PlainText, Hinshi, KigoWord, MotoTsudzuri, RekishiText]:
+            obj = cast(PlainText, self.obj)
+            return obj.text
+        elif type(self.obj) is BoldText:
+            obj = cast(BoldText, self.obj)
+            return obj.text
+        elif type(self.obj) is OriginWord:
+            obj = cast(OriginWord, self.obj)
+            return obj.text
+        elif type(self.obj) is SuperscriptText:
+            obj = cast(SuperscriptText, self.obj)
+            return f'^{obj.text}'
+        elif type(self.obj) is ItalicText:
+            obj = cast(ItalicText, self.obj)
+            return obj.text
+        elif type(self.obj) is Gaiji:
+            obj = cast(Gaiji, self.obj)
+            return '\n' + obj.str_equivalent
+        elif type(self.obj) is DefinitionNumber:
+            obj = cast(DefinitionNumber, self.obj)
+            return f'\n{obj.num}'
+        elif type(self.obj) is RelatedWordLink:
+            obj = cast(RelatedWordLink, self.obj)
+            return obj.text
+        elif type(self.obj) is RelatedWordLinkList:
+            obj = cast(RelatedWordLinkList, self.obj)
+            print_str = ''
+            for link in obj:
+                print_str += f'\n{link.text}'
+            return print_str
+        elif type(self.obj) is Media:
+            obj = cast(Media, self.obj)
+            return '[Media Links]'
+        elif type(self.obj) is Table:
+            obj = cast(Table, self.obj)
+            return '\n' + obj.to_df().__str__()
+        elif type(self.obj) is TableList:
+            obj = cast(Table, self.obj)
+            print_str = ''
+            for table in obj:
+                print_str += '\n' + table.to_df().__str__()
+            return print_str
+        else:
+            return f'TODO ({self.obj.__class__.__name__})'
+
+    def custom_str(self, indent: int=0, first: bool=False) -> str:
+        tab = '\t' * indent
+        use_tab, use_linebreak = False, False
+        if type(self.obj) in [PlainText, Hinshi, KigoWord, MotoTsudzuri, RekishiText]:
+            obj = cast(PlainText, self.obj)
+            print_str = obj.text
+        elif type(self.obj) is BoldText:
+            obj = cast(BoldText, self.obj)
+            print_str = obj.text
+        elif type(self.obj) is OriginWord:
+            obj = cast(OriginWord, self.obj)
+            print_str = obj.text
+        elif type(self.obj) is SuperscriptText:
+            obj = cast(SuperscriptText, self.obj)
+            print_str = f'^{obj.text}'
+        elif type(self.obj) is ItalicText:
+            obj = cast(ItalicText, self.obj)
+            print_str = obj.text
+        elif type(self.obj) is Gaiji:
+            obj = cast(Gaiji, self.obj)
+            use_tab, use_linebreak = True, not first
+            print_str = obj.str_equivalent
+        elif type(self.obj) is DefinitionNumber:
+            obj = cast(DefinitionNumber, self.obj)
+            use_tab, use_linebreak = True, not first
+            print_str = f'{obj.num}'
+        elif type(self.obj) is RelatedWordLink:
+            obj = cast(RelatedWordLink, self.obj)
+            print_str = obj.text
+        elif type(self.obj) is RelatedWordLinkList:
+            obj = cast(RelatedWordLinkList, self.obj)
+            print_str = ''
+            for link in obj:
+                print_str += f'\n{tab}{link.text}'
+        elif type(self.obj) is Media:
+            obj = cast(Media, self.obj)
+            use_tab, use_linebreak = True, True
+            print_str = '[Media Links]'
+        elif type(self.obj) is Table:
+            obj = cast(Table, self.obj)
+            use_tab, use_linebreak = True, True
+            print_str = obj.to_df().__str__()
+        elif type(self.obj) is TableList:
+            obj = cast(Table, self.obj)
+            print_str = ''
+            for table in obj:
+                print_str += f'\n{tab}' + table.to_df().__str__()
+        else:
+            print_str = f'TODO ({self.obj.__class__.__name__})'
+        if first:
+            use_tab = True
+        # if True:
+        #     print_str = f'[{type(self.obj).__name__}]{print_str}'
+        if use_tab:
+            print_str = f'{tab}{print_str}'
+        if use_linebreak:
+            print_str = f'\n{print_str}'
+        return print_str
 
     @property
     def class_name(self) -> str:
@@ -375,10 +489,29 @@ class ParsedItemList(
         super().__init__(obj_type=ParsedItem, obj_list=item_list)
         self.item_list = self.obj_list
     
+    @property
     def preview_str(self) -> str:
         print_str = ''
         for item in self:
-            print_str += item.preview_str()
+            print_str += item.preview_str
+        return print_str
+
+    @property
+    def plain_str(self) -> str:
+        print_str = ''
+        for item in self:
+            print_str += item.plain_str
+        return print_str
+
+    def custom_str(self, indent: int=0) -> str:
+        print_str = ''
+        first = True
+        for item in self:
+            if isinstance(item.obj, PlainText) and item.obj.is_empty:
+                continue
+            print_str += item.custom_str(indent=indent, first=first)
+            if first:
+                first = False
         return print_str
 
     @classmethod
@@ -482,10 +615,6 @@ class ParsedItemList(
         
         item_group_list = ParsedItemGroupList()
         for indent_label, indent_val, group in zip(indent_label_buffer, indent_val_buffer, groups):
-            # tab = '\t'*indent_val
-            # logger.cyan(f"{tab}{indent_label} {[item.class_name for item in group]}")
-            # logger.purple(f"{tab}{''.join([item.obj.plain_str for item in group])}")
-
             item_group = ParsedItemGroup(group_type=indent_label, item_list=ParsedItemList(group), indent=indent_val)
             if len(item_group_list) == 0:
                 item_group_list.append(item_group)
@@ -497,7 +626,6 @@ class ParsedItemList(
                     relevant_item_group.contained_groups.append(item_group)
                 else:
                     item_group_list.append(item_group)
-        # logger.blue(item_group_list.plain_str)
         return item_group_list
 
 class ParsedItemGroup(BasicLoadableObject['ParsedItemGroup']):
@@ -584,13 +712,23 @@ class ParsedItemListHandler(
         super().__init__(obj_type=ParsedItemList, obj_list=item_list_list)
         self.item_list_list = self.obj_list
     
+    @property
     def preview_str(self) -> str:
         print_str = ''
         for i, item_list in enumerate(self):
             if i == 0:
-                print_str += item_list.preview_str()
+                print_str += item_list.preview_str
             else:
-                print_str += f'\n{item_list.preview_str()}'
+                print_str += f'\n{item_list.preview_str}'
+        return print_str
+
+    def custom_str(self, indent: int=0) -> str:
+        print_str = ''
+        for i, item_list in enumerate(self):
+            if i == 0:
+                print_str += item_list.custom_str(indent=indent)
+            else:
+                print_str += f'\n{item_list.custom_str(indent=indent)}'
         return print_str
 
     def to_dict_list(self) -> List[List[dict]]:

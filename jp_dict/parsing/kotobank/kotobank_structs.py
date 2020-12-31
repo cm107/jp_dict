@@ -16,8 +16,28 @@ from .nippon_daihyakka_zensho import parse as parse_ndz, ParsedItemList as NDZ_P
 
 class DictionaryContent(BasicLoadableObject['DictionaryContent']):
     def __init__(self, dictionary_name: str, content: Any=None):
-        assert hasattr(content, 'to_dict') or hasattr(content, 'to_dict_list') or content is None
-        assert hasattr(content, 'from_dict') or hasattr(content, 'from_dict_list') or content is None
+        if content is not None:
+            if not (hasattr(content, 'to_dict') or hasattr(content, 'to_dict_list')):
+                raise AttributeError(
+                    f"""
+                    Content of type {type(content).__name__} must have either
+                    a to_dict method or to_dict_list method.
+                    """
+                )
+            if not (hasattr(content, 'from_dict') or hasattr(content, 'from_dict_list')):
+                raise AttributeError(
+                    f"""
+                    Content of type {type(content).__name__} must have either
+                    a from_dict method or from_dict_list method.
+                    """
+                )
+            if not hasattr(content, 'custom_str'):
+                raise AttributeError(
+                    f"""
+                    Content of type {type(content).__name__} must have
+                    a custom_str method.
+                    """
+                )
         self.dictionary_name = dictionary_name
         self.content = content
     
@@ -39,6 +59,15 @@ class DictionaryContent(BasicLoadableObject['DictionaryContent']):
             dictionary_name=dictionary_name,
             content=content
         )
+    
+    def custom_str(self, indent: int=0) -> str:
+        tab = '\t' * indent
+        print_str = f'{tab}{self.dictionary_name}\n'
+        if self.content is not None:
+            print_str += self.content.custom_str(indent=indent+1)
+        else:
+            print_str += f'\t{tab}{None}'
+        return print_str
 
 class DictionaryContentList(
     BasicLoadableHandler['DictionaryContentList', 'DictionaryContent'],
@@ -60,6 +89,18 @@ class DictionaryContentList(
                 names.append(content.dictionary_name)
         return names
 
+    def custom_str(self, indent: int=0) -> str:
+        print_str = ''
+        first = True
+        for item in self:
+            if item.content is not None:
+                if first:
+                    print_str += item.custom_str(indent=indent)
+                    first = False
+                else:
+                    print_str += f'\n{item.custom_str(indent=indent)}'
+        return print_str
+
 class MainTitle(BasicLoadableObject['MainTitle']):
     def __init__(self, writing: str, reading: str=None):
         super().__init__()
@@ -77,6 +118,10 @@ class MainAliasName(BasicLoadableObject['MainAliasName']):
     def __init__(self, text_list: List[str]):
         super().__init__()
         self.text_list = text_list
+    
+    def custom_str(self, indent: int=0) -> str:
+        tab = '\t' * indent
+        return tab + ', '.join(self.text_list)
 
 class MainArea(BasicLoadableObject['MainArea']):
     def __init__(self, articles: DictionaryContentList=None):
@@ -86,6 +131,9 @@ class MainArea(BasicLoadableObject['MainArea']):
     def from_dict(cls, item_dict: dict) -> MainArea:
         return MainArea(articles=DictionaryContentList.from_dict_list(item_dict['articles']))
 
+    def custom_str(self, indent: int=0) -> str:
+        return self.articles.custom_str(indent=indent)
+
 class KotobankResult(BasicLoadableObject['KotobankResult']):
     def __init__(self, search_word: str, main_title: MainTitle=None, main_alias_name: MainAliasName=None, main_area: MainArea=None):
         super().__init__()
@@ -94,6 +142,20 @@ class KotobankResult(BasicLoadableObject['KotobankResult']):
         self.main_alias_name = main_alias_name
         self.main_area = main_area
     
+    @property
+    def is_empty(self) -> bool:
+        return self.main_title is None
+    
+    def custom_str(self, indent: int=0) -> str:
+        tab = lambda x: '\t' * x
+        print_str = f'{tab(indent)}Search Word: {self.search_word}'
+        print_str += f'\n{tab(indent)}Main Title: {self.main_title}'
+        if self.main_alias_name is not None:
+            print_str += f'\n{tab(indent)}Main Alias Name: {self.main_alias_name.custom_str()}'
+        if self.main_area is not None:
+            print_str += f'\n{tab(indent)}Main Area:\n{self.main_area.custom_str(indent=1)}'
+        return print_str
+
     def to_dict(self) -> dict:
         result = {'search_word': self.search_word}
         if self.main_title is not None:
@@ -108,7 +170,7 @@ class KotobankResult(BasicLoadableObject['KotobankResult']):
     def from_dict(cls, item_dict: dict) -> KotobankResult:
         return KotobankResult(
             search_word=item_dict['search_word'],
-            main_title=MainTitle(item_dict['main_title']) if 'main_title' in item_dict else None,
+            main_title=MainTitle.from_dict(item_dict['main_title']) if 'main_title' in item_dict else None,
             main_alias_name=MainAliasName.from_dict(item_dict['main_alias_name']) if 'main_alias_name' in item_dict else None,
             main_area=MainArea.from_dict(item_dict['main_area']) if 'main_area' in item_dict else None
         )
@@ -127,6 +189,23 @@ class KotobankResultList(
     def __init__(self, results: List[KotobankResult]=None):
         super().__init__(obj_type=KotobankResult, obj_list=results)
         self.results = self.obj_list
+
+    def custom_str(self, indent: int=0, num_breaks: int=1) -> str:
+        print_str = ''
+        first = True
+        breaks = '\n' * num_breaks
+        for result in self:
+            if not result.is_empty:
+                if first:
+                    print_str += f'{result.custom_str(indent=indent)}'
+                    first = False
+                else:
+                    print_str += f'{breaks}{result.custom_str(indent=indent)}'
+        return print_str
+
+    @property
+    def nonempty_results(self) -> KotobankResultList:
+        return KotobankResultList([result for result in self if not result.is_empty])
 
     @classmethod
     def from_dict_list(cls, dict_list: List[dict]) -> KotobankResultList:
@@ -278,6 +357,7 @@ class KotobankWordHtmlParser:
             writing=main_title_writing_text,
             reading=main_title_reading_text
         )
+        # print(f'MainTitle.from_dict(main_title.to_dict()).to_dict(): {MainTitle.from_dict(main_title.to_dict()).to_dict()}')
         return main_title
     
     def parse_main_alias_name(self, content_area_html: Tag) -> MainAliasName:

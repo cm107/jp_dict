@@ -81,7 +81,7 @@ class A_Link(BasicLoadableObject['A_Link']):
     
     @property
     def plain_str(self) -> str:
-        return f'[{self.text}]({self.url})'
+        return f'[{self.text}]'
 
 class StyledText(BasicLoadableObject['StyledText']):
     """
@@ -134,6 +134,7 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
         super().__init__()
         self.obj = obj
 
+    @property
     def preview_str(self) -> str:
         if type(self.obj) in [PlainText, BoldText, SmallText, StyledText]:
             return self.obj.text
@@ -200,11 +201,16 @@ class ParsedItemList(
         super().__init__(obj_type=ParsedItem, obj_list=item_list)
         self.item_list = self.obj_list
     
+    @property
     def preview_str(self) -> str:
         print_str = ''
         for item in self:
-            print_str += item.preview_str()
+            print_str += item.preview_str
         return print_str
+
+    def custom_str(self, indent: int=0) -> str:
+        tab = '\t' * indent
+        return f'{tab}{self.preview_str}'
 
     @classmethod
     def from_dict_list(cls, dict_list: List[dict]) -> ParsedItemList:
@@ -277,13 +283,23 @@ class ParsedContainerList(
         super().__init__(obj_type=ParsedContainer, obj_list=container_list)
         self.container_list = self.obj_list
 
+    @property
     def preview_str(self) -> str:
         print_str = ''
         for i, container in enumerate(self):
             if i == 0:
-                print_str += container.parsed_items.preview_str()
+                print_str += container.parsed_items.preview_str
             else:
-                print_str += f'\n{container.parsed_items.preview_str()}'
+                print_str += f'\n{container.parsed_items.preview_str}'
+        return print_str
+
+    def custom_str(self, indent: int=0) -> str:
+        print_str = ''
+        for i, container in enumerate(self):
+            if i == 0:
+                print_str += container.parsed_items.custom_str(indent=indent)
+            else:
+                print_str += f'\n{container.parsed_items.custom_str(indent=indent)}'
         return print_str
 
     @classmethod
@@ -302,13 +318,23 @@ class ParsedArticleList(
         super().__init__(obj_type=ParsedContainerList, obj_list=article_list)
         self.article_list = self.obj_list
 
+    @property
     def preview_str(self) -> str:
         print_str = ''
         for i, article in enumerate(self):
             if i == 0:
-                print_str += article.preview_str()
+                print_str += article.preview_str
             else:
-                print_str += f'\n{article.preview_str()}'
+                print_str += f'\n{article.preview_str}'
+        return print_str
+
+    def custom_str(self, indent: int=0) -> str:
+        print_str = ''
+        for i, article in enumerate(self):
+            if i == 0:
+                print_str += article.custom_str(indent=indent)
+            else:
+                print_str += f'\n{article.custom_str(indent=indent)}'
         return print_str
 
     def to_dict_list(self) -> list:
