@@ -1141,6 +1141,18 @@ class DictionaryEntry(BasicLoadableObject['DictionaryEntry']):
             supplementary_links=SupplementaryLinks.from_dict(item_dict['supplementary_links']),
             meaning_section=MeaningSection.from_dict(item_dict['meaning_section'])
         )
+    
+    def same_entry_as(self, other, strict: bool=True) -> bool:
+        if isinstance(other, DictionaryEntry):
+            if strict:
+                return self == other
+            else:
+                same_wr = self.word_representation == other.word_representation
+                same_other_forms = self.meaning_section.other_forms == other.meaning_section.other_forms
+                same_meaning_len = len(self.meaning_section.meaning_groups) == len(other.meaning_section.meaning_groups)
+                return same_wr and same_other_forms and same_meaning_len
+        else:
+            return NotImplemented
 
 class DictionaryEntryList(
     BasicLoadableHandler['DictionaryEntryList', 'DictionaryEntry'],
@@ -1162,6 +1174,18 @@ class DictionaryEntryList(
     @classmethod
     def from_dict_list(cls, dict_list: List[dict]) -> DictionaryEntryList:
         return DictionaryEntryList([DictionaryEntry.from_dict(item_dict) for item_dict in dict_list])
+
+    def contains_same_entry_as(self, other, strict: bool=True) -> bool:
+        if isinstance(other, DictionaryEntry):
+            if strict:
+                return other in self
+            else:
+                for entry in self:
+                    if entry.same_entry_as(other=other, strict=strict):
+                        return True
+                return False
+        else:
+            return NotImplemented
 
 class GrammarBreakdown(BasicLoadableObject['GrammarBreakdown']):
     def __init__(self, dictionary_version_link: Link, explanation: str, form_text_list: List[str]):
@@ -1236,15 +1260,16 @@ class ResultArea(BasicLoadableObject['ResultArea']):
     @classmethod
     def from_dict(cls, item_dict: dict) -> ResultArea:
         return ResultArea(
-            grammar_breakdown=item_dict['grammar_breakdown'] if 'grammar_breakdown' in item_dict else None,
-            number_conversion=item_dict['number_conversion'] if 'number_conversion' in item_dict else None
+            grammar_breakdown=GrammarBreakdown.from_dict(item_dict['grammar_breakdown']) if 'grammar_breakdown' in item_dict else None,
+            number_conversion=NumberConversion.from_dict(item_dict['number_conversion']) if 'number_conversion' in item_dict else None
         )
 
 class JishoSearchQuery(BasicLoadableObject['JishoSearchQuery']):
     def __init__(
         self, url: str, title: str, result_count: int,
         exact_matches: DictionaryEntryList, nonexact_matches: DictionaryEntryList,
-        result_area: ResultArea=None, more_words_link: Link=None
+        result_area: ResultArea=None, more_words_link: Link=None,
+        history_group_id: int=None
     ):
         super().__init__()
         self.url = url
@@ -1254,6 +1279,7 @@ class JishoSearchQuery(BasicLoadableObject['JishoSearchQuery']):
         self.nonexact_matches = nonexact_matches
         self.result_area = result_area
         self.more_words_link = more_words_link
+        self.history_group_id = history_group_id
 
     def custom_str(self, indent: int=0) -> str:
         tab = '\t' * indent
@@ -1286,7 +1312,8 @@ class JishoSearchQuery(BasicLoadableObject['JishoSearchQuery']):
             exact_matches=DictionaryEntryList.from_dict_list(item_dict['exact_matches']),
             nonexact_matches=DictionaryEntryList.from_dict_list(item_dict['nonexact_matches']),
             result_area=ResultArea.from_dict(item_dict['result_area']) if 'result_area' in item_dict and item_dict['result_area'] is not None else None,
-            more_words_link=Link.from_dict(item_dict['more_words_link']) if item_dict['more_words_link'] is not None else None
+            more_words_link=Link.from_dict(item_dict['more_words_link']) if item_dict['more_words_link'] is not None else None,
+            history_group_id=item_dict['history_group_id'] if 'history_group_id' in item_dict else None
         )
 
     @property
@@ -1354,7 +1381,7 @@ class JishoSearchHtmlParser:
         search_url = f'https://jisho.org/search/{search_word}'
         return JishoSearchHtmlParser(url=search_url)
 
-    def parse(self) -> JishoSearchQuery:
+    def parse(self, history_group_id: int=None) -> JishoSearchQuery:
         main_results_html = self._soup.find(name='div', attrs={'id': 'main_results'})
         matches_exist, result_area = self.parse_result_area(main_results_html)
         primary_html = main_results_html.find(name='div', attrs={'id': 'primary'}) if matches_exist else None
@@ -1397,7 +1424,8 @@ class JishoSearchHtmlParser:
             title=self.title,
             result_count=result_count,
             exact_matches=exact_matches, nonexact_matches=nonexact_matches,
-            result_area=result_area, more_words_link=more_words_link
+            result_area=result_area, more_words_link=more_words_link,
+            history_group_id=history_group_id
         )
 
         return search_query

@@ -154,7 +154,7 @@ class ParserManager(BasicLoadableObject['ParserManager']):
                     pbar.update()
                 continue
             parser = JishoSearchHtmlParser(url=group.url)
-            search_query = parser.parse()
+            search_query = parser.parse(history_group_id=group.id)
             dump_path = f'{self.jisho_parse_dump_dir}/{decoded_search_word}.json'
             search_query.save_to_path(dump_path, overwrite=False)
             dumped_search_word_list.append(decoded_search_word)
@@ -197,7 +197,7 @@ class ParserManager(BasicLoadableObject['ParserManager']):
                         exact_matches.append(all_matches[idx])
                 else:
                     pass
-                sw_matches = SearchWordMatches(search_word=search_word, matches=exact_matches)
+                sw_matches = SearchWordMatches(search_word=search_word, matches=exact_matches, history_group_id=query.history_group_id)
                 sw_matches_handler.append(sw_matches)
                 if pbar is not None:
                     pbar.update()

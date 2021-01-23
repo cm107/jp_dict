@@ -81,7 +81,10 @@ class BrowserHistoryItemList(
                 common_url_dict[item.url] = [item]
             else:
                 common_url_dict[item.url].append(item)
-        return CommonBrowserHistoryItemGroupList([CommonBrowserHistoryItemGroup.from_list(item_list) for title, item_list in common_url_dict.items()])
+        groups = CommonBrowserHistoryItemGroupList()
+        for title, item_list in common_url_dict.items():
+            groups.append(CommonBrowserHistoryItemGroup.from_list(item_list=item_list, id=len(groups)))
+        return groups
 
 class BrowserHistory(BasicLoadableObject['BrowserHistory']):
     def __init__(self, browser_history_item_list: BrowserHistoryItemList=None):
@@ -137,7 +140,8 @@ class CommonBrowserHistoryItemGroup(BasicLoadableObject['CommonBrowserHistoryIte
     def __init__(
         self, title: str, url: str,
         client_id: str, time_usec: List[int],
-        page_transition: str=None, favicon_url: str=None
+        page_transition: str=None, favicon_url: str=None,
+        id: int=None
     ):
         self.title = title
         self.url = url
@@ -145,7 +149,8 @@ class CommonBrowserHistoryItemGroup(BasicLoadableObject['CommonBrowserHistoryIte
         self.time_usec = time_usec
         self.page_transition = page_transition
         self.favicon_url = favicon_url
-    
+        self.id = id
+
     def to_list(self) -> List[BrowserHistoryItem]:
         return [
             BrowserHistoryItem(
@@ -159,7 +164,7 @@ class CommonBrowserHistoryItemGroup(BasicLoadableObject['CommonBrowserHistoryIte
         ]
 
     @classmethod
-    def from_list(cls, item_list: List[BrowserHistoryItem]) -> CommonBrowserHistoryItemGroup:
+    def from_list(cls, item_list: List[BrowserHistoryItem], id: int=None) -> CommonBrowserHistoryItemGroup:
         title = []
         url = []
         client_id = []
@@ -190,28 +195,29 @@ class CommonBrowserHistoryItemGroup(BasicLoadableObject['CommonBrowserHistoryIte
             client_id=client_id,
             time_usec=time_usec,
             page_transition=page_transition,
-            favicon_url=favicon_url
+            favicon_url=favicon_url,
+            id=id
         )
     
     def to_browser_history_item_list(self) -> BrowserHistoryItemList:
         return BrowserHistoryItemList(self.to_list())
 
     @classmethod
-    def from_browser_history_item_list(cls, browser_history_item_list: BrowserHistoryItemList) -> CommonBrowserHistoryItemGroup:
-        return cls.from_list(browser_history_item_list.history_items)
+    def from_browser_history_item_list(cls, browser_history_item_list: BrowserHistoryItemList, id: int=None) -> CommonBrowserHistoryItemGroup:
+        return cls.from_list(browser_history_item_list.history_items, id=id)
     
     @classmethod
-    def convert_from(cls, obj: Any) -> CommonBrowserHistoryItemGroup:
+    def convert_from(cls, obj: Any, id: int=None) -> CommonBrowserHistoryItemGroup:
         if isinstance(obj, list):
             if len(list(set([type(part) for part in obj]))) == 1:
                 if isinstance(obj[0], BrowserHistoryItem):
-                    return cls.from_list(obj)
+                    return cls.from_list(obj, id=id)
                 else:
                     raise TypeError(f'Cannot convert List[{type(obj[0]).__name__}] to {cls.__name__}')
             else:
                 raise TypeError(f'Cannot convert multi-type list to {cls.__name__}')
         elif isinstance(obj, BrowserHistoryItemList):
-            return cls.from_browser_history_item_list(obj)
+            return cls.from_browser_history_item_list(obj, id=id)
         else:
             raise TypeError(f'Cannot convert {type(obj).__name__} to {cls.__name__}')
     
