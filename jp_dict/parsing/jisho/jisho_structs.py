@@ -1147,10 +1147,14 @@ class DictionaryEntry(BasicLoadableObject['DictionaryEntry']):
             if strict:
                 return self == other
             else:
-                same_wr = self.word_representation == other.word_representation
-                same_other_forms = self.meaning_section.other_forms == other.meaning_section.other_forms
-                same_meaning_len = len(self.meaning_section.meaning_groups) == len(other.meaning_section.meaning_groups)
-                return same_wr and same_other_forms and same_meaning_len
+                if self.word_representation != other.word_representation:
+                    return False
+                elif len(self.meaning_section.meaning_groups) != len(other.meaning_section.meaning_groups):
+                    return False
+                elif self.meaning_section.other_forms != other.meaning_section.other_forms:
+                    return False
+                else:
+                    return True
         else:
             return NotImplemented
 

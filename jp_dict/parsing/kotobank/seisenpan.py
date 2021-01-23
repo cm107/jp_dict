@@ -125,7 +125,7 @@ class CaptionedImage(BasicLoadableObject['CaptionedImage']):
     Unlike the KanjiImage, this one doesn't have any text that can be
     stripped. It's just an image with an enclosed caption.
     """
-    def __init__(self, url: str, caption: str):
+    def __init__(self, url: str, caption: str=None):
         self.url = url
         self.caption = caption
 
@@ -382,9 +382,9 @@ def get_parsed_items(tag: Tag) -> ParsedItemList:
                 text = child.text.strip()
                 img_source = KanjiImage(url=url, text=text, height=height)
                 parsed_items.append(img_source, is_obj=True)
-            elif child.name == 'img' and 'src' in child.attrs and 'caption' in child.attrs:
+            elif child.name == 'img' and 'src' in child.attrs:
                 url = f"kotobank.jp{child.attrs['src']}"
-                caption = child.attrs['caption']
+                caption = child.attrs['caption'] if 'caption' in child.attrs else None
                 captioned_img = CaptionedImage(url=url, caption=caption)
                 parsed_items.append(captioned_img, is_obj=True)
             elif child.name == 'sma<a':
@@ -395,8 +395,7 @@ def get_parsed_items(tag: Tag) -> ParsedItemList:
                 logger.red(f'child.name: {child.name}')
                 logger.red(f'child.attrs: {child.attrs}')
                 logger.red(f'child.text.strip(): {child.text.strip()}')
-                import sys
-                sys.exit()
+                raise Exception
         else:
             raise TypeError
     return parsed_items
@@ -438,7 +437,6 @@ def parse(ex_cf_html_list: List[Tag]) -> ParsedArticleList:
                     logger.red(f'child.name: {child.name}')
                     logger.red(f'child.attrs: {child.attrs}')
                     logger.red(f'child.text.strip(): {child.text.strip()}')
-                    import sys
-                    sys.exit()
+                    raise Exception
         article_list.append(container_list)
     return article_list

@@ -12,6 +12,7 @@ if not file_exists(manager_save_path):
         jisho_grouped_history_path=f'{parse_data_dir}/jisho_grouped_history.json',
         jisho_parse_dump_dir=f'{parse_data_dir}/jisho_parse_dump',
         jisho_matches_path=f'{parse_data_dir}/jisho_matches.json',
+        jisho_pruned_entries_path=f'{parse_data_dir}/pruned_jisho_entries.json',
         kotobank_parse_dump_dir=f'{parse_data_dir}/kotobank_parse_dump',
         combined_kotobank_dump_path=f'{parse_data_dir}/kotobank_combined.json',
         manager_save_path=manager_save_path
