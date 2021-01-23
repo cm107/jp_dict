@@ -38,6 +38,7 @@ class DictionaryEntryMatch(BasicLoadableIdObject['DictionaryEntryMatch']):
 
 class DictionaryEntryMatchList(
     BasicLoadableIdHandler['DictionaryEntryMatchList', 'DictionaryEntryMatch'],
+    BasicLoadableHandler['DictionaryEntryMatchList', 'DictionaryEntryMatch'],
     BasicHandler['DictionaryEntryMatchList', 'DictionaryEntryMatch']
 ):
     def __init__(self, matches: List[DictionaryEntryMatch]=None):
@@ -88,8 +89,6 @@ class DictionaryEntryMatchList(
             2:
                 Pros: Focuses on finding as many matches as possible, including those that have already been matched with the same written form.
                 Cons: Slow. Can pick up many redundant entries.
-        
-        TODO:   Test each mode while comparing the number of pruned matches.
         """
         def process_first_match_only(handler: SearchWordMatchesHandler, pbar: tqdm=None):
             for match in handler.first_matches:

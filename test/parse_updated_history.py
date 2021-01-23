@@ -19,4 +19,4 @@ if not file_exists(manager_save_path):
     )
 else:
     manager = ParserManager.load_from_path(manager_save_path)
-manager.run(verbose=True, show_pbar=True, force_accumulate_jisho_matches=True)
+manager.run(verbose=True, show_pbar=True)

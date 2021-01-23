@@ -223,11 +223,14 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             assert file_exists(self.jisho_matches_path), f"Couldn't find Jisho matches path: {self.jisho_matches_path}"
             sw_matches_handler = SearchWordMatchesHandler.load_from_path(self.jisho_matches_path)
             entry_match_list = DictionaryEntryMatchList()
-            logger.cyan('Pruning Unique Jisho Entries')
+            if verbose:
+                logger.cyan('Pruning Unique Jisho Entries')
             entry_match_list.add_pruned_matches(handler=sw_matches_handler.unique, mode=0, show_pbar=show_pbar, leave_pbar=True)
-            logger.cyan('Pruning Non-Unique Jisho Entries')
+            if verbose:
+                logger.cyan('Pruning Non-Unique Jisho Entries')
             entry_match_list.add_pruned_matches(handler=sw_matches_handler.non_unique, mode=1, show_pbar=show_pbar, leave_pbar=True)
-            logger.cyan('Finished Pruning Jisho Entries')
+            if verbose:
+                logger.cyan('Finished Pruning Jisho Entries')
             entry_match_list.save_to_path(self.jisho_pruned_entries_path, overwrite=True)
             if self._metadata.requires_jisho_match_pruning:
                 self._metadata.requires_jisho_match_pruning = False
