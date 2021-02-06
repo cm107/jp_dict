@@ -14,9 +14,12 @@ if not file_exists(manager_save_path):
         jisho_matches_path=f'{parse_data_dir}/jisho_matches.json',
         jisho_pruned_entries_path=f'{parse_data_dir}/pruned_jisho_entries.json',
         kotobank_parse_dump_dir=f'{parse_data_dir}/kotobank_parse_dump',
+        kotobank_temp_map_dir=f'{parse_data_dir}/kotobank_temp_map',
         combined_kotobank_dump_path=f'{parse_data_dir}/kotobank_combined.json',
         manager_save_path=manager_save_path
     )
 else:
     manager = ParserManager.load_from_path(manager_save_path)
 manager.run(verbose=True, show_pbar=True)
+
+# TODO: After expanding on kotobank parser, some additional html cases need to be accounted for.

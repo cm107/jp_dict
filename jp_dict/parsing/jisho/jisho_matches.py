@@ -5,11 +5,16 @@ from .jisho_structs import DictionaryEntry, DictionaryEntryList
 from common_utils.base.basic import BasicLoadableIdObject, BasicLoadableIdHandler, BasicLoadableObject, BasicLoadableHandler, BasicHandler
 
 class DictionaryEntryMatch(BasicLoadableIdObject['DictionaryEntryMatch']):
-    def __init__(self, id: int=None, entry: DictionaryEntry=None, search_words: List[str]=None, history_group_id_list: List[int]=None):
+    def __init__(
+        self, id: int=None, entry: DictionaryEntry=None,
+        search_words: List[str]=None, history_group_id_list: List[int]=None,
+        linked_kotobank_queries: List[str]=None
+    ):
         super().__init__(id=id)
         self.entry = entry
         self.search_words = search_words if search_words is not None else []
         self.history_group_id_list = history_group_id_list if history_group_id_list is not None else []
+        self.linked_kotobank_queries = linked_kotobank_queries if linked_kotobank_queries is not None else []
     
     def custom_str(self, indent: int=0) -> str:
         tab = lambda x: '\t' * x
@@ -24,7 +29,8 @@ class DictionaryEntryMatch(BasicLoadableIdObject['DictionaryEntryMatch']):
             id=item_dict['id'] if 'id' in item_dict else None,
             entry=DictionaryEntry.from_dict(item_dict['entry']) if item_dict['entry'] is not None else None,
             search_words=item_dict['search_words'],
-            history_group_id_list=item_dict['history_group_id_list'] if 'history_group_id_list' in item_dict else None
+            history_group_id_list=item_dict['history_group_id_list'] if 'history_group_id_list' in item_dict else None,
+            linked_kotobank_queries=item_dict['linked_kotobank_queries'] if 'linked_kotobank_queries' in item_dict else None
         )
     
     @property
