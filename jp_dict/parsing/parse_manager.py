@@ -109,8 +109,8 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             kotobank_parse_dump_dir=item_dict['kotobank_parse_dump_dir'],
             kotobank_temp_map_dir=item_dict['kotobank_temp_map_dir'],
             combined_kotobank_dump_path=item_dict['combined_kotobank_dump_path'],
-            kotobank_parse_config=item_dict['kotobank_parse_config'] if 'kotobank_parse_config' in item_dict else None,
-            manager_save_path=item_dict['manager_save_path']
+            kotobank_parse_config=KotobankParseConfig.from_dict(item_dict['kotobank_parse_config']) if 'kotobank_parse_config' in item_dict else None,
+            manager_save_path=item_dict['manager_save_path'],
         )
         manager._metadata = ParserManagerMetaData.from_dict(item_dict['metadata'])
         return manager
@@ -429,7 +429,7 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             if pbar is not None:
                 pbar.set_description('Linking Kotobank Results To Jisho Entries')
             for entry_match in entry_match_list:
-                temp_dict = json.load(open(f'{self.kotobank_temp_map_dir}/{entry_match.id}.json'), 'r')
+                temp_dict = json.load(open(f'{self.kotobank_temp_map_dir}/{entry_match.id}.json', 'r'))
                 entry_match.linked_kotobank_queries = temp_dict['successful_search_queries']
                 if pbar is not None:
                     pbar.update()

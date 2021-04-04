@@ -784,9 +784,6 @@ def parse(ex_cf_html_list: List[Tag]):
                         raise Exception(
                             f"""
                             gaiji_root_int={gaiji_root_int} is not in an acceptable range.
-                            Please check the HTML source at:
-                                {self.url}
-                                {self.title}
                             """
                         )
                     assert gaiji_int_equivalent in gaiji_map, f'{gaiji_int_equivalent} not in gaiji_map.\nurl: {self.url}\ntitle: {self.title}'
@@ -874,14 +871,16 @@ def parse(ex_cf_html_list: List[Tag]):
                     italic_text_str = child.text.strip()
                     italic_text = ItalicText(italic_text_str)
                     item_list.append(italic_text, is_obj=True)
+                elif child.name == 'br' and len(child.find_all(name='br')) > 1:
+                    # Nested br block
+                    # TODO: Might need to fix this later on.
+                    item_list.append(PlainText(child.text.strip()), is_obj=True)
                 else:
                     logger.red(f'TODO')
                     logger.red(f'\tchild.text.strip(): {child.text.strip()}')
                     logger.red(f'\tchild.name: {child.name}')
                     logger.red(f'\tchild.attrs: {child.attrs}')
                     logger.red(child)
-                    logger.red(f'\tself.url: {self.url}')
-                    logger.red(f'\tself.title: {self.title}')
                     raise Exception
             else:
                 raise Exception(f'Unknown type(child): {type(child)}')

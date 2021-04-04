@@ -390,6 +390,18 @@ def get_parsed_items(tag: Tag) -> ParsedItemList:
             elif child.name == 'sma<a':
                 # Wierd tag. Probably a typo. Refer to 軌跡
                 parsed_items.append(ParseFailed(), is_obj=True)
+            elif child.name == 'sm<a' and 'href' in child.attrs:
+                # Seems like a typo in the HTML.
+                # The link actually doesn't appear on the page.
+                # Refer to た
+                text = child.text.strip()
+                parsed_items.append(PlainText(text), is_obj=True)
+            elif child.name == 'u' and len(child.attrs) == 0:
+                # Very rarely is there ever an underline word in this dictionary.
+                # For now I'm just going to write this off as plain text until
+                # I find a good reason to do otherwise.
+                text = child.text.strip()
+                parsed_items.append(PlainText(text), is_obj=True)
             else:
                 logger.red(f'TODO')
                 logger.red(f'child.name: {child.name}')
