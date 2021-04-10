@@ -1,26 +1,30 @@
 from __future__ import annotations
-from typing import List
+from typing import List, Dict
 from tqdm import tqdm
 from .jisho_structs import DictionaryEntry, DictionaryEntryList
+from ..browser_history import CommonBrowserHistoryItemGroupList
 from common_utils.base.basic import BasicLoadableIdObject, BasicLoadableIdHandler, BasicLoadableObject, BasicLoadableHandler, BasicHandler
 
 class DictionaryEntryMatch(BasicLoadableIdObject['DictionaryEntryMatch']):
     def __init__(
         self, id: int=None, entry: DictionaryEntry=None,
         search_words: List[str]=None, history_group_id_list: List[int]=None,
-        linked_kotobank_queries: List[str]=None
+        linked_kotobank_queries: List[str]=None,
+        search_words_time_usec: Dict[str, List[int]]=None
     ):
         super().__init__(id=id)
         self.entry = entry
         self.search_words = search_words if search_words is not None else []
         self.history_group_id_list = history_group_id_list if history_group_id_list is not None else []
         self.linked_kotobank_queries = linked_kotobank_queries if linked_kotobank_queries is not None else []
-    
+        self.search_words_time_usec = search_words_time_usec
+
     def custom_str(self, indent: int=0) -> str:
         tab = lambda x: '\t' * x
         print_str = self.entry.custom_str(indent=indent)
         print_str += f'\n{tab(indent)}Search Words: {self.search_words}'
         print_str += f'\n{tab(indent)}History Group IDs: {self.history_group_id_list}'
+        print_str += f'\n{tab(indent)}Linked Kotobank Queries: {self.linked_kotobank_queries}'
         return print_str
 
     @classmethod
@@ -30,8 +34,19 @@ class DictionaryEntryMatch(BasicLoadableIdObject['DictionaryEntryMatch']):
             entry=DictionaryEntry.from_dict(item_dict['entry']) if item_dict['entry'] is not None else None,
             search_words=item_dict['search_words'],
             history_group_id_list=item_dict['history_group_id_list'] if 'history_group_id_list' in item_dict else None,
-            linked_kotobank_queries=item_dict['linked_kotobank_queries'] if 'linked_kotobank_queries' in item_dict else None
+            linked_kotobank_queries=item_dict['linked_kotobank_queries'] if 'linked_kotobank_queries' in item_dict else None,
+            search_words_time_usec=item_dict['search_words_time_usec'] if 'search_words_time_usec' in item_dict else None
         )
+    
+    def load_time_usec(self, browser_history: CommonBrowserHistoryItemGroupList):
+        for search_word, history_id in zip(self.search_words, self.history_group_id_list):
+            history_item_matches = browser_history.get(id=history_id)
+            assert len(history_item_matches) == 1, f'len(history_item_matches): {len(history_item_matches)} != 1'
+            history_item = history_item_matches[0]
+            if self.search_words_time_usec is None:
+                self.search_words_time_usec = {search_word: history_item.time_usec}
+            else:
+                self.search_words_time_usec[search_word] = history_item.time_usec
     
     @property
     def unique_search_word(self) -> str:
@@ -66,6 +81,17 @@ class DictionaryEntryMatchList(
     @classmethod
     def from_dict_list(cls, dict_list: List[dict]) -> DictionaryEntryMatchList:
         return DictionaryEntryMatchList([DictionaryEntryMatch.from_dict(item_dict) for item_dict in dict_list])
+    
+    def load_time_usec(self, browser_history: CommonBrowserHistoryItemGroupList, show_pbar: bool=True, leave_pbar: bool=True):
+        pbar = tqdm(total=len(self), unit='entries', leave=leave_pbar) if show_pbar else None
+        for entry_match in self:
+            if pbar is not None:
+                pbar.set_description(entry_match.entry.word_representation.writing)
+            entry_match.load_time_usec(browser_history=browser_history)
+            if pbar is not None:
+                pbar.update()
+        if pbar is not None:
+            pbar.close()
     
     @property
     def search_words(self) -> List[str]:

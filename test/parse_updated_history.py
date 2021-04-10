@@ -16,6 +16,7 @@ if not file_exists(manager_save_path):
         kotobank_parse_dump_dir=f'{parse_data_dir}/kotobank_parse_dump',
         kotobank_temp_map_dir=f'{parse_data_dir}/kotobank_temp_map',
         combined_kotobank_dump_path=f'{parse_data_dir}/kotobank_combined.json',
+        jisho_kotobank_combined_dump_path=f'{parse_data_dir}/jisho_kotobank_combined_results.json',
         manager_save_path=manager_save_path
     )
 else:

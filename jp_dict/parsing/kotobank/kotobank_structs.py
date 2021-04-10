@@ -114,6 +114,10 @@ class MainTitle(BasicLoadableObject['MainTitle']):
         else:
             return f'{self.writing}'
 
+    @property
+    def simple_repr(self) -> str:
+        return self.__str__()
+
 class MainAliasName(BasicLoadableObject['MainAliasName']):
     def __init__(self, text_list: List[str]):
         super().__init__()

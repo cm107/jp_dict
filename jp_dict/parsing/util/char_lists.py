@@ -15,6 +15,31 @@ hiragana_chars = list("ぁあぃいぅうぇえぉおかがきぎくぐけげこ
 katakana_chars = list("ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶヽヾ")
 misc_kana_chars = list("ー")
 
+hiragana2katakana_map = {hiragana_char: katakana_char for hiragana_char, katakana_char in zip(hiragana_chars, katakana_chars)}
+katakana2hiragana_map = {katakana_char: hiragana_char for hiragana_char, katakana_char in zip(hiragana_chars, katakana_chars)}
+
+def convert_hiragana2katakana(text: str) -> str:
+    if text is None:
+        return None
+    result = ''
+    for parsed_char in list(text):
+        if parsed_char in hiragana_chars:
+            result += hiragana2katakana_map[parsed_char]
+        else:
+            result += parsed_char
+    return result
+
+def convert_katakana2hiragana(text: str) -> str:
+    if text is None:
+        return None
+    result = ''
+    for parsed_char in list(text):
+        if parsed_char in katakana_chars:
+            result += katakana2hiragana_map[parsed_char]
+        else:
+            result += parsed_char
+    return result
+
 circle_number_char2int = { # Refer to https://ja.wikipedia.org/wiki/丸数字
     '⓪': 0,
     '①': 1,

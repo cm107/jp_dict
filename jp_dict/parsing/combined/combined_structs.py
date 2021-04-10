@@ -1,0 +1,142 @@
+from __future__ import annotations
+from typing import List
+from tqdm import tqdm
+from common_utils.base.basic import BasicLoadableObject, BasicLoadableHandler, BasicHandler
+from common_utils.file_utils import dir_exists
+from ..jisho.jisho_matches import DictionaryEntryMatchList as JishoEntries, \
+    DictionaryEntryMatch as JishoEntry
+from ..kotobank.kotobank_structs import KotobankResult, KotobankResultList
+from ..util.char_lists import convert_katakana2hiragana
+
+# TODO: Finish implementing
+
+class CombinedResult(BasicLoadableObject['CombinedResult']):
+    def __init__(self, jisho_result: JishoEntry, kotobank_result: KotobankResult=None):
+        self.jisho_result = jisho_result
+        self.kotobank_result = kotobank_result
+
+    @classmethod
+    def from_dict(cls, item_dict: dict) -> CombinedResult:
+        return CombinedResult(
+            jisho_result=JishoEntry.from_dict(item_dict['jisho_result']),
+            kotobank_result=KotobankResult.from_dict(item_dict['kotobank_result']) if item_dict['kotobank_result'] is not None else None
+        )
+
+    def custom_str(self, indent: int=0) -> str:
+        print_str = self.jisho_result.custom_str(indent=indent)
+        if self.kotobank_result is not None:
+            print_str += '\n' + self.kotobank_result.custom_str(indent=indent)
+        return print_str
+    
+    @property
+    def simple_repr(self) -> str:
+        return self.custom_str()
+
+    @classmethod
+    def from_match(cls, entry_match: JishoEntry, kotobank_dump_dir: str, verbose: bool=False) -> CombinedResult:
+        assert dir_exists(kotobank_dump_dir)
+        kotobank_results = KotobankResultList()
+        # print(entry_match.entry.word_representation.custom_str())
+        # print(f'entry_match.linked_kotobank_queries: {entry_match.linked_kotobank_queries}')
+        for linked_query in entry_match.linked_kotobank_queries:
+            kotobank_result = KotobankResult.load_from_path(f'{kotobank_dump_dir}/{linked_query}.json')
+            kotobank_results.append(kotobank_result)
+        
+        # Use naive approach for now.
+        if len(kotobank_results) == 0:
+            if verbose:
+                print(f"Warning: No results found for {entry_match.entry.word_representation.writing}")
+            chosen_kotobank_result = None
+        elif len(kotobank_results) == 1:
+            chosen_kotobank_result = kotobank_results[0]
+        else:
+            chosen_kotobank_results = []
+            for kotobank_result0 in kotobank_results:
+                if convert_katakana2hiragana(kotobank_result0.main_title.reading) == convert_katakana2hiragana(entry_match.entry.word_representation.reading):
+                    chosen_kotobank_results.append(kotobank_result0)
+            if len(chosen_kotobank_results) == 0:
+                for kotobank_result0 in kotobank_results:
+                    if convert_katakana2hiragana(kotobank_result0.main_title.writing) == convert_katakana2hiragana(entry_match.entry.word_representation.reading):
+                        chosen_kotobank_results.append(kotobank_result0)
+                if len(chosen_kotobank_results) == 0:
+                    for kotobank_result0 in kotobank_results:
+                        if convert_katakana2hiragana(kotobank_result0.main_title.writing) == convert_katakana2hiragana(entry_match.entry.word_representation.writing):
+                            chosen_kotobank_results.append(kotobank_result0)
+            if len(chosen_kotobank_results) == 1:
+                chosen_kotobank_result = chosen_kotobank_results[0]
+            elif len(chosen_kotobank_results) == 0:
+                if verbose:
+                    print(f'entry_match.entry.word_representation.simple_repr: {entry_match.entry.word_representation.simple_repr}')
+                    print(f'kotobank: {[kotobank_result.main_title.simple_repr for kotobank_result0 in kotobank_results]}')
+                    print(f"Couldn't match any kotobank results to the jisho entry based on writing/reading.")
+                chosen_kotobank_result = None
+            else:
+                kotobank_result_with_most_dictionaries = None
+                most_dictionaries = 0
+                digital_daijisen_found = False
+                for kotobank_result0 in kotobank_results:
+                    num_dictionaries = len(kotobank_result0.main_area.articles)
+                    if kotobank_result_with_most_dictionaries is None or num_dictionaries > most_dictionaries:
+                        kotobank_result_with_most_dictionaries = kotobank_result0
+                        most_dictionaries = num_dictionaries
+                        if 'デジタル大辞泉の解説' in kotobank_result_with_most_dictionaries.main_area.articles.dictionary_names:
+                            digital_daijisen_found = True
+                    elif num_dictionaries == most_dictionaries and not digital_daijisen_found and 'デジタル大辞泉の解説' in kotobank_result.main_area.articles.dictionary_names:
+                        digital_daijisen_found = True
+                        kotobank_result_with_most_dictionaries = kotobank_result0
+                chosen_kotobank_result = kotobank_result_with_most_dictionaries
+        return CombinedResult(jisho_result=entry_match, kotobank_result=chosen_kotobank_result)
+
+class CombinedResultList(
+    BasicLoadableHandler['CombinedResultList', 'CombinedResult'],
+    BasicHandler['CombinedResultList', 'CombinedResult']
+):
+    def __init__(self, result_list: List[CombinedResult]=None):
+        super().__init__(obj_type=CombinedResult, obj_list=result_list)
+        self.result_list = self.obj_list
+
+    @classmethod
+    def from_dict_list(cls, dict_list: List[dict]) -> CombinedResultList:
+        return CombinedResultList([CombinedResult.from_dict(item_dict) for item_dict in dict_list])
+
+    def custom_str(self, indent: int=0, num_line_breaks: int=2) -> str:
+        print_str = ''
+        first = True
+        line_breaks = lambda x: '\n' * x
+        for result in self:
+            if first:
+                print_str += result.custom_str(indent=indent)
+                first = False
+            else:
+                print_str += f'{line_breaks(num_line_breaks)}{result.custom_str(indent=indent)}'
+        return print_str
+
+    @property
+    def simple_repr(self) -> str:
+        return self.custom_str()
+
+    @classmethod
+    def from_matches(
+        cls, entry_matches: JishoEntries, kotobank_dump_dir: str,
+        show_pbar: bool=True, leave_pbar: bool=True,
+        verbose: bool=False
+    ) -> CombinedResultList:
+        results = CombinedResultList()
+        pbar = tqdm(total=len(entry_matches), unit='matches', leave=leave_pbar) if show_pbar else None
+        if pbar is not None:
+            print('Combining Jisho and Kotobank Results')
+        for entry_match in entry_matches:
+            if pbar is not None:
+                pbar.set_description(entry_match.entry.word_representation.writing)
+            result = CombinedResult.from_match(
+                entry_match=entry_match,
+                kotobank_dump_dir=kotobank_dump_dir,
+                verbose=verbose
+            )
+            if result is not None:
+                results.append(result)
+            if pbar is not None:
+                pbar.update()
+        if pbar is not None:
+            pbar.close()
+        return results
