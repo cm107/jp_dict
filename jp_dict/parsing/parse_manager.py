@@ -7,7 +7,7 @@ from common_utils.base.basic import BasicLoadableObject
 from common_utils.file_utils import dir_exists, file_exists, make_dir_if_not_exists, \
     delete_all_files_in_dir, delete_file_if_exists, delete_dir_if_exists
 from common_utils.path_utils import recursively_get_all_matches_under_dirpath, \
-    get_all_files_of_extension, get_rootname_from_path
+    get_all_files_of_extension, get_rootname_from_path, get_all_files_of_extension
 from logger import logger
 
 from .browser_history import BrowserHistoryHandler, BrowserHistory, \
@@ -27,7 +27,8 @@ class ParserManagerMetaData(BasicLoadableObject['ParserManagerMetaData']):
         requires_load_time_usec: bool=False,
         requires_postmatching_redo: bool=False,
         requires_kotobank_combine: bool=False,
-        requires_jisho_kotobank_results_combine: bool=False
+        requires_jisho_kotobank_results_combine: bool=False,
+        requires_filter_and_sort: bool=False
     ):
         self.browser_history_paths = browser_history_paths if browser_history_paths is not None else []
         self.requires_jisho_grouping = requires_jisho_grouping
@@ -37,6 +38,7 @@ class ParserManagerMetaData(BasicLoadableObject['ParserManagerMetaData']):
         self.requires_postmatching_redo = requires_postmatching_redo
         self.requires_kotobank_combine = requires_kotobank_combine
         self.requires_jisho_kotobank_results_combine = requires_jisho_kotobank_results_combine
+        self.requires_filter_and_sort = requires_filter_and_sort
 
 class KotobankParseConfig(BasicLoadableObject['KotobankParseConfig']):
     def __init__(
@@ -68,6 +70,8 @@ class ParserManager(BasicLoadableObject['ParserManager']):
         kotobank_temp_map_dir: str,
         combined_kotobank_dump_path: str,
         jisho_kotobank_combined_dump_path: str,
+        anki_export_dir_for_filter: str,
+        filter_sorted_results_dump_path: str,
         manager_save_path: str,
         kotobank_parse_config: KotobankParseConfig=None
     ):
@@ -82,6 +86,8 @@ class ParserManager(BasicLoadableObject['ParserManager']):
         self.kotobank_temp_map_dir = kotobank_temp_map_dir
         self.combined_kotobank_dump_path = combined_kotobank_dump_path
         self.jisho_kotobank_combined_dump_path = jisho_kotobank_combined_dump_path
+        self.anki_export_dir_for_filter = anki_export_dir_for_filter
+        self.filter_sorted_results_dump_path = filter_sorted_results_dump_path
         self.manager_save_path = manager_save_path
 
         self.kotobank_parse_config = kotobank_parse_config if kotobank_parse_config is not None else KotobankParseConfig()
@@ -100,6 +106,8 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             'kotobank_temp_map_dir': self.kotobank_temp_map_dir,
             'combined_kotobank_dump_path': self.combined_kotobank_dump_path,
             'jisho_kotobank_combined_dump_path': self.jisho_kotobank_combined_dump_path,
+            'anki_export_dir_for_filter': self.anki_export_dir_for_filter,
+            'filter_sorted_results_dump_path': self.filter_sorted_results_dump_path,
             'manager_save_path': self.manager_save_path,
             'kotobank_parse_config': self.kotobank_parse_config.to_dict(),
             'metadata': self._metadata.to_dict()
@@ -118,6 +126,8 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             kotobank_temp_map_dir=item_dict['kotobank_temp_map_dir'],
             combined_kotobank_dump_path=item_dict['combined_kotobank_dump_path'],
             jisho_kotobank_combined_dump_path=item_dict['jisho_kotobank_combined_dump_path'],
+            anki_export_dir_for_filter=item_dict['anki_export_dir_for_filter'],
+            filter_sorted_results_dump_path=item_dict['filter_sorted_results_dump_path'],
             kotobank_parse_config=KotobankParseConfig.from_dict(item_dict['kotobank_parse_config']) if 'kotobank_parse_config' in item_dict else None,
             manager_save_path=item_dict['manager_save_path'],
         )
@@ -488,6 +498,29 @@ class ParserManager(BasicLoadableObject['ParserManager']):
                 logger.cyan('Finished Combining Jisho and Kotobank Results')
             if self._metadata.requires_jisho_kotobank_results_combine:
                 self._metadata.requires_jisho_kotobank_results_combine = False
+            self._metadata.requires_filter_and_sort = True
+            self.save_to_path(self.manager_save_path, overwrite=True)
+
+    def filter_and_sort_results(self, force: bool=False, verbose: bool=False, show_pbar: bool=True):
+        if self._metadata.requires_filter_and_sort or force or not file_exists(self.filter_sorted_results_dump_path):
+            assert file_exists(self.jisho_kotobank_combined_dump_path), f"Couldn't find combined Jisho Kotobank Results: {self.jisho_kotobank_combined_dump_path}"
+            combined_results = CombinedResultList.load_from_path(self.jisho_kotobank_combined_dump_path)
+            if verbose:
+                logger.cyan('Sorting Jisho and Kotobank Results')
+            combined_results.recommended_sort(show_pbar=True, leave_pbar=True)
+            if verbose:
+                logger.cyan('Finished Sorting Jisho and Kotobank Results')
+            if dir_exists(self.anki_export_dir_for_filter):
+                anki_deck_export_paths = get_all_files_of_extension(self.anki_export_dir_for_filter, 'txt')
+                if verbose and len(anki_deck_export_paths) > 0:
+                    logger.cyan('Filtering Jisho and Kotobank Results')
+                for path in anki_deck_export_paths:
+                    combined_results = combined_results.filter_out_anki_export(path, show_pbar=show_pbar, leave_pbar=True)
+                if verbose and len(anki_deck_export_paths) > 0:
+                    logger.cyan('Finished Filtering Jisho and Kotobank Results')
+            combined_results.save_to_path(self.filter_sorted_results_dump_path, overwrite=True)
+            if self._metadata.requires_filter_and_sort:
+                self._metadata.requires_filter_and_sort = False
                 self.save_to_path(self.manager_save_path, overwrite=True)
 
     def run(
@@ -501,6 +534,7 @@ class ParserManager(BasicLoadableObject['ParserManager']):
         force_parse_kotobank: bool=False, ignore_parse_kotobank: bool=False,
         force_combine_kotobank: bool=False, ignore_combine_kotobank: bool=True, # not needed
         force_combine_jisho_and_kotobank_results: bool=False, ignore_combine_jisho_and_kotobank_results: bool=False,
+        force_filter_and_sort_results: bool=False, ignore_filter_and_sort_results: bool=False,
         verbose: bool=False, show_pbar: bool=True
     ):
         if not ignore_combine_history or force_combine_history:
@@ -521,3 +555,5 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             self.combine_kotobank_results(force=force_combine_kotobank, verbose=verbose, show_pbar=show_pbar)
         if not ignore_combine_jisho_and_kotobank_results or force_combine_jisho_and_kotobank_results:
             self.combine_jisho_and_kotobank_results(force=force_combine_jisho_and_kotobank_results, verbose=verbose, show_pbar=show_pbar)
+        if not ignore_filter_and_sort_results or force_filter_and_sort_results:
+            self.filter_and_sort_results(force=force_filter_and_sort_results, verbose=verbose, show_pbar=show_pbar)

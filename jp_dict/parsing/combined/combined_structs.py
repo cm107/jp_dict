@@ -11,6 +11,7 @@ from ..kotobank.kotobank_structs import KotobankResult, KotobankResultList
 from ..util.char_lists import convert_katakana2hiragana
 from ...util.time_utils import get_localtime_from_time_usec, \
     get_utc_time_from_time_usec
+from ..anki.export_txt_parser import AnkiExportTextData
 
 # TODO: Finish implementing
 
@@ -272,3 +273,19 @@ class CombinedResultList(
         if pbar is not None:
             pbar.update()
             pbar.close()
+    
+    def filter_out_anki_export(self, path: str, show_pbar: bool=True, leave_pbar: bool=True) -> CombinedResultList:
+        filtered_results = CombinedResultList()
+        export_data = AnkiExportTextData.parse_from_txt(path)
+
+        pbar = tqdm(total=len(self), unit='result(s)', leave=leave_pbar) if show_pbar else None
+        if pbar is not None:
+            pbar.set_description('Filtering Out Results From Export')
+        for result in self:
+            if not export_data.contains(writing=result.jisho_result.entry.word_representation.writing):
+                filtered_results.append(result)
+            if pbar is not None:
+                pbar.update()
+        if pbar is not None:
+            pbar.close()
+        return filtered_results
