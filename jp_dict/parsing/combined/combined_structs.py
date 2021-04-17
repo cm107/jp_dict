@@ -1,12 +1,16 @@
 from __future__ import annotations
-from typing import List
+from typing import List, Dict
 from tqdm import tqdm
+from datetime import datetime
+
 from common_utils.base.basic import BasicLoadableObject, BasicLoadableHandler, BasicHandler
 from common_utils.file_utils import dir_exists
 from ..jisho.jisho_matches import DictionaryEntryMatchList as JishoEntries, \
     DictionaryEntryMatch as JishoEntry
 from ..kotobank.kotobank_structs import KotobankResult, KotobankResultList
 from ..util.char_lists import convert_katakana2hiragana
+from ...util.time_utils import get_localtime_from_time_usec, \
+    get_utc_time_from_time_usec
 
 # TODO: Finish implementing
 
@@ -21,6 +25,68 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
             jisho_result=JishoEntry.from_dict(item_dict['jisho_result']),
             kotobank_result=KotobankResult.from_dict(item_dict['kotobank_result']) if item_dict['kotobank_result'] is not None else None
         )
+
+    @property
+    def time_usec_info(self) -> Dict[str, List[int]]:
+        return self.jisho_result.search_words_time_usec
+
+    @time_usec_info.setter
+    def time_usec_info(self, time_usec_info: Dict[str, List[int]]):
+        self.jisho_result.search_words_time_usec = time_usec_info
+
+    @property
+    def localtime_info(self) -> Dict[str, List[datetime]]:
+        return {
+            search_word: [get_localtime_from_time_usec(time_usec) for time_usec in time_usec_list]
+            for search_word, time_usec_list in self.time_usec_info.items()
+        }
+
+    @property
+    def search_word_hit_count(self) -> int:
+        count = 0
+        for search_word, time_usec_list in self.time_usec_info.items():
+            count += len(time_usec_list)
+        return count
+
+    @property
+    def cumulative_search_localtimes(self) -> List[datetime]:
+        cumulative_localtimes = []
+        for search_word, localtime_list in self.localtime_info.items():
+            cumulative_localtimes.extend(localtime_list)
+        return cumulative_localtimes
+
+    @property
+    def first_search_localtime(self) -> datetime:
+        return min(self.cumulative_search_localtimes)
+    
+    @property
+    def last_search_localtime(self) -> datetime:
+        return max(self.cumulative_search_localtimes)
+    
+    @property
+    def first_and_last_localtime(self) -> (datetime, datetime):
+        localtimes = self.cumulative_search_localtimes
+        return (min(localtimes), max(localtimes))
+
+    @property
+    def is_common_word(self) -> bool:
+        return self.jisho_result.entry.concept_labels.is_common
+    
+    @property
+    def is_jlpt(self) -> bool:
+        return self.jisho_result.entry.concept_labels.is_jlpt
+
+    @property
+    def jlpt_level(self) -> int:
+        return self.jisho_result.entry.concept_labels.jlpt_level
+
+    @property
+    def is_wanikani(self) -> bool:
+        return self.jisho_result.entry.concept_labels.is_wanikani
+    
+    @property
+    def wanikani_level(self) -> int:
+        return self.jisho_result.entry.concept_labels.wanikani_level
 
     def custom_str(self, indent: int=0) -> str:
         print_str = self.jisho_result.custom_str(indent=indent)
@@ -140,3 +206,69 @@ class CombinedResultList(
         if pbar is not None:
             pbar.close()
         return results
+
+    def plot_timeofday_distribution(self, save_path: str='localtime_plot.png', mode: str='localtime'):
+        # Google browser history uses time_usec, which seems to be based on utc.
+        # Thus, it would be appropriate to first add the utc timezone to the datetime object and then convert
+        # to your local timezone.
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+        import datetime
+
+        cum_localtime_list = []
+        for result in self:
+            for search_word, time_usec_list in result.time_usec_info.items():
+                if mode == 'localtime':
+                    localtime_list = [get_localtime_from_time_usec(time_usec) for time_usec in time_usec_list]
+                else:
+                    localtime_list = [get_utc_time_from_time_usec(time_usec) for time_usec in time_usec_list]
+                cum_localtime_list.extend(localtime_list)
+        
+        ax = sns.displot(data=[localtime.hour for localtime in cum_localtime_list])
+        plt.savefig(save_path)
+        plt.clf()
+        plt.close('all')
+    
+    def sort_by_jlpt(self, jlpt_first: bool=True, reverse: bool=True):
+        jlpt_results = self.get(is_jlpt=True)
+        non_jlpt_results = self.get(is_jlpt=False)
+        jlpt_results.sort(attr_name='jlpt_level', reverse=reverse)
+        if jlpt_first:
+            self.obj_list = (jlpt_results + non_jlpt_results).obj_list
+        else:
+            self.obj_list = (non_jlpt_results + jlpt_results).obj_list
+
+    def sort_by_wanikani(self, wanikani_first: bool=True, reverse: bool=False):
+        wanikani_results = self.get(is_wanikani=True)
+        non_wanikani_results = self.get(is_wanikani=False)
+        wanikani_results.sort(attr_name='wanikani_level', reverse=reverse)
+        if wanikani_first:
+            self.obj_list = (wanikani_results + non_wanikani_results).obj_list
+        else:
+            self.obj_list = (non_wanikani_results + wanikani_results).obj_list
+
+    def recommended_sort(self, show_pbar: bool=False, leave_pbar: bool=True):
+        # Note: The most important sorts come last while the least important ones come first.
+        pbar = tqdm(total=5, unit='sorts', leave=leave_pbar) if show_pbar else None
+        if pbar is not None:
+            pbar.set_description('Sorting by localtime')
+        self.sort(attr_name='first_search_localtime') # Initial order
+        if pbar is not None:
+            pbar.update()
+            pbar.set_description('Sorting by wanikani')
+        self.sort_by_wanikani(wanikani_first=True, reverse=False)
+        if pbar is not None:
+            pbar.update()
+            pbar.set_description('Sorting by jlpt')
+        self.sort_by_jlpt(jlpt_first=True, reverse=True)
+        if pbar is not None:
+            pbar.update()
+            pbar.set_description('Sorting by common words')
+        self.sort(attr_name='is_common_word', reverse=True)
+        if pbar is not None:
+            pbar.update()
+            pbar.set_description('Sorting by hit count')
+        self.sort(attr_name='search_word_hit_count', reverse=True) # Order by hit count
+        if pbar is not None:
+            pbar.update()
+            pbar.close()
