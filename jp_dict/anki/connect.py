@@ -3,6 +3,7 @@ import urllib.request
 from typing import List, Dict
 from .note_structs import NoteAddParam, NoteAddParamList, \
     BaseFields, BasicFields, BasicFieldsList
+from .model_structs import CardTemplateList, CardTemplate
 
 class AnkiConnect:
     def __init__(self, base_url: str='http://localhost:8765'):
@@ -200,3 +201,97 @@ class AnkiConnect:
     
     def remove_empty_notes(self):
         self.invoke('removeEmptyNotes')
+    
+    def get_model_names(self) -> List[str]:
+        result = self.invoke('modelNames')
+        return result
+    
+    def get_model_names_and_ids(self) -> Dict[str, int]:
+        result = self.invoke('modelNamesAndIds')
+        return result
+    
+    def get_model_field_names(self, model_name: str) -> List[str]:
+        result = self.invoke('modelFieldNames', modelName=model_name)
+        return result
+    
+    def get_model_field_names_on_templates(self, model_name: str) -> Dict[str, List[List[str]]]:
+        result = self.invoke('modelFieldsOnTemplates', modelName=model_name)
+        return result
+    
+    def create_model(self, model_name: str, field_names: List[str], css: str, card_templates: CardTemplateList) -> dict:
+        for field in card_templates.fields:
+            assert field in field_names
+        result = self.invoke(
+            'createModel',
+            modelName=model_name,
+            inOrderFields=field_names,
+            css=css,
+            cardTemplates=card_templates.to_dict_list()
+        )
+        return result
+    
+    def update_model_templates(self, model_name: str, card_templates: CardTemplateList):
+        self.invoke(
+            'updateModelTemplates',
+            model={
+                'name': model_name,
+                'templates': card_templates.get_update_format_dict()
+            }
+        )
+    
+    def update_model_styling(self, model_name: str, css: str):
+        self.invoke(
+            'updateModelStyling',
+            model={
+                'name': model_name,
+                'css': css
+            }
+        )
+
+    def create_jp_standard_model(self) -> dict:
+        from textwrap import dedent
+        self.create_model(
+            model_name='jp_standard',
+            field_names=['Word', 'Reading', 'Meaning'],
+            css=dedent("""
+            .card {
+                font-family: arial;
+                font-size: 20px;
+                text-align: center;
+                color: black;
+                background-color: white;
+            }
+            """),
+            card_templates=CardTemplateList([
+                CardTemplate(
+                    name='Card 1',
+                    front=dedent("""
+                    {{Word}}
+                    """),
+                    back=dedent("""
+                    {{Word}}
+                    <hr id=answer>
+                    Reading: {{Reading}}
+                    <br>
+                    Definition:
+                    <br>
+                    {{Meaning}}
+                    """)
+                ),
+                CardTemplate(
+                    name='Card 2',
+                    front=dedent("""
+                    {{Meaning}}
+                    """),
+                    back=dedent("""
+                    {{Word}}
+                    <hr id=answer>
+                    Reading: {{Reading}}
+                    <br>
+                    Definition:
+                    <br>
+                    {{Meaning}}
+                    """)
+                ),
+            ])
+        )

@@ -46,6 +46,40 @@ class BasicFields(BaseFields['BasicFields']):
             back=item_dict['Back']
         )
 
+class JapaneseStandardFields(BaseFields['JapaneseStandardFields']):
+    def __init__(self, word: str, reading: str, meaning: str):
+        super().__init__()
+        self.word = word
+        self.reading = reading
+        self.meaning = meaning
+    
+    def to_dict(self) -> dict:
+        return {
+            'Word': self.word,
+            'Reading': self.reading,
+            'Meaning': self.meaning
+        }
+    
+    @classmethod
+    def from_dict(cls, item_dict: dict) -> JapaneseStandardFields:
+        return JapaneseStandardFields(
+            word=item_dict['Word'],
+            reading=item_dict['Reading'],
+            meaning=item_dict['Meaning']
+        )
+
+class JapaneseStandardFieldsList(
+    BasicLoadableHandler['JapaneseStandardFieldsList', 'JapaneseStandardFields'],
+    BasicHandler['JapaneseStandardFieldsList', 'JapaneseStandardFields']
+):
+    def __init__(self, fields_list: List[JapaneseStandardFields]=None):
+        super().__init__(obj_type=JapaneseStandardFields, obj_list=fields_list)
+        self.fields_list = self.obj_list
+
+    @classmethod
+    def from_dict_list(cls, dict_list: List[dict]) -> JapaneseStandardFieldsList:
+        return JapaneseStandardFieldsList([JapaneseStandardFields.from_dict(item_dict) for item_dict in dict_list])
+
 class BasicFieldsList(
     BasicLoadableHandler['BasicFieldsList', 'BasicFields'],
     BasicHandler['BasicFieldsList', 'BasicFields']
@@ -132,7 +166,8 @@ class NoteAddParam(BasicLoadableObject['NoteAddParam']):
         )
     
     @classmethod
-    def basic(cls, deck_name: str, fields: BasicFields, **kwargs) -> NoteAddParam:
+    def from_fields(cls, deck_name: str, fields: BaseFields, model_name: str, **kwargs) -> NoteAddParam:
+        assert isinstance(fields, BaseFields)
         if 'options' in kwargs:
             options = kwargs['options']
             if isinstance(options, dict):
@@ -149,13 +184,31 @@ class NoteAddParam(BasicLoadableObject['NoteAddParam']):
         picture = kwargs['picture'] if 'picture' in kwargs else []
         return NoteAddParam(
             deck_name=deck_name,
-            model_name='Basic',
+            model_name=model_name,
             fields=fields,
             options=options,
             tags=tags,
             audio=audio,
             video=video,
             picture=picture
+        )
+
+    @classmethod
+    def basic(cls, deck_name: str, fields: BasicFields, **kwargs) -> NoteAddParam:
+        return cls.from_fields(
+            deck_name=deck_name,
+            fields=fields,
+            model_name='Basic',
+            **kwargs
+        )
+    
+    @classmethod
+    def jp_standard(cls, deck_name: str, fields: JapaneseStandardFields, **kwargs) -> NoteAddParam:
+        return cls.from_fields(
+            deck_name=deck_name,
+            fields=fields,
+            model_name='jp_standard',
+            **kwargs
         )
     
     @classmethod
@@ -192,3 +245,11 @@ class NoteAddParamList(
     def from_basic_dict_list(cls, deck_name: str, basic_dict_list: List[Dict[str, str]], **kwargs) -> NoteAddParamList:
         fields_list = BasicFieldsList.from_dict_list(basic_dict_list)
         return cls.basic(deck_name=deck_name, fields_list=fields_list, **kwargs)
+    
+    @classmethod
+    def jp_standard(cls, deck_name: str, fields_list: JapaneseStandardFieldsList, **kwargs) -> NoteAddParamList:
+        notes = NoteAddParamList()
+        for fields in fields_list:
+            note = NoteAddParam.jp_standard(deck_name=deck_name, fields=fields, **kwargs)
+            notes.append(note)
+        return notes
