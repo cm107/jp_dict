@@ -256,6 +256,27 @@ class SupplementaryLinks(BasicLoadableObject['SupplementaryLinks']):
     @property
     def has_other_links(self) -> bool:
         return len(self.other_links) > 0
+    
+    @property
+    def html(self) -> str:
+        print_str = ''
+        first = True
+        for links_title, links in [
+            ('Audio Links', self.audio_links),
+            ('Collocation Links', self.collocation_links),
+            ('Other Links', self.other_links)
+        ]:
+            if len(links) > 0:
+                if first:
+                    print_str += f'{links_title}:'
+                    first = False
+                else:
+                    print_str += f'<br><br>{links_title}:'
+                
+                for i, link in enumerate(links):
+                    print_str += f'<br>{link.html}'
+        
+        return print_str
 
 class PlainText(BasicLoadableObject['PlainText']):
     def __init__(self, text: str, tag: str):

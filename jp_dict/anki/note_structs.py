@@ -17,14 +17,14 @@ class BaseFields(
     def number_of_fields(self) -> int:
         return len(list(self.to_constructor_dict().keys()))
 
-    @abstractmethod
-    def to_dict(self) -> dict:
-        raise NotImplementedError
+    # @abstractmethod
+    # def to_dict(self) -> dict:
+    #     raise NotImplementedError
 
-    @classmethod
-    @abstractclassmethod
-    def from_dict(cls, item_dict: dict) -> T:
-        raise NotImplementedError
+    # @classmethod
+    # @abstractclassmethod
+    # def from_dict(cls, item_dict: dict) -> T:
+    #     raise NotImplementedError
 
 class BasicFields(BaseFields['BasicFields']):
     def __init__(self, front: str='', back: str=''):
@@ -91,6 +91,43 @@ class BasicFieldsList(
     @classmethod
     def from_dict_list(cls, dict_list: List[dict]) -> BasicFieldsList:
         return BasicFieldsList([BasicFields.from_dict(item_dict) for item_dict in dict_list])
+
+class ParsedVocabularyFields(BasicLoadableObject['ParsedVocabularyFields']):
+    def __init__(
+        self,
+        writing: str, reading: str,
+        common: str, jlpt_level: str, wanikani_level: str,
+        eng_definition: str, jp_definition: str,
+        links: str, searched_words: str, search_word_hit_count: str,
+        cumulative_search_localtimes: str
+    ):
+        # TODO: Implement fields that will house the data from CombinedResult
+        # TODO: JishoEntry
+        # TODO: KotobankResult
+        # TODO: I think I should probably forward the most important information from JishoEntry and KotobankResult to CombinedResult via properties.
+        self.writing = writing
+        self.reading = reading
+        self.common = common
+        self.jlpt_level = jlpt_level
+        self.wanikani_level = wanikani_level
+        self.eng_definition = eng_definition
+        self.jp_definition = jp_definition
+        self.links = links
+        self.searched_words = searched_words
+        self.search_word_hit_count = search_word_hit_count
+        self.cumulative_search_localtimes = cumulative_search_localtimes
+
+class ParsedVocabularyFieldsList(
+    BasicLoadableHandler['ParsedVocabularyFieldsList', 'ParsedVocabularyFields'],
+    BasicHandler['ParsedVocabularyFieldsList', 'ParsedVocabularyFields']
+):
+    def __init__(self, fields_list: List[ParsedVocabularyFields]=None):
+        super().__init__(obj_type=ParsedVocabularyFields, obj_list=fields_list)
+        self.fields_list = self.obj_list
+    
+    @classmethod
+    def from_dict_list(cls, dict_list: List[dict]) -> ParsedVocabularyFieldsList:
+        return ParsedVocabularyFieldsList([ParsedVocabularyFields.from_dict(item_dict) for item_dict in dict_list])
 
 class NoteAddOptions(BasicLoadableObject['NoteAddOptions']):
     def __init__(
@@ -167,7 +204,7 @@ class NoteAddParam(BasicLoadableObject['NoteAddParam']):
     
     @classmethod
     def from_fields(cls, deck_name: str, fields: BaseFields, model_name: str, **kwargs) -> NoteAddParam:
-        assert isinstance(fields, BaseFields)
+        # assert isinstance(fields, BaseFields)
         if 'options' in kwargs:
             options = kwargs['options']
             if isinstance(options, dict):
@@ -215,6 +252,15 @@ class NoteAddParam(BasicLoadableObject['NoteAddParam']):
     def basic_simple(cls, deck_name: str, front: str, back: str, **kwargs) -> NoteAddParam:
         return cls.basic(deck_name=deck_name, fields=BasicFields(front=front, back=back), **kwargs)
 
+    @classmethod
+    def parsed_vocab(cls, deck_name: str, fields: ParsedVocabularyFields, **kwargs) -> NoteAddParam:
+        return cls.from_fields(
+            deck_name=deck_name,
+            fields=fields,
+            model_name='parsed_vocab',
+            **kwargs
+        )
+
 class NoteAddParamList(
     BasicLoadableHandler['NoteAddParamList', 'NoteAddParam'],
     BasicHandler['NoteAddParamList', 'NoteAddParam']
@@ -251,5 +297,13 @@ class NoteAddParamList(
         notes = NoteAddParamList()
         for fields in fields_list:
             note = NoteAddParam.jp_standard(deck_name=deck_name, fields=fields, **kwargs)
+            notes.append(note)
+        return notes
+
+    @classmethod
+    def parsed_vocab(cls, deck_name: str, fields_list: ParsedVocabularyFieldsList, **kwargs) -> NoteAddParamList:
+        notes = NoteAddParamList()
+        for fields in fields_list:
+            note = NoteAddParam.parsed_vocab(deck_name=deck_name, fields=fields, **kwargs)
             notes.append(note)
         return notes

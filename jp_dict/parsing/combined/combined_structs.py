@@ -12,6 +12,7 @@ from ..util.char_lists import convert_katakana2hiragana
 from ...util.time_utils import get_localtime_from_time_usec, \
     get_utc_time_from_time_usec
 from ..anki.export_txt_parser import AnkiExportTextData
+from ...anki.note_structs import ParsedVocabularyFields, ParsedVocabularyFieldsList
 
 # TODO: Finish implementing
 
@@ -25,6 +26,40 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
         return CombinedResult(
             jisho_result=JishoEntry.from_dict(item_dict['jisho_result']),
             kotobank_result=KotobankResult.from_dict(item_dict['kotobank_result']) if item_dict['kotobank_result'] is not None else None
+        )
+
+    def to_vocabulary_fields(self) -> ParsedVocabularyFields:
+        common = 'common' if self.jisho_result.entry.concept_labels.is_common else ''
+        jlpt_level = self.jisho_result.entry.concept_labels.jlpt_level
+        jlpt_level = str(jlpt_level) if jlpt_level is not None else ''
+        wanikani_level = self.jisho_result.entry.concept_labels.wanikani_level
+        wanikani_level = str(wanikani_level) if wanikani_level is not None else ''
+        # searched_words = str(self.jisho_result.search_words).replace('[', '').replace(']', '')
+        searched_words = ''
+        for search_word, datetime_list in self.localtime_info.items():
+            if len(searched_words) == 0:
+                searched_words += f'{search_word}: {len(datetime_list)}'
+            else:
+                searched_words += f', {search_word}: {len(datetime_list)}'
+        cumulative_search_localtimes = ''
+        for i, localtime in enumerate(self.cumulative_search_localtimes):
+            if i == 0:
+                cumulative_search_localtimes += localtime.strftime('%Y/%m/%d %H:%M:%S')
+            else:
+                cumulative_search_localtimes += f", {localtime.strftime('%Y/%m/%d %H:%M:%S')}"
+
+        return ParsedVocabularyFields(
+            writing=self.jisho_result.entry.word_representation.writing,
+            reading=self.jisho_result.entry.word_representation.reading,
+            common=common,
+            jlpt_level=jlpt_level,
+            wanikani_level=wanikani_level,
+            eng_definition=self.jisho_result.entry.meaning_section.custom_str().replace('\n', '<br>'),
+            jp_definition=self.kotobank_result.custom_str().replace('\n', '<br>') if self.kotobank_result is not None else '',
+            links=self.jisho_result.entry.supplementary_links.html,
+            searched_words=searched_words,
+            search_word_hit_count=str(self.search_word_hit_count),
+            cumulative_search_localtimes=cumulative_search_localtimes,
         )
 
     @property
@@ -289,3 +324,9 @@ class CombinedResultList(
         if pbar is not None:
             pbar.close()
         return filtered_results
+    
+    def to_vocabulary_fields_list(self) -> ParsedVocabularyFieldsList:
+        fields_list = ParsedVocabularyFieldsList()
+        for result in self:
+            fields_list.append(result.to_vocabulary_fields())
+        return fields_list

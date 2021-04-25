@@ -1,8 +1,9 @@
 import json
 import urllib.request
 from typing import List, Dict
+from tqdm import tqdm
 from .note_structs import NoteAddParam, NoteAddParamList, \
-    BaseFields, BasicFields, BasicFieldsList
+    BaseFields, BasicFields, BasicFieldsList, ParsedVocabularyFields
 from .model_structs import CardTemplateList, CardTemplate
 
 class AnkiConnect:
@@ -109,6 +110,25 @@ class AnkiConnect:
                 **kwargs
             )
         )
+        return result
+    
+    def add_note_sequence(self, notes: NoteAddParamList, show_pbar: bool=True, leave_pbar: bool=True) -> List[int]:
+        result = []
+        pbar = tqdm(total=len(notes), unit='note(s)', leave=leave_pbar) if show_pbar else None
+        if pbar is not None:
+            pbar.set_description('Adding Notes')
+        for note in notes:
+            try:
+                result0 = self.add_note(note)
+            except:
+                if pbar is not None:
+                    pbar.update()
+                continue
+            result.append(result0)
+            if pbar is not None:
+                pbar.update()
+        if pbar is not None:
+            pbar.close()
         return result
     
     def add_notes(self, notes: NoteAddParamList) -> List[int]:
@@ -293,5 +313,57 @@ class AnkiConnect:
                     {{Meaning}}
                     """)
                 ),
+            ])
+        )
+    
+    def create_parsed_vocab_model(self) -> dict:
+        from textwrap import dedent
+        self.create_model(
+            model_name='parsed_vocab',
+            field_names=ParsedVocabularyFields.get_constructor_params(),
+            css=dedent("""
+            .card {
+                font-family: arial;
+                font-size: 20px;
+                text-align: center;
+                color: black;
+                background-color: white;
+            }
+            """),
+            card_templates=CardTemplateList([
+                CardTemplate(
+                    name='Card 1',
+                    front=dedent("""
+                    {{writing}}
+                    """),
+                    back=dedent("""
+                    {{writing}}
+                    <hr id=answer>
+                    Reading: {{reading}}
+                    <br>
+                    {{common}}, JLPT {{jlpt_level}}, Wanikani {{wanikani_level}}
+                    <br>
+                    {{jp_definition}}
+                    <br><br>
+                    <details>
+                    <summary>English Definition</summary>
+                    {{eng_definition}}
+                    </details>
+                    <br><br>
+                    <details>
+                    <summary>Links</summary>
+                    {{links}}
+                    </details>
+                    <br>
+                    <details>
+                    <summary>Other Info</summary>
+                    Searched Words: {{searched_words}}
+                    <br>
+                    Search Word Hit Count: {{search_word_hit_count}}
+                    <br>
+                    Local Times: {{cumulative_search_localtimes}}
+                    </details>
+                    """)
+                )
             ])
         )
