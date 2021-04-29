@@ -239,8 +239,8 @@ class AnkiConnect:
         return result
     
     def create_model(self, model_name: str, field_names: List[str], css: str, card_templates: CardTemplateList) -> dict:
-        for field in card_templates.fields:
-            assert field in field_names
+        # for field in card_templates.fields:
+        #     assert field in field_names
         result = self.invoke(
             'createModel',
             modelName=model_name,
@@ -250,6 +250,10 @@ class AnkiConnect:
         )
         return result
     
+    def get_model_templates(self, model_name: str) -> Dict[str, Dict[str, str]]:
+        result = self.invoke('modelTemplates', modelName=model_name)
+        return result
+
     def update_model_templates(self, model_name: str, card_templates: CardTemplateList):
         self.invoke(
             'updateModelTemplates',
@@ -259,6 +263,10 @@ class AnkiConnect:
             }
         )
     
+    def get_model_styling(self, model_name: str) -> Dict[str, str]:
+        result = self.invoke('modelStyling', modelName=model_name)
+        return result
+
     def update_model_styling(self, model_name: str, css: str):
         self.invoke(
             'updateModelStyling',
@@ -318,6 +326,10 @@ class AnkiConnect:
     
     def create_parsed_vocab_model(self) -> dict:
         from textwrap import dedent
+        from common_utils.path_utils import get_script_dir
+        
+        back_path = f"{get_script_dir()}/templates/parsed_vocab_back.html"
+        back_text = ''.join(open(back_path, 'r').readlines()).replace('\n', '')
         self.create_model(
             model_name='parsed_vocab',
             field_names=ParsedVocabularyFields.get_constructor_params(),
@@ -329,41 +341,14 @@ class AnkiConnect:
                 color: black;
                 background-color: white;
             }
-            """),
+            """).replace('\n', ''),
             card_templates=CardTemplateList([
                 CardTemplate(
                     name='Card 1',
                     front=dedent("""
                     {{writing}}
-                    """),
-                    back=dedent("""
-                    {{writing}}
-                    <hr id=answer>
-                    Reading: {{reading}}
-                    <br>
-                    {{common}}, JLPT {{jlpt_level}}, Wanikani {{wanikani_level}}
-                    <br>
-                    {{jp_definition}}
-                    <br><br>
-                    <details>
-                    <summary>English Definition</summary>
-                    {{eng_definition}}
-                    </details>
-                    <br><br>
-                    <details>
-                    <summary>Links</summary>
-                    {{links}}
-                    </details>
-                    <br>
-                    <details>
-                    <summary>Other Info</summary>
-                    Searched Words: {{searched_words}}
-                    <br>
-                    Search Word Hit Count: {{search_word_hit_count}}
-                    <br>
-                    Local Times: {{cumulative_search_localtimes}}
-                    </details>
-                    """)
+                    """).replace('\n', ''),
+                    back=back_text
                 )
             ])
         )

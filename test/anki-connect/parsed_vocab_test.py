@@ -2,9 +2,16 @@ from jp_dict.anki.connect import AnkiConnect
 from jp_dict.anki.note_structs import NoteAddParamList
 from jp_dict.parsing.combined.combined_structs import CombinedResultList
 
-results = CombinedResultList.load_from_path('/home/clayton/workspace/prj/data_keep/data/study/parse_data/jisho_kotobank_combined_results.json')
+results = CombinedResultList.load_from_path('/home/clayton/workspace/prj/data_keep/data/study/parse_data/filter_sorted_results.json')
+results = results[:100]
+# print(results.custom_str())
+# import sys
+# sys.exit()
 
 anki_connect = AnkiConnect()
+# print(anki_connect.get_model_templates(model_name='parsed_vocab'))
+# import sys
+# sys.exit()
 anki_connect.delete_deck(deck=anki_connect.get_deck_names(exclude_default=True))
 anki_connect.clear_unused_tags()
 
