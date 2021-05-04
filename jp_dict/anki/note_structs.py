@@ -98,7 +98,10 @@ class ParsedVocabularyFields(BasicLoadableObject['ParsedVocabularyFields']):
         writing: str, reading: str,
         common: str, jlpt_level: str, wanikani_level: str,
         eng_definition: str, daijisen: str, seisenpan: str, ndz: str,
-        links: str, searched_words: str, search_word_hit_count: str,
+        links: str,
+        jisho_search_link: str, kotobank_search_link: str,
+        ejje_sentence_search_link: str, weblio_search_link: str,
+        searched_words: str, search_word_hit_count: str,
         cumulative_search_localtimes: str,
         custom_definition: str='',
         auto_open_fields: str='',
@@ -114,6 +117,10 @@ class ParsedVocabularyFields(BasicLoadableObject['ParsedVocabularyFields']):
         self.seisenpan = seisenpan
         self.ndz = ndz
         self.links = links
+        self.jisho_search_link = jisho_search_link
+        self.kotobank_search_link = kotobank_search_link
+        self.ejje_sentence_search_link = ejje_sentence_search_link
+        self.weblio_search_link = weblio_search_link
         self.searched_words = searched_words
         self.search_word_hit_count = search_word_hit_count
         self.cumulative_search_localtimes = cumulative_search_localtimes

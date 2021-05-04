@@ -64,7 +64,14 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
             daijisen = ''
             seisenpan = ''
             ndz = ''
-            
+        kotobank_search_link = f'<a href="https://kotobank.jp/word/{self.kotobank_result.search_word}">Kotobank search for {self.kotobank_result.search_word}</a>' \
+            if self.kotobank_result is not None else ''
+        jisho_search_link = f'<a href="https://jisho.org/search/{self.jisho_result.entry.word_representation.writing}">Jisho search for {self.jisho_result.entry.word_representation.writing}</a>' \
+            if self.jisho_result.entry.word_representation is not None else ''
+        ejje_sentence_search_link = f'<a href="https://ejje.weblio.jp/sentence/content/{self.jisho_result.entry.word_representation.writing}">Weblio sentence search for {self.jisho_result.entry.word_representation.writing}</a>' \
+            if self.jisho_result.entry.word_representation is not None else '' #TODO
+        weblio_search_link = f'<a href="https://www.weblio.jp/content/{self.jisho_result.entry.word_representation.writing}">Weblio search for {self.jisho_result.entry.word_representation.writing}</a>' \
+            if self.jisho_result.entry.word_representation is not None else ''
         return ParsedVocabularyFields(
             writing=self.jisho_result.entry.word_representation.writing,
             reading=self.jisho_result.entry.word_representation.reading,
@@ -76,6 +83,10 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
             seisenpan=seisenpan,
             ndz=ndz,
             links=self.jisho_result.entry.supplementary_links.html,
+            jisho_search_link=jisho_search_link,
+            kotobank_search_link=kotobank_search_link,
+            ejje_sentence_search_link=ejje_sentence_search_link,
+            weblio_search_link=weblio_search_link,
             searched_words=searched_words,
             search_word_hit_count=str(self.search_word_hit_count),
             cumulative_search_localtimes=cumulative_search_localtimes,
