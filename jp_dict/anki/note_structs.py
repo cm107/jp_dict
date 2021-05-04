@@ -100,6 +100,7 @@ class ParsedVocabularyFields(BasicLoadableObject['ParsedVocabularyFields']):
         eng_definition: str, daijisen: str, seisenpan: str, ndz: str,
         links: str, searched_words: str, search_word_hit_count: str,
         cumulative_search_localtimes: str,
+        custom_definition: str='',
         auto_open_fields: str='',
         memo: str=''
     ):
@@ -116,6 +117,7 @@ class ParsedVocabularyFields(BasicLoadableObject['ParsedVocabularyFields']):
         self.searched_words = searched_words
         self.search_word_hit_count = search_word_hit_count
         self.cumulative_search_localtimes = cumulative_search_localtimes
+        self.custom_definition = custom_definition
         self.auto_open_fields = auto_open_fields
         self.memo = memo
 

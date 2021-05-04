@@ -3,7 +3,7 @@ from jp_dict.anki.note_structs import NoteAddParamList
 from jp_dict.parsing.combined.combined_structs import CombinedResultList
 
 results = CombinedResultList.load_from_path('/home/clayton/workspace/prj/data_keep/data/study/parse_data/filter_sorted_results.json')
-results = results[:1000]
+results = results[:100]
 # print(results.custom_str())
 # import sys
 # sys.exit()

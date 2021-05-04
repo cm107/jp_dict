@@ -5,8 +5,15 @@ Reading: {{reading}}
 {{#jlpt_level}}<br>JLPT {{jlpt_level}}{{/jlpt_level}}
 {{#wanikani_level}}<br>Wanikani Level {{wanikani_level}}{{/wanikani_level}}
 <div style='font-size: 20px; color:navy; text-align:left;'>
+    {{#custom_definition}}
+        <details id="custom_definition_details">
+            <summary>Custom Definition:</summary>
+            <p style="margin-left:5%">
+                <span id="custom_definition">{{custom_definition}}</span>
+            </p>
+        </details>
+    {{/custom_definition}}
     {{#daijisen}}
-        <!-- <details open> -->
         <details id="daijisen_details">
             <summary>デジタル大辞泉の解説:</summary>
             <p style="margin-left:5%">
@@ -31,13 +38,17 @@ Reading: {{reading}}
         </details>
     {{/ndz}}
 </div>
-<div style='text-align:left'>
-    <details id="eng_definition_details">
-        <summary>English Definition</summary>
-        <div style='font-size: 20px; color:green; margin-left:5%'>
-            <span id="eng_definition">{{eng_definition}}</span>
+<div style="text-align:left">
+        <div style="font-size: 20px; color:green;">
+            <details id="eng_definition_details">
+                <summary>English Definition</summary>
+                <span id="eng_definition">
+                    <p style="margin-left:5%">
+                        {{eng_definition}}
+                    </p>
+                </span>
+            </details>
         </div>
-    </details>
     <details>
         <summary>Links</summary>
         <div style='font-size: 20px; margin-left:5%'>
@@ -99,13 +110,29 @@ Reading: {{reading}}
         }
     }
 
+    function openFieldsInArray(arr, str_ids, details_ids)
+    {
+        for(i = 0; i < arr.length; i++)
+        {
+            var idx = str_ids.indexOf(arr[i]);
+            var item_element = document.getElementById(str_ids[idx]);
+            var item_details_element = document.getElementById(details_ids[idx]);
+            if (!!item_element && !!item_details_element)
+            {
+                openIfNotEmpty(item_element, item_details_element);
+            }
+        }
+    }
+
     var jp_str_ids = [
+        "custom_definition",
         "daijisen",
         "seisenpan",
         "ndz",
         "eng_definition"
     ];
     var jp_details_ids = [
+        "custom_definition_details",
         "daijisen_details",
         "seisenpan_details",
         "ndz_details",
@@ -116,16 +143,7 @@ Reading: {{reading}}
     if (!!auto_open_fields_element)
     {
         var auto_open_fields_arr = auto_open_fields_element.innerHTML.replace(" ", "").split(",");
-        for(i = 0; i < auto_open_fields_arr.length; i++)
-        {
-            var idx = jp_str_ids.indexOf(auto_open_fields_arr[i]);
-            var item_element = document.getElementById(jp_str_ids[idx]);
-            var item_details_element = document.getElementById(jp_details_ids[idx]);
-            if (!!item_element && !!item_details_element)
-            {
-                openIfNotEmpty(item_element, item_details_element);
-            }
-        }
+        openFieldsInArray(arr=auto_open_fields_arr, str_ids=jp_str_ids, details_ids=jp_details_ids);
     }
     else
     {
