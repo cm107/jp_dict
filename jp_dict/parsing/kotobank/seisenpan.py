@@ -87,7 +87,7 @@ class StyledText(BasicLoadableObject['StyledText']):
     """
     So far, I have seen this be used to draw a box around
     some text with a given border width (e.g. 1px), a solid
-    colodr (e.g. #000) and a given margin.
+    color (e.g. #000) and a given margin.
     """
     def __init__(self, text: str, style: str):
         super().__init__()
@@ -136,12 +136,21 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
 
     @property
     def preview_str(self) -> str:
-        if type(self.obj) in [PlainText, BoldText, SmallText, StyledText]:
+        if type(self.obj) is PlainText:
             return self.obj.text
+        elif type(self.obj) is StyledText:
+            print(self.obj)
+            return self.obj.text
+        elif type(self.obj) is BoldText:
+            return f'<b>{self.obj.text}</b>'
+        elif type(self.obj) is SmallText:
+            return f'<small>{self.obj.text}</small>'
         elif type(self.obj) is SubText:
-            return f'_{self.obj.text}'
+            # return f'_{self.obj.text}'
+            return f'<sub>{self.obj.text}</sub>'
         elif type(self.obj) is SupText:
-            return f'^{self.obj.text}'
+            # return f'^{self.obj.text}'
+            return f'<sup>{self.obj.text}</sup>'
         elif type(self.obj) in [A_Link, ParseFailed]:
             return self.obj.plain_str
         elif type(self.obj) == LineBreak:

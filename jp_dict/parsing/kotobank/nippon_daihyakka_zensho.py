@@ -41,6 +41,14 @@ class DescriptionLinkListObject(BasicLoadableObject['DescriptionLinkListObject']
     def plain_str(self) -> str:
         return f"{self.explanation}: {' | '.join([link.text for link in self.linklist])}"
 
+    @property
+    def html_str(self) -> str:
+        html_link_list = [
+            f'<a href="{link.url}">{link.text}</a>'
+            for link in self.linklist
+        ]
+        return f"{self.explanation}: {' | '.join(html_link_list)}"
+
 class PassagePart(BasicLoadableObject['PassagePart']):
     def __init__(self, header: str, paragraphs: List[str]=None):
         super().__init__()
@@ -128,6 +136,10 @@ class MediaItem(BasicLoadableObject['MediaItem']):
     @property
     def plain_str(self) -> str:
         return '[MediaItem]'
+    
+    @property
+    def html_str(self) -> str:
+        return f'<a href="{self.url}"><img src="{self.url}" alt="Failed to load image."></a><figcaption>{self.caption}</figcaption>'
 
 class Media(
     BasicLoadableHandler['Media', 'MediaItem'],
@@ -144,6 +156,16 @@ class Media(
     @property
     def plain_str(self) -> str:
         return '[Media]'
+    
+    @property
+    def html_str(self) -> str:
+        print_str = ''
+        for i, item in enumerate(self):
+            if i == 0:
+                print_str += item.html_str
+            else:
+                print_str += f'<br>{item.html_str}'
+        return print_str
 
 class ParsedItem(BasicLoadableObject['ParsedItem']):
     def __init__(self, obj: Any):
@@ -158,6 +180,9 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
     def custom_str(self, indent: int=0) -> str:
         if isinstance(self.obj, Passage):
             return self.obj.custom_str(indent=indent)
+        elif hasattr(self.obj, 'html_str'):
+            tab = '\t' * indent
+            return f'{tab}{self.obj.html_str}'
         else:
             tab = '\t' * indent
             return f'{tab}{self.plain_str}'

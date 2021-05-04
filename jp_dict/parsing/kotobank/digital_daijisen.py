@@ -374,16 +374,28 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
             print_str = obj.text
         elif type(self.obj) is BoldText:
             obj = cast(BoldText, self.obj)
-            print_str = obj.text
+            if not all_html:
+                print_str = obj.text
+            else:
+                print_str = f'<b>{obj.text}</b>'
         elif type(self.obj) is OriginWord:
             obj = cast(OriginWord, self.obj)
-            print_str = obj.text
+            if not all_html:
+                print_str = obj.text
+            else:
+                print_str = f'<strong>{obj.text}</strong>'
         elif type(self.obj) is SuperscriptText:
             obj = cast(SuperscriptText, self.obj)
-            print_str = f'^{obj.text}'
+            if not all_html:
+                print_str = f'^{obj.text}'
+            else:
+                print_str = f'<sup>{obj.text}</sup>'
         elif type(self.obj) is ItalicText:
             obj = cast(ItalicText, self.obj)
-            print_str = obj.text
+            if not all_html:
+                print_str = obj.text
+            else:
+                print_str = f'<i>{obj.text}</i>'
         elif type(self.obj) is Gaiji:
             obj = cast(Gaiji, self.obj)
             use_tab, use_linebreak = True, not first
@@ -391,7 +403,7 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
         elif type(self.obj) is DefinitionNumber:
             obj = cast(DefinitionNumber, self.obj)
             use_tab, use_linebreak = True, not first
-            print_str = f'{obj.num}'
+            print_str = f'{obj.num}.'
         elif type(self.obj) is RelatedWordLink:
             obj = cast(RelatedWordLink, self.obj)
             if not (link2html or all_html):

@@ -47,18 +47,28 @@ Reading: {{reading}}
     <details>
         <summary>Other Info</summary>
         <div style='font-size: 20px; margin-left:5%'>
-            Searched Words: {{searched_words}}
+            <b>Searched Words:</b> {{searched_words}}
             <br>
-            Search Word Hit Count: {{search_word_hit_count}}
+            <b>Search Word Hit Count:</b> {{search_word_hit_count}}
             <br>
-            Local Times: {{cumulative_search_localtimes}}
+            <b>Local Times:</b> {{cumulative_search_localtimes}}
             {{#auto_open_fields}}
                 <br>
-                Automatically Open Fields: <span id="auto_open_fields">{{auto_open_fields}}</span>
+                <b>Automatically Open Fields:</b> <span id="auto_open_fields">{{auto_open_fields}}</span>
             {{/auto_open_fields}}
         </div>
     </details>
 </div>
+
+{{#memo}}
+    <hr id=memo>
+    <div style="text-align:left; font-size:20px;">
+        <b>Memo:</b>
+        <div style="margin-left:5%; color:blueviolet">
+            {{memo}}
+        </div>
+    </div>
+{{/memo}}
 
 <div id="debug_element"></div>
 
