@@ -97,25 +97,25 @@ class ParsedVocabularyFields(BasicLoadableObject['ParsedVocabularyFields']):
         self,
         writing: str, reading: str,
         common: str, jlpt_level: str, wanikani_level: str,
-        eng_definition: str, jp_definition: str,
+        eng_definition: str, daijisen: str, seisenpan: str, ndz: str,
         links: str, searched_words: str, search_word_hit_count: str,
-        cumulative_search_localtimes: str
+        cumulative_search_localtimes: str,
+        auto_open_fields: str=''
     ):
-        # TODO: Implement fields that will house the data from CombinedResult
-        # TODO: JishoEntry
-        # TODO: KotobankResult
-        # TODO: I think I should probably forward the most important information from JishoEntry and KotobankResult to CombinedResult via properties.
         self.writing = writing
         self.reading = reading
         self.common = common
         self.jlpt_level = jlpt_level
         self.wanikani_level = wanikani_level
         self.eng_definition = eng_definition
-        self.jp_definition = jp_definition
+        self.daijisen = daijisen
+        self.seisenpan = seisenpan
+        self.ndz = ndz
         self.links = links
         self.searched_words = searched_words
         self.search_word_hit_count = search_word_hit_count
         self.cumulative_search_localtimes = cumulative_search_localtimes
+        self.auto_open_fields = auto_open_fields
 
 class ParsedVocabularyFieldsList(
     BasicLoadableHandler['ParsedVocabularyFieldsList', 'ParsedVocabularyFields'],

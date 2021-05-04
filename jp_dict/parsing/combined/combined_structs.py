@@ -48,6 +48,23 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
             else:
                 cumulative_search_localtimes += f", {localtime.strftime('%Y/%m/%d %H:%M:%S')}"
 
+        if self.kotobank_result is not None:
+            daijisen = self.kotobank_result.digital_daijisen_content
+            daijisen = daijisen.custom_str(indent=0) if daijisen is not None else ''
+            daijisen = daijisen.replace('\n', '<br>')
+
+            seisenpan = self.kotobank_result.seisenpan_content
+            seisenpan = seisenpan.custom_str(indent=0) if seisenpan is not None else ''
+            seisenpan = seisenpan.replace('\n', '<br>')
+
+            ndz = self.kotobank_result.ndz_content
+            ndz = ndz.custom_str(indent=0) if ndz is not None else ''
+            ndz = ndz.replace('\n', '<br>')
+        else:
+            daijisen = ''
+            seisenpan = ''
+            ndz = ''
+            
         return ParsedVocabularyFields(
             writing=self.jisho_result.entry.word_representation.writing,
             reading=self.jisho_result.entry.word_representation.reading,
@@ -55,7 +72,9 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
             jlpt_level=jlpt_level,
             wanikani_level=wanikani_level,
             eng_definition=self.jisho_result.entry.meaning_section.custom_str().replace('\n', '<br>'),
-            jp_definition=self.kotobank_result.custom_str().replace('\n', '<br>') if self.kotobank_result is not None else '',
+            daijisen=daijisen,
+            seisenpan=seisenpan,
+            ndz=ndz,
             links=self.jisho_result.entry.supplementary_links.html,
             searched_words=searched_words,
             search_word_hit_count=str(self.search_word_hit_count),

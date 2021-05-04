@@ -17,6 +17,9 @@ anki_connect.clear_unused_tags()
 
 if 'parsed_vocab' not in anki_connect.get_model_names():
     anki_connect.create_parsed_vocab_model()
+else:
+    anki_connect.update_parsed_vocab_templates_and_styling()
+
 anki_connect.create_deck(deck='parsed_vocab_test')
 anki_connect.add_note_sequence(
     NoteAddParamList.parsed_vocab(
@@ -24,3 +27,4 @@ anki_connect.add_note_sequence(
         fields_list=results.to_vocabulary_fields_list()
     )
 )
+anki_connect.gui_card_browse(query='deck:parsed_vocab_test')

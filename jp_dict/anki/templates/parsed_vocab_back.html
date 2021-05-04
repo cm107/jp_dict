@@ -4,24 +4,121 @@ Reading: {{reading}}
 {{#common}}<br>Common{{/common}}
 {{#jlpt_level}}<br>JLPT {{jlpt_level}}{{/jlpt_level}}
 {{#wanikani_level}}<br>Wanikani Level {{wanikani_level}}{{/wanikani_level}}
-<br>
-<div style='font-size: 20px; color:navy; text-align:left;'>{{jp_definition}}</div>
-<br><br>
-<details>
-<summary>English Definition</summary>
-<div style='font-size: 20px; color:green; text-align:left;'>{{eng_definition}}</div>
-</details>
-<br><br>
-<details>
-<summary>Links</summary>
-{{links}}
-</details>
-<br>
-<details>
-<summary>Other Info</summary>
-Searched Words: {{searched_words}}
-<br>
-Search Word Hit Count: {{search_word_hit_count}}
-<br>
-Local Times: {{cumulative_search_localtimes}}
-</details>
+<div style='font-size: 20px; color:navy; text-align:left;'>
+    {{#daijisen}}
+        <!-- <details open> -->
+        <details id="daijisen_details">
+            <summary>デジタル大辞泉の解説:</summary>
+            <p style="margin-left:5%">
+                <span id="daijisen">{{daijisen}}</span>
+            </p>
+        </details>
+    {{/daijisen}}
+    {{#seisenpan}}
+        <details id="seisenpan_details">
+            <summary>精選版 日本国語大辞典の解説:</summary>
+            <p style="margin-left:5%">
+                <span id="seisenpan">{{seisenpan}}</span>
+            </p>
+        </details>
+    {{/seisenpan}}
+    {{#ndz}}
+        <details id="ndz_details">
+            <summary>日本大百科全書(ニッポニカ)の解説:</summary>
+            <p style="margin-left:5%">
+                <span id="ndz">{{ndz}}</span>
+            </p>
+        </details>
+    {{/ndz}}
+</div>
+<div style='text-align:left'>
+    <details id="eng_definition_details">
+        <summary>English Definition</summary>
+        <div style='font-size: 20px; color:green; margin-left:5%'>
+            <span id="eng_definition">{{eng_definition}}</span>
+        </div>
+    </details>
+    <details>
+        <summary>Links</summary>
+        <div style='font-size: 20px; margin-left:5%'>
+            {{links}}
+        </div>
+    </details>
+    <details>
+        <summary>Other Info</summary>
+        <div style='font-size: 20px; margin-left:5%'>
+            Searched Words: {{searched_words}}
+            <br>
+            Search Word Hit Count: {{search_word_hit_count}}
+            <br>
+            Local Times: {{cumulative_search_localtimes}}
+            {{#auto_open_fields}}
+                <br>
+                Automatically Open Fields: <span id="auto_open_fields">{{auto_open_fields}}</span>
+            {{/auto_open_fields}}
+        </div>
+    </details>
+</div>
+
+<div id="debug_element"></div>
+
+<script>
+    function updateDebugElement(str)
+    {
+        document.getElementById("debug_element").innerHTML = str;
+    }
+
+    function openIfNotEmpty(str_element, details_element) {
+        if (!!str_element.innerHTML)
+        {
+            details_element.open = true;
+            return true;
+        }
+        return false;
+    }
+
+    function openFirstNonEmpty(str_ids, details_ids)
+    {
+        for (i = 0; i < str_ids.length; i++)
+        {
+            var item_element = document.getElementById(str_ids[i]);
+            var item_details_element = document.getElementById(details_ids[i]);
+            if (!!item_element && !!item_details_element)
+                if (openIfNotEmpty(item_element, item_details_element))
+                    break;
+        }
+    }
+
+    var jp_str_ids = [
+        "daijisen",
+        "seisenpan",
+        "ndz",
+        "eng_definition"
+    ];
+    var jp_details_ids = [
+        "daijisen_details",
+        "seisenpan_details",
+        "ndz_details",
+        "eng_definition_details"
+    ];
+
+    var auto_open_fields_element = document.getElementById("auto_open_fields");
+    if (!!auto_open_fields_element)
+    {
+        var auto_open_fields_arr = auto_open_fields_element.innerHTML.replace(" ", "").split(",");
+        for(i = 0; i < auto_open_fields_arr.length; i++)
+        {
+            var idx = jp_str_ids.indexOf(auto_open_fields_arr[i]);
+            var item_element = document.getElementById(jp_str_ids[idx]);
+            var item_details_element = document.getElementById(jp_details_ids[idx]);
+            if (!!item_element && !!item_details_element)
+            {
+                openIfNotEmpty(item_element, item_details_element);
+            }
+        }
+    }
+    else
+    {
+        openFirstNonEmpty(jp_str_ids, jp_details_ids);
+    }
+</script>

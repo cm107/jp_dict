@@ -324,31 +324,38 @@ class AnkiConnect:
             ])
         )
     
-    def create_parsed_vocab_model(self) -> dict:
+    def _get_parsed_vocab_templates(self) -> (str, CardTemplateList):
         from textwrap import dedent
         from common_utils.path_utils import get_script_dir
         
         back_path = f"{get_script_dir()}/templates/parsed_vocab_back.html"
         back_text = ''.join(open(back_path, 'r').readlines()).replace('\n', '')
+        css_path = f"{get_script_dir()}/templates/parsed_vocab_back.css"
+        css_text = ''.join(open(css_path, 'r').readlines()).replace('\n', '')
+        return css_text, CardTemplateList([
+            CardTemplate(
+                name='Card 1',
+                front=dedent("""
+                {{writing}}
+                """).replace('\n', ''),
+                back=back_text
+            )
+        ])
+
+    def update_parsed_vocab_templates_and_styling(self):
+        css_text, card_templates = self._get_parsed_vocab_templates()
+        self.update_model_templates(model_name='parsed_vocab', card_templates=card_templates)
+        self.update_model_styling(model_name='parsed_vocab', css=css_text)
+
+    def create_parsed_vocab_model(self) -> dict:
+        css_text, card_templates = self._get_parsed_vocab_templates()
         self.create_model(
             model_name='parsed_vocab',
             field_names=ParsedVocabularyFields.get_constructor_params(),
-            css=dedent("""
-            .card {
-                font-family: arial;
-                font-size: 20px;
-                text-align: center;
-                color: black;
-                background-color: white;
-            }
-            """).replace('\n', ''),
-            card_templates=CardTemplateList([
-                CardTemplate(
-                    name='Card 1',
-                    front=dedent("""
-                    {{writing}}
-                    """).replace('\n', ''),
-                    back=back_text
-                )
-            ])
+            css=css_text,
+            card_templates=card_templates
         )
+    
+    def gui_card_browse(self, query: str) -> List[int]:
+        result = self.invoke('guiBrowse', query=query)
+        return result

@@ -362,7 +362,11 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
         else:
             return f'TODO ({self.obj.__class__.__name__})'
 
-    def custom_str(self, indent: int=0, first: bool=False) -> str:
+    def custom_str(
+        self, indent: int=0, first: bool=False,
+        link2html: bool=False, media2html: bool=False,
+        all_html: bool=True
+    ) -> str:
         tab = '\t' * indent
         use_tab, use_linebreak = False, False
         if type(self.obj) in [PlainText, Hinshi, KigoWord, MotoTsudzuri, RekishiText]:
@@ -390,16 +394,25 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
             print_str = f'{obj.num}'
         elif type(self.obj) is RelatedWordLink:
             obj = cast(RelatedWordLink, self.obj)
-            print_str = obj.text
+            if not (link2html or all_html):
+                print_str = obj.text
+            else:
+                print_str = f'<a href="{obj.url}">{obj.text}</a>'
         elif type(self.obj) is RelatedWordLinkList:
             obj = cast(RelatedWordLinkList, self.obj)
             print_str = ''
             for link in obj:
-                print_str += f'\n{tab}{link.text}'
+                if not (link2html or all_html):
+                    print_str += f'\n{tab}{link.text}'
+                else:
+                    print_str += f'\n{tab}<a href="{link.url}">{link.text}</a>'
         elif type(self.obj) is Media:
             obj = cast(Media, self.obj)
             use_tab, use_linebreak = True, True
-            print_str = '[Media Links]'
+            if not (media2html or all_html):
+                print_str = '[Media Links]'
+            else:
+                print_str = f'<a href="{obj.fullsize_img_link.url}"><img src="{obj.fullsize_img_link.url}" alt="Failed to load image."></a>'
         elif type(self.obj) is Table:
             obj = cast(Table, self.obj)
             use_tab, use_linebreak = True, True

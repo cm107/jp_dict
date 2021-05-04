@@ -185,6 +185,26 @@ class KotobankResult(BasicLoadableObject['KotobankResult']):
             return self.main_area.articles.dictionary_names
         else:
             return []
+    
+    def _get_content(self, dictionary_name: str) -> Any:
+        if self.main_area is None or self.main_area.articles is None:
+            return None
+        for article in self.main_area.articles:
+            if article.dictionary_name == dictionary_name:
+                return article.content
+        return None 
+
+    @property
+    def digital_daijisen_content(self) -> DigitalDaijisenDataHandler:
+        return self._get_content('デジタル大辞泉の解説')
+    
+    @property
+    def seisenpan_content(self) -> SeisenpanDataHandler:
+        return self._get_content('精選版 日本国語大辞典の解説')
+    
+    @property
+    def ndz_content(self) -> NDZ_ParsedItemList:
+        return self._get_content('日本大百科全書(ニッポニカ)の解説')
 
 class KotobankResultList(
     BasicLoadableHandler['KotobankResultList', 'KotobankResult'],
