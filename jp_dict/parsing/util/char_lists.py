@@ -14,6 +14,7 @@ space_chars = [
 hiragana_chars = list("ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてでとどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎわゐゑをんゔゕゖゝゞ")
 katakana_chars = list("ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶヽヾ")
 misc_kana_chars = list("ー")
+nonkanji_chars = wild_cards + eng_chars + typo_chars + space_chars + hiragana_chars + katakana_chars + misc_kana_chars
 
 hiragana2katakana_map = {hiragana_char: katakana_char for hiragana_char, katakana_char in zip(hiragana_chars, katakana_chars)}
 katakana2hiragana_map = {katakana_char: hiragana_char for hiragana_char, katakana_char in zip(hiragana_chars, katakana_chars)}

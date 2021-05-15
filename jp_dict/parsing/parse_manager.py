@@ -19,6 +19,7 @@ from .jisho.jisho_matches import SearchWordMatchesHandler, \
 from .kotobank.kotobank_structs import KotobankWordHtmlParser, \
     KotobankResult, KotobankResultList
 from .combined.combined_structs import CombinedResultList
+from .koohii import KoohiiParser
 
 class ParserManagerMetaData(BasicLoadableObject['ParserManagerMetaData']):
     def __init__(
@@ -28,7 +29,8 @@ class ParserManagerMetaData(BasicLoadableObject['ParserManagerMetaData']):
         requires_postmatching_redo: bool=False,
         requires_kotobank_combine: bool=False,
         requires_jisho_kotobank_results_combine: bool=False,
-        requires_filter_and_sort: bool=False
+        requires_filter_and_sort: bool=False,
+        requires_parse_and_combine_koohii: bool=False
     ):
         self.browser_history_paths = browser_history_paths if browser_history_paths is not None else []
         self.requires_jisho_grouping = requires_jisho_grouping
@@ -39,6 +41,7 @@ class ParserManagerMetaData(BasicLoadableObject['ParserManagerMetaData']):
         self.requires_kotobank_combine = requires_kotobank_combine
         self.requires_jisho_kotobank_results_combine = requires_jisho_kotobank_results_combine
         self.requires_filter_and_sort = requires_filter_and_sort
+        self.requires_parse_and_combine_koohii = requires_parse_and_combine_koohii
 
 class KotobankParseConfig(BasicLoadableObject['KotobankParseConfig']):
     def __init__(
@@ -72,6 +75,8 @@ class ParserManager(BasicLoadableObject['ParserManager']):
         jisho_kotobank_combined_dump_path: str,
         anki_export_dir_for_filter: str,
         filter_sorted_results_dump_path: str,
+        koohii_parse_dump_dir: str,
+        koohii_combined_dump_path: str,
         manager_save_path: str,
         kotobank_parse_config: KotobankParseConfig=None
     ):
@@ -88,6 +93,8 @@ class ParserManager(BasicLoadableObject['ParserManager']):
         self.jisho_kotobank_combined_dump_path = jisho_kotobank_combined_dump_path
         self.anki_export_dir_for_filter = anki_export_dir_for_filter
         self.filter_sorted_results_dump_path = filter_sorted_results_dump_path
+        self.koohii_parse_dump_dir = koohii_parse_dump_dir
+        self.koohii_combined_dump_path = koohii_combined_dump_path
         self.manager_save_path = manager_save_path
 
         self.kotobank_parse_config = kotobank_parse_config if kotobank_parse_config is not None else KotobankParseConfig()
@@ -108,6 +115,8 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             'jisho_kotobank_combined_dump_path': self.jisho_kotobank_combined_dump_path,
             'anki_export_dir_for_filter': self.anki_export_dir_for_filter,
             'filter_sorted_results_dump_path': self.filter_sorted_results_dump_path,
+            'koohii_parse_dump_dir': self.koohii_parse_dump_dir,
+            'koohii_combined_dump_path': self.koohii_combined_dump_path,
             'manager_save_path': self.manager_save_path,
             'kotobank_parse_config': self.kotobank_parse_config.to_dict(),
             'metadata': self._metadata.to_dict()
@@ -128,6 +137,8 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             jisho_kotobank_combined_dump_path=item_dict['jisho_kotobank_combined_dump_path'],
             anki_export_dir_for_filter=item_dict['anki_export_dir_for_filter'],
             filter_sorted_results_dump_path=item_dict['filter_sorted_results_dump_path'],
+            koohii_parse_dump_dir=item_dict['koohii_parse_dump_dir'],
+            koohii_combined_dump_path=item_dict['koohii_combined_dump_path'],
             kotobank_parse_config=KotobankParseConfig.from_dict(item_dict['kotobank_parse_config']) if 'kotobank_parse_config' in item_dict else None,
             manager_save_path=item_dict['manager_save_path'],
         )
@@ -519,8 +530,28 @@ class ParserManager(BasicLoadableObject['ParserManager']):
                 if verbose and len(anki_deck_export_paths) > 0:
                     logger.cyan('Finished Filtering Jisho and Kotobank Results')
             combined_results.save_to_path(self.filter_sorted_results_dump_path, overwrite=True)
+            self._metadata.requires_parse_and_combine_koohii = True
             if self._metadata.requires_filter_and_sort:
                 self._metadata.requires_filter_and_sort = False
+            self.save_to_path(self.manager_save_path, overwrite=True)
+
+    def parse_and_combine_koohii(self, force: bool=False, verbose: bool=False, show_pbar: bool=True):
+        if self._metadata.requires_parse_and_combine_koohii or force or not dir_exists(self.koohii_parse_dump_dir) or not file_exists(self.koohii_combined_dump_path):
+            assert file_exists(self.filter_sorted_results_dump_path)
+            results = CombinedResultList.load_from_path(self.filter_sorted_results_dump_path)
+            kanji_dict = results.get_all_writing_kanji(include_hit_count=True, show_pbar=show_pbar, leave_pbar=True)
+            parser = KoohiiParser(username='jpdict_scraper', password='password', showWindow=False)
+            if verbose:
+                logger.cyan('Parsing and Combining Kanji Data From Koohii')
+            parser.parse_and_save(
+                search_kanji_list=kanji_dict.keys(),
+                hit_count_list=[info_dict['hit_count'] for info_dict in kanji_dict.values()],
+                used_in_list=[info_dict['used_in'] for info_dict in kanji_dict.values()],
+                save_dir=self.koohii_parse_dump_dir, combined_save_path=self.koohii_combined_dump_path
+            )
+
+            if self._metadata.requires_parse_and_combine_koohii:
+                self._metadata.requires_parse_and_combine_koohii = False
                 self.save_to_path(self.manager_save_path, overwrite=True)
 
     def run(
@@ -535,6 +566,7 @@ class ParserManager(BasicLoadableObject['ParserManager']):
         force_combine_kotobank: bool=False, ignore_combine_kotobank: bool=True, # not needed
         force_combine_jisho_and_kotobank_results: bool=False, ignore_combine_jisho_and_kotobank_results: bool=False,
         force_filter_and_sort_results: bool=False, ignore_filter_and_sort_results: bool=False,
+        force_parse_and_combine_koohii: bool=False, ignore_parse_and_combine_koohii: bool=False,
         verbose: bool=False, show_pbar: bool=True
     ):
         if not ignore_combine_history or force_combine_history:
@@ -557,3 +589,5 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             self.combine_jisho_and_kotobank_results(force=force_combine_jisho_and_kotobank_results, verbose=verbose, show_pbar=show_pbar)
         if not ignore_filter_and_sort_results or force_filter_and_sort_results:
             self.filter_and_sort_results(force=force_filter_and_sort_results, verbose=verbose, show_pbar=show_pbar)
+        if not ignore_parse_and_combine_koohii or force_parse_and_combine_koohii:
+            self.parse_and_combine_koohii(force=force_parse_and_combine_koohii, verbose=verbose, show_pbar=show_pbar)

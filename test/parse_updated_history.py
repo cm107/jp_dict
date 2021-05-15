@@ -19,6 +19,8 @@ if not file_exists(manager_save_path):
         jisho_kotobank_combined_dump_path=f'{parse_data_dir}/jisho_kotobank_combined_results.json',
         anki_export_dir_for_filter='/home/clayton/workspace/prj/data_keep/data/study/anki',
         filter_sorted_results_dump_path=f'{parse_data_dir}/filter_sorted_results.json',
+        koohii_parse_dump_dir=f'{parse_data_dir}/koohii_parse_dump',
+        koohii_combined_dump_path=f'{parse_data_dir}/koohii_combined.json',
         manager_save_path=manager_save_path
     )
 else:

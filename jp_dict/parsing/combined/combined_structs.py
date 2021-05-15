@@ -2,13 +2,14 @@ from __future__ import annotations
 from typing import List, Dict
 from tqdm import tqdm
 from datetime import datetime
+from collections import OrderedDict
 
 from common_utils.base.basic import BasicLoadableObject, BasicLoadableHandler, BasicHandler
 from common_utils.file_utils import dir_exists
 from ..jisho.jisho_matches import DictionaryEntryMatchList as JishoEntries, \
     DictionaryEntryMatch as JishoEntry
 from ..kotobank.kotobank_structs import KotobankResult, KotobankResultList
-from ..util.char_lists import convert_katakana2hiragana
+from ..util.char_lists import convert_katakana2hiragana, nonkanji_chars
 from ...util.time_utils import get_localtime_from_time_usec, \
     get_utc_time_from_time_usec
 from ..anki.export_txt_parser import AnkiExportTextData
@@ -219,6 +220,12 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
                 chosen_kotobank_result = kotobank_result_with_most_dictionaries
         return CombinedResult(jisho_result=entry_match, kotobank_result=chosen_kotobank_result)
 
+    @property
+    def writing_kanji_list(self) -> List[str]:
+        chars = [char for char in list(self.jisho_result.entry.word_representation.writing) if char not in nonkanji_chars]
+        # return list(set(chars))
+        return chars
+
 class CombinedResultList(
     BasicLoadableHandler['CombinedResultList', 'CombinedResult'],
     BasicHandler['CombinedResultList', 'CombinedResult']
@@ -360,3 +367,29 @@ class CombinedResultList(
         for result in self:
             fields_list.append(result.to_vocabulary_fields())
         return fields_list
+    
+    def get_all_writing_kanji(self, include_hit_count: bool=False, show_pbar: bool=True, leave_pbar: bool=True) -> OrderedDict[str, int]:
+        kanji_dict = {}
+        pbar = tqdm(total=len(self), unit='result(s)', leave=leave_pbar) if show_pbar else None
+        for result in self:
+            if pbar is not None:
+                pbar.set_description(f'Parsing Kanji From: {result.jisho_result.entry.word_representation.writing}')
+            for kanji in result.writing_kanji_list: # TODO: Include search_word in kanji_dict
+                if include_hit_count:
+                    hit_count = result.search_word_hit_count
+                else:
+                    hit_count = 1
+                if kanji not in kanji_dict:
+                    kanji_dict[kanji] = {'hit_count': hit_count, 'used_in': [result.jisho_result.entry.word_representation.writing]}
+                    # kanji_dict[kanji] = hit_count
+                else:
+                    # kanji_dict[kanji] += hit_count
+                    kanji_dict[kanji]['hit_count'] += hit_count
+                    if result.jisho_result.entry.word_representation.writing not in kanji_dict[kanji]['used_in']:
+                        kanji_dict[kanji]['used_in'].append(result.jisho_result.entry.word_representation.writing)
+            if pbar is not None:
+                pbar.update()
+        if pbar is not None:
+            pbar.close()
+        kanji_dict = OrderedDict(sorted(kanji_dict.items(), key=lambda x: x[1]['hit_count'], reverse=True))
+        return kanji_dict
