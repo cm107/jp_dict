@@ -85,3 +85,23 @@ class AnkiExportTextData(
                 return True
         
         return False
+
+def parse_kanji_anki_export(path: str, field_idx: int) -> List[str]:
+    kanji_list = []
+    if not os.path.isfile(path):
+        raise FileNotFoundError(f"Couldn't find file: {path}")
+    f = open(path, 'r')
+
+    for line in f.readlines():
+        parts = line.split('\t')
+        parts = [part for part in parts if part not in ['', '\n']]
+        kanji = parts[field_idx]
+        if len(kanji) == 0:
+            raise Exception
+        elif len(kanji) == 1:
+            kanji_list.append(kanji)
+        else:
+            kanji_list.extend(list(kanji.replace('・', '')))
+    f.close()
+
+    return kanji_list

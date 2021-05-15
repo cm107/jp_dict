@@ -77,7 +77,9 @@ class ParserManager(BasicLoadableObject['ParserManager']):
         filter_sorted_results_dump_path: str,
         koohii_parse_dump_dir: str,
         koohii_combined_dump_path: str,
+        filtered_koohii_dump_path: str,
         manager_save_path: str,
+        learned_kanji_txt_path: str=None,
         kotobank_parse_config: KotobankParseConfig=None
     ):
         assert dir_exists(browser_history_dir), f"Couldn't find browser history folder: {browser_history_dir}"
@@ -95,8 +97,10 @@ class ParserManager(BasicLoadableObject['ParserManager']):
         self.filter_sorted_results_dump_path = filter_sorted_results_dump_path
         self.koohii_parse_dump_dir = koohii_parse_dump_dir
         self.koohii_combined_dump_path = koohii_combined_dump_path
+        self.filtered_koohii_dump_path = filtered_koohii_dump_path
         self.manager_save_path = manager_save_path
 
+        self.learned_kanji_txt_path = learned_kanji_txt_path
         self.kotobank_parse_config = kotobank_parse_config if kotobank_parse_config is not None else KotobankParseConfig()
 
         self._metadata = ParserManagerMetaData()
@@ -117,7 +121,9 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             'filter_sorted_results_dump_path': self.filter_sorted_results_dump_path,
             'koohii_parse_dump_dir': self.koohii_parse_dump_dir,
             'koohii_combined_dump_path': self.koohii_combined_dump_path,
+            'filtered_koohii_dump_path': self.filtered_koohii_dump_path,
             'manager_save_path': self.manager_save_path,
+            'learned_kanji_txt_path': self.learned_kanji_txt_path,
             'kotobank_parse_config': self.kotobank_parse_config.to_dict(),
             'metadata': self._metadata.to_dict()
         }
@@ -139,6 +145,8 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             filter_sorted_results_dump_path=item_dict['filter_sorted_results_dump_path'],
             koohii_parse_dump_dir=item_dict['koohii_parse_dump_dir'],
             koohii_combined_dump_path=item_dict['koohii_combined_dump_path'],
+            filtered_koohii_dump_path=item_dict['filtered_koohii_dump_path'],
+            learned_kanji_txt_path=item_dict['learned_kanji_txt_path'] if 'learned_kanji_txt_path' in item_dict else None,
             kotobank_parse_config=KotobankParseConfig.from_dict(item_dict['kotobank_parse_config']) if 'kotobank_parse_config' in item_dict else None,
             manager_save_path=item_dict['manager_save_path'],
         )
@@ -547,7 +555,9 @@ class ParserManager(BasicLoadableObject['ParserManager']):
                 search_kanji_list=kanji_dict.keys(),
                 hit_count_list=[info_dict['hit_count'] for info_dict in kanji_dict.values()],
                 used_in_list=[info_dict['used_in'] for info_dict in kanji_dict.values()],
-                save_dir=self.koohii_parse_dump_dir, combined_save_path=self.koohii_combined_dump_path
+                save_dir=self.koohii_parse_dump_dir, combined_save_path=self.koohii_combined_dump_path,
+                learned_kanji_txt_path=self.learned_kanji_txt_path,
+                filtered_dump_path=self.filtered_koohii_dump_path
             )
 
             if self._metadata.requires_parse_and_combine_koohii:

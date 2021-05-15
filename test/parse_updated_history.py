@@ -21,6 +21,8 @@ if not file_exists(manager_save_path):
         filter_sorted_results_dump_path=f'{parse_data_dir}/filter_sorted_results.json',
         koohii_parse_dump_dir=f'{parse_data_dir}/koohii_parse_dump',
         koohii_combined_dump_path=f'{parse_data_dir}/koohii_combined.json',
+        filtered_koohii_dump_path=f'{parse_data_dir}/koohii_filtered.json',
+        learned_kanji_txt_path=f'/home/clayton/workspace/prj/data_keep/data/study/anki/learned_kanji_combined.txt',
         manager_save_path=manager_save_path
     )
 else:

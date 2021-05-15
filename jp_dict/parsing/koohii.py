@@ -82,6 +82,13 @@ class KoohiiResultList(
     def from_dict_list(cls, dict_list: List[dict]) -> KoohiiResultList:
         return KoohiiResultList([KoohiiResult.from_dict(item_dict) for item_dict in dict_list])
 
+    def filter_out_kanji(self, kanji_list: List[str]) -> KoohiiResultList:
+        filtered_results = KoohiiResultList()
+        for result in self:
+            if result.kanji not in kanji_list:
+                filtered_results.append(result)
+        return filtered_results
+
 class KoohiiParser:
     def __init__(self, username: str, password: str, showWindow: bool=False):
         self.web = Browser(showWindow=showWindow)
@@ -219,7 +226,8 @@ class KoohiiParser:
         used_in_list: List[List[str]]=None,
         save_dir: str='kanji_save',
         force: bool=False, show_pbar: bool=True, leave_pbar: bool=True,
-        combined_save_path: str=None
+        combined_save_path: str=None,
+        learned_kanji_txt_path: str=None, filtered_dump_path: str=None
     ):
         if not os.path.isdir(save_dir):
             os.mkdir(save_dir)
@@ -250,3 +258,9 @@ class KoohiiParser:
         if combined_results is not None:
             combined_results.sort(attr_name='hit_count', reverse=True)
             combined_results.save_to_path(combined_save_path, overwrite=True)
+            if learned_kanji_txt_path is not None and filtered_dump_path is not None:
+                f = open(learned_kanji_txt_path, 'r')
+                lines = f.readlines()
+                learned_kanji_list = [line.replace('\n', '') for line in lines]
+                filtered_results = combined_results.filter_out_kanji(learned_kanji_list)
+                filtered_results.save_to_path(filtered_dump_path, overwrite=True)
