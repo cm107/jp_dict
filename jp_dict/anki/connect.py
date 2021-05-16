@@ -4,7 +4,7 @@ from typing import List, Dict
 from tqdm import tqdm
 from .note_structs import NoteAddParam, NoteAddParamList, \
     BaseFields, BasicFields, BasicFieldsList, ParsedVocabularyFields, \
-    ParsedKanjiFields
+    ParsedKanjiFields, ParsedKanjiFieldsList
 from .model_structs import CardTemplateList, CardTemplate
 
 class AnkiConnect:
@@ -176,7 +176,7 @@ class AnkiConnect:
         return result
     
     def update_note_fields(self, note_id: int, fields: BaseFields, audio=None, video=None, image=None):
-        assert isinstance(fields, BaseFields)
+        # assert isinstance(fields, BaseFields)
         note_dict = {
             'id': note_id,
             'fields': fields.to_dict()
@@ -390,6 +390,80 @@ class AnkiConnect:
             css=css_text,
             card_templates=card_templates
         )
+    
+    def _update_parsed_kanji_fields(self, deck_name: str, unique_id: str, update_func) -> bool:
+        """
+        Returns true if the note was found and the update was successful.
+        If the note couldn't be found, returns false.
+        """
+        
+        note_ids = self.find_notes(f'deck:{deck_name} unique_id:{unique_id}')
+        if len(note_ids) == 1:
+            note_id = note_ids[0]
+            result = self.get_notes_info(note_ids=[note_id])[0]
+            fields = {key: val['value'] for key, val in result['fields'].items()}
+            parsed_fields = ParsedKanjiFields(**fields)
+            update_func(parsed_fields)
+            self.update_note_fields(
+                note_id=note_id,
+                fields=parsed_fields
+            )
+            return True
+        elif len(note_ids) == 0:
+            return False
+        else:
+            raise Exception(f'Found more than one result for deck_name: {deck_name}, unique_id: {unique_id}')
+
+    def update_parsed_kanji_fields(
+        self, deck_name: str, unique_id: str, # search related
+        hit_count: str, used_in: str, order_idx: str # updated fields
+    ) -> bool:
+        """
+        I think this should typically only be used when updating existing cards in anki.
+        The other fields probably shouldn't be modified.
+        """
+        def update_func(fields: ParsedKanjiFields):
+            fields.hit_count = hit_count
+            fields.used_in = used_in
+            fields.order_idx = order_idx
+        
+        return self._update_parsed_kanji_fields(
+            deck_name=deck_name, unique_id=unique_id,
+            update_func=update_func
+        )
+
+    def add_or_update_parsed_kanji_notes(
+        self, deck_name: str, fields_list: ParsedKanjiFieldsList,
+        show_pbar: bool=True, leave_pbar: bool=True,
+        **kwargs
+    ) -> List[int]:
+        result = []
+        pbar = tqdm(total=len(fields_list), unit='note(s)', leave=leave_pbar) if show_pbar else None
+        if pbar is not None:
+            pbar.set_description('Adding Notes')
+        for fields in fields_list:
+            # try:
+            #     result0 = self.add_note(note)
+            # except:
+            #     print('Exception!')
+            #     if pbar is not None:
+            #         pbar.update()
+            #     continue
+            
+            found = self.update_parsed_kanji_fields(
+                deck_name=deck_name, unique_id=fields.unique_id,
+                hit_count=fields.hit_count, used_in=fields.used_in,
+                order_idx=fields.order_idx
+            )
+            if not found:
+                note = NoteAddParam.parsed_kanji(deck_name=deck_name, fields=fields, **kwargs)
+                result0 = self.add_note(note)
+                result.append(result0)
+            if pbar is not None:
+                pbar.update()
+        if pbar is not None:
+            pbar.close()
+        return result
 
     def gui_card_browse(self, query: str) -> List[int]:
         result = self.invoke('guiBrowse', query=query)

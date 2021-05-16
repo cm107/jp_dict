@@ -14,8 +14,7 @@ from ...util.time_utils import get_localtime_from_time_usec, \
     get_utc_time_from_time_usec
 from ..anki.export_txt_parser import AnkiExportTextData
 from ...anki.note_structs import ParsedVocabularyFields, ParsedVocabularyFieldsList
-
-# TODO: Finish implementing
+from .kanji_info import WritingKanjiInfo, WritingKanjiInfoList
 
 class CombinedResult(BasicLoadableObject['CombinedResult']):
     def __init__(self, jisho_result: JishoEntry, kotobank_result: KotobankResult=None):
@@ -107,6 +106,13 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
             search_word: [get_localtime_from_time_usec(time_usec) for time_usec in time_usec_list]
             for search_word, time_usec_list in self.time_usec_info.items()
         }
+
+    @property
+    def earliest_time_usec(self) -> int:
+        cum_time_usec_list = []
+        for search_word, time_usec_list in self.time_usec_info.items():
+            cum_time_usec_list.extend(time_usec_list)
+        return min(cum_time_usec_list)
 
     @property
     def search_word_hit_count(self) -> int:
@@ -368,28 +374,39 @@ class CombinedResultList(
             fields_list.append(result.to_vocabulary_fields())
         return fields_list
     
-    def get_all_writing_kanji(self, include_hit_count: bool=False, show_pbar: bool=True, leave_pbar: bool=True) -> OrderedDict[str, int]:
-        kanji_dict = {}
+    def get_all_writing_kanji(self, include_hit_count: bool=False, show_pbar: bool=True, leave_pbar: bool=True) -> WritingKanjiInfoList:
+        info_list = WritingKanjiInfoList()
         pbar = tqdm(total=len(self), unit='result(s)', leave=leave_pbar) if show_pbar else None
         for result in self:
             if pbar is not None:
                 pbar.set_description(f'Parsing Kanji From: {result.jisho_result.entry.word_representation.writing}')
-            for kanji in result.writing_kanji_list: # TODO: Include search_word in kanji_dict
+            for i, kanji in enumerate(result.writing_kanji_list):
                 if include_hit_count:
                     hit_count = result.search_word_hit_count
                 else:
                     hit_count = 1
-                if kanji not in kanji_dict:
-                    kanji_dict[kanji] = {'hit_count': hit_count, 'used_in': [result.jisho_result.entry.word_representation.writing]}
-                    # kanji_dict[kanji] = hit_count
+                earliest_time_usec = result.earliest_time_usec
+                relevant_info_list = info_list.get(kanji=kanji)
+                if len(relevant_info_list) == 0:
+                    info = WritingKanjiInfo(
+                        kanji=kanji, hit_count=hit_count,
+                        used_in=[result.jisho_result.entry.word_representation.writing],
+                        earliest_time_usec=earliest_time_usec, earliest_pos_idx=i
+                    )
+                    info_list.append(info)
+                elif len(relevant_info_list) == 1:
+                    relevant_info = relevant_info_list[0]
+                    relevant_info.hit_count += hit_count
+                    if result.jisho_result.entry.word_representation.writing not in relevant_info.used_in:
+                        relevant_info.used_in.append(result.jisho_result.entry.word_representation.writing)
+                    if earliest_time_usec < relevant_info.earliest_time_usec:
+                        relevant_info.earliest_time_usec = earliest_time_usec
+                        relevant_info.earliest_pos_idx = i
                 else:
-                    # kanji_dict[kanji] += hit_count
-                    kanji_dict[kanji]['hit_count'] += hit_count
-                    if result.jisho_result.entry.word_representation.writing not in kanji_dict[kanji]['used_in']:
-                        kanji_dict[kanji]['used_in'].append(result.jisho_result.entry.word_representation.writing)
+                    raise Exception
             if pbar is not None:
                 pbar.update()
         if pbar is not None:
             pbar.close()
-        kanji_dict = OrderedDict(sorted(kanji_dict.items(), key=lambda x: x[1]['hit_count'], reverse=True))
-        return kanji_dict
+        info_list.sort(attr_name='hit_count', reverse=True)
+        return info_list

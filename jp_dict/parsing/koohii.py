@@ -2,13 +2,13 @@ from __future__ import annotations
 from typing import List
 import os
 from webbot import Browser
-import requests
 from bs4 import BeautifulSoup
-import urllib3
 from tqdm import tqdm
 from common_utils.base.basic import BasicLoadableObject, BasicLoadableHandler, \
     BasicHandler
 from ..anki.note_structs import ParsedKanjiFields, ParsedKanjiFieldsList
+from ..parsing.combined.kanji_info import WritingKanjiInfoList
+from ..anki.connect import AnkiConnect
 
 class KoohiiResult(BasicLoadableObject['KoohiiResult']):
     def __init__(
@@ -17,7 +17,8 @@ class KoohiiResult(BasicLoadableObject['KoohiiResult']):
         kanji: str, reading: str, stroke_count: int,
         keyword: str,
         new_shared_stories: List[str], shared_stories: List[str],
-        hit_count: int=0, used_in: List[str]=None
+        hit_count: int=0, used_in: List[str]=None,
+        earliest_time_usec: int=None, earliest_pos_idx: int=None
     ):
         super().__init__()
         self.lesson_name = lesson_name
@@ -30,6 +31,8 @@ class KoohiiResult(BasicLoadableObject['KoohiiResult']):
         self.shared_stories = shared_stories
         self.hit_count = hit_count
         self.used_in = used_in if used_in is not None else []
+        self.earliest_time_usec = earliest_time_usec
+        self.earliest_pos_idx = earliest_pos_idx
     
     def __str__(self) -> str:
         print_str = f'{self.lesson_name}, Frame {self.frame_num}'
@@ -60,9 +63,12 @@ class KoohiiResult(BasicLoadableObject['KoohiiResult']):
             shared_stories=item_dict['shared_stories'],
             hit_count=item_dict['hit_count'],
             used_in=item_dict['used_in'] if 'used_in' in item_dict else None,
+            earliest_time_usec=item_dict['earliest_time_usec'] if 'earliest_time_usec' in item_dict else None,
+            earliest_pos_idx=item_dict['earliest_pos_idx'] if 'earliest_pos_idx' in item_dict else None
         )
     
-    def to_kanji_fields(self) -> ParsedKanjiFields:
+    def to_kanji_fields(self, order_idx: int=None) -> ParsedKanjiFields:
+        # TODO: Work in earliest_time_usec and earliest_pos_idx and use them as a unique identifier
         jisho_word_base_url = 'https://jisho.org/word'
         return ParsedKanjiFields(
             lesson_name=self.lesson_name,
@@ -79,7 +85,9 @@ class KoohiiResult(BasicLoadableObject['KoohiiResult']):
                     f'<a href="{jisho_word_base_url}/{word}">{word}</a>'
                     for word in self.used_in
                 ]
-            )
+            ),
+            order_idx=str(order_idx) if order_idx is not None else "",
+            unique_id=f'{self.earliest_time_usec}-{self.earliest_pos_idx}'
         )
 
 class KoohiiResultList(
@@ -111,7 +119,22 @@ class KoohiiResultList(
         return filtered_results
     
     def to_kanji_fields(self) -> ParsedKanjiFieldsList:
-        return ParsedKanjiFieldsList([result.to_kanji_fields() for result in self])
+        return ParsedKanjiFieldsList([result.to_kanji_fields(order_idx=i) for i, result in enumerate(self)])
+
+    def add_or_update_anki(self, deck_name: str, open_browser: bool=False):
+        anki_connect = AnkiConnect()
+        if 'parsed_kanji' not in anki_connect.get_model_names():
+            anki_connect.create_parsed_kanji_model()
+        else:
+            anki_connect.update_parsed_kanji_templates_and_styling()
+        if deck_name not in anki_connect.get_deck_names():
+            anki_connect.create_deck(deck=deck_name)
+        anki_connect.add_or_update_parsed_kanji_notes(
+            deck_name=deck_name,
+            fields_list=self.to_kanji_fields()
+        )
+        if open_browser:
+            anki_connect.gui_card_browse(query=f'deck:{deck_name}')
 
 class KoohiiParser:
     def __init__(self, username: str, password: str, showWindow: bool=False):
@@ -154,7 +177,10 @@ class KoohiiParser:
             soup = self.get_search_soup(search_kanji=search_kanji, login_if_necessary=login_if_necessary)
         return soup
 
-    def parse(self, search_kanji: str, hit_count: int=0, used_in: List[str]=None) -> KoohiiResult:
+    def parse(
+        self, search_kanji: str, hit_count: int=0, used_in: List[str]=None,
+        earliest_time_usec: int=None, earliest_pos_idx: int=None
+    ) -> KoohiiResult:
         soup = self.get_search_soup(search_kanji=search_kanji)
         row_html = soup.find(name='div', class_='row')
         h2_html = (
@@ -178,7 +204,9 @@ class KoohiiParser:
                 new_shared_stories=[],
                 shared_stories=[],
                 hit_count=hit_count,
-                used_in=used_in if used_in is not None else []
+                used_in=used_in if used_in is not None else [],
+                earliest_time_usec=earliest_time_usec,
+                earliest_pos_idx=earliest_pos_idx
             )
 
 
@@ -226,7 +254,9 @@ class KoohiiParser:
             new_shared_stories=new_shared_story_text_list,
             shared_stories=shared_story_text_list,
             hit_count=hit_count,
-            used_in=used_in if used_in is not None else []
+            used_in=used_in if used_in is not None else [],
+            earliest_time_usec=earliest_time_usec,
+            earliest_pos_idx=earliest_pos_idx
         )
     
     def parse_batch(self, search_kanji_list: List[str], hit_count_list: List[int]=None, show_pbar: bool=True, leave_pbar: bool=True) -> KoohiiResultList:
@@ -246,32 +276,33 @@ class KoohiiParser:
         return results
     
     def parse_and_save(
-        self, search_kanji_list: List[str], hit_count_list: List[int]=None,
-        used_in_list: List[List[str]]=None,
+        self, kanji_info_list: WritingKanjiInfoList,
         save_dir: str='kanji_save',
         force: bool=False, show_pbar: bool=True, leave_pbar: bool=True,
         combined_save_path: str=None,
         learned_kanji_txt_path: str=None, filtered_dump_path: str=None
     ):
-        if not os.path.isdir(save_dir):
-            os.mkdir(save_dir)
-        if hit_count_list is None:
-            hit_count_list = [0] * len(search_kanji_list)
-        if used_in_list is None:
-            used_in_list = [[]] * len(search_kanji_list)
-        
         combined_results = KoohiiResultList() if combined_save_path is not None else None
-        pbar = tqdm(total=len(search_kanji_list), unit='kanji', leave=leave_pbar) if show_pbar else None
-        for search_kanji, hit_count, used_in in zip(search_kanji_list, hit_count_list, used_in_list):
+        pbar = tqdm(total=len(kanji_info_list), unit='kanji', leave=leave_pbar) if show_pbar else None
+        for kanji_info in kanji_info_list:
             if pbar is not None:
-                pbar.set_description(f'Parsing Koohii Data For: {search_kanji}')
-            save_path = f'{save_dir}/{search_kanji}.json'
+                pbar.set_description(f'Parsing Koohii Data For: {kanji_info.kanji}')
+            if not os.path.isdir(save_dir):
+                os.mkdir(save_dir)
+            save_path = f'{save_dir}/{kanji_info.kanji}.json'
             if not os.path.isfile(save_path) or force:
-                result = self.parse(search_kanji, hit_count=hit_count, used_in=used_in)
+                result = self.parse(
+                    kanji_info.kanji,
+                    hit_count=kanji_info.hit_count, used_in=kanji_info.used_in,
+                    earliest_time_usec=kanji_info.earliest_time_usec,
+                    earliest_pos_idx=kanji_info.earliest_pos_idx
+                )
             else:
                 result = KoohiiResult.load_from_path(save_path)
-                result.hit_count = hit_count
-                result.used_in = used_in
+                result.hit_count = kanji_info.hit_count
+                result.used_in = kanji_info.used_in
+                result.earliest_time_usec = kanji_info.earliest_time_usec
+                result.earliest_pos_idx = kanji_info.earliest_pos_idx
             result.save_to_path(save_path, overwrite=True)
             if combined_results is not None:
                 combined_results.append(result)

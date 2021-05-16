@@ -149,10 +149,12 @@ class ParsedKanjiFields(BasicLoadableObject['ParsedKanjiFields']):
         keyword: str,
         new_shared_stories: str, shared_stories: str,
         hit_count: str, used_in: str,
+        order_idx: str, unique_id: str,
         new_shared_stories_show_idx: str="", shared_stories_show_idx: str="",
         custom_keyword: str="", custom_reading: str="", custom_story: str=""
     ):
         super().__init__()
+        # Defined only when adding new card
         self.kanji = kanji
         self.lesson_name = lesson_name
         self.frame_num = frame_num
@@ -161,10 +163,16 @@ class ParsedKanjiFields(BasicLoadableObject['ParsedKanjiFields']):
         self.keyword = keyword
         self.new_shared_stories = new_shared_stories
         self.shared_stories = shared_stories
+
+        # Updated Regularly
         self.hit_count = hit_count
         self.used_in = used_in
+        self.order_idx = order_idx
         
-        # For user input
+        # Should NEVER Change, EVER!
+        self.unique_id = unique_id
+
+        # For user input (Update From Anki Only)
         self.new_shared_stories_show_idx = new_shared_stories_show_idx
         self.shared_stories_show_idx = shared_stories_show_idx
         self.custom_keyword = custom_keyword
