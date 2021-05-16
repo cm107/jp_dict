@@ -3,7 +3,8 @@ import urllib.request
 from typing import List, Dict
 from tqdm import tqdm
 from .note_structs import NoteAddParam, NoteAddParamList, \
-    BaseFields, BasicFields, BasicFieldsList, ParsedVocabularyFields
+    BaseFields, BasicFields, BasicFieldsList, ParsedVocabularyFields, \
+    ParsedKanjiFields
 from .model_structs import CardTemplateList, CardTemplate
 
 class AnkiConnect:
@@ -118,12 +119,14 @@ class AnkiConnect:
         if pbar is not None:
             pbar.set_description('Adding Notes')
         for note in notes:
-            try:
-                result0 = self.add_note(note)
-            except:
-                if pbar is not None:
-                    pbar.update()
-                continue
+            # try:
+            #     result0 = self.add_note(note)
+            # except:
+            #     print('Exception!')
+            #     if pbar is not None:
+            #         pbar.update()
+            #     continue
+            result0 = self.add_note(note)
             result.append(result0)
             if pbar is not None:
                 pbar.update()
@@ -356,6 +359,38 @@ class AnkiConnect:
             card_templates=card_templates
         )
     
+    def _get_parsed_kanji_templates(self) -> (str, CardTemplateList):
+        from textwrap import dedent
+        from common_utils.path_utils import get_script_dir
+        
+        back_path = f"{get_script_dir()}/templates/parsed_kanji.html"
+        back_text = ''.join(open(back_path, 'r').readlines()).replace('\n', '')
+        css_path = f"{get_script_dir()}/templates/parsed_kanji.css"
+        css_text = ''.join(open(css_path, 'r').readlines()).replace('\n', '')
+        return css_text, CardTemplateList([
+            CardTemplate(
+                name='Card 1',
+                front=dedent("""
+                {{kanji}}
+                """).replace('\n', ''),
+                back=back_text
+            )
+        ])
+
+    def update_parsed_kanji_templates_and_styling(self):
+        css_text, card_templates = self._get_parsed_kanji_templates()
+        self.update_model_templates(model_name='parsed_kanji', card_templates=card_templates)
+        self.update_model_styling(model_name='parsed_kanji', css=css_text)
+
+    def create_parsed_kanji_model(self) -> dict:
+        css_text, card_templates = self._get_parsed_kanji_templates()
+        self.create_model(
+            model_name='parsed_kanji',
+            field_names=ParsedKanjiFields.get_constructor_params(),
+            css=css_text,
+            card_templates=card_templates
+        )
+
     def gui_card_browse(self, query: str) -> List[int]:
         result = self.invoke('guiBrowse', query=query)
         return result

@@ -140,6 +140,49 @@ class ParsedVocabularyFieldsList(
     def from_dict_list(cls, dict_list: List[dict]) -> ParsedVocabularyFieldsList:
         return ParsedVocabularyFieldsList([ParsedVocabularyFields.from_dict(item_dict) for item_dict in dict_list])
 
+class ParsedKanjiFields(BasicLoadableObject['ParsedKanjiFields']):
+    def __init__(
+        self,
+        kanji: str,
+        lesson_name: str, frame_num: str,
+        reading: str, stroke_count: str,
+        keyword: str,
+        new_shared_stories: str, shared_stories: str,
+        hit_count: str, used_in: str,
+        new_shared_stories_show_idx: str="", shared_stories_show_idx: str="",
+        custom_keyword: str="", custom_reading: str="", custom_story: str=""
+    ):
+        super().__init__()
+        self.kanji = kanji
+        self.lesson_name = lesson_name
+        self.frame_num = frame_num
+        self.reading = reading
+        self.stroke_count = stroke_count
+        self.keyword = keyword
+        self.new_shared_stories = new_shared_stories
+        self.shared_stories = shared_stories
+        self.hit_count = hit_count
+        self.used_in = used_in
+        
+        # For user input
+        self.new_shared_stories_show_idx = new_shared_stories_show_idx
+        self.shared_stories_show_idx = shared_stories_show_idx
+        self.custom_keyword = custom_keyword
+        self.custom_reading = custom_reading
+        self.custom_story = custom_story
+
+class ParsedKanjiFieldsList(
+    BasicLoadableHandler['ParsedKanjiFieldsList', 'ParsedKanjiFields'],
+    BasicHandler['ParsedKanjiFieldsList', 'ParsedKanjiFields']
+):
+    def __init__(self, fields_list: List[ParsedKanjiFields]=None):
+        super().__init__(obj_type=ParsedKanjiFields, obj_list=fields_list)
+        self.fields_list = self.obj_list
+    
+    @classmethod
+    def from_dict_list(cls, dict_list: List[dict]) -> ParsedKanjiFieldsList:
+        return ParsedKanjiFieldsList([ParsedKanjiFields.from_dict(item_dict) for item_dict in dict_list])
+
 class NoteAddOptions(BasicLoadableObject['NoteAddOptions']):
     def __init__(
         self,
@@ -271,6 +314,15 @@ class NoteAddParam(BasicLoadableObject['NoteAddParam']):
             model_name='parsed_vocab',
             **kwargs
         )
+    
+    @classmethod
+    def parsed_kanji(cls, deck_name: str, fields: ParsedKanjiFields, **kwargs) -> NoteAddParam:
+        return cls.from_fields(
+            deck_name=deck_name,
+            fields=fields,
+            model_name='parsed_kanji',
+            **kwargs
+        )
 
 class NoteAddParamList(
     BasicLoadableHandler['NoteAddParamList', 'NoteAddParam'],
@@ -316,5 +368,13 @@ class NoteAddParamList(
         notes = NoteAddParamList()
         for fields in fields_list:
             note = NoteAddParam.parsed_vocab(deck_name=deck_name, fields=fields, **kwargs)
+            notes.append(note)
+        return notes
+    
+    @classmethod
+    def parsed_kanji(cls, deck_name: str, fields_list: ParsedKanjiFieldsList, **kwargs) -> NoteAddParamList:
+        notes = NoteAddParamList()
+        for fields in fields_list:
+            note = NoteAddParam.parsed_kanji(deck_name=deck_name, fields=fields, **kwargs)
             notes.append(note)
         return notes

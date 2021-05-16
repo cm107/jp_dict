@@ -8,6 +8,7 @@ import urllib3
 from tqdm import tqdm
 from common_utils.base.basic import BasicLoadableObject, BasicLoadableHandler, \
     BasicHandler
+from ..anki.note_structs import ParsedKanjiFields, ParsedKanjiFieldsList
 
 class KoohiiResult(BasicLoadableObject['KoohiiResult']):
     def __init__(
@@ -60,6 +61,26 @@ class KoohiiResult(BasicLoadableObject['KoohiiResult']):
             hit_count=item_dict['hit_count'],
             used_in=item_dict['used_in'] if 'used_in' in item_dict else None,
         )
+    
+    def to_kanji_fields(self) -> ParsedKanjiFields:
+        jisho_word_base_url = 'https://jisho.org/word'
+        return ParsedKanjiFields(
+            lesson_name=self.lesson_name,
+            frame_num=str(self.frame_num),
+            kanji=self.kanji,
+            reading=self.reading,
+            stroke_count=str(self.stroke_count),
+            keyword=self.keyword,
+            new_shared_stories='<br>'.join(self.new_shared_stories),
+            shared_stories='<br>'.join(self.shared_stories),
+            hit_count=str(self.hit_count),
+            used_in=', '.join(
+                [
+                    f'<a href="{jisho_word_base_url}/{word}">{word}</a>'
+                    for word in self.used_in
+                ]
+            )
+        )
 
 class KoohiiResultList(
     BasicLoadableHandler['KoohiiResultList', 'KoohiiResult'],
@@ -88,6 +109,9 @@ class KoohiiResultList(
             if result.kanji not in kanji_list:
                 filtered_results.append(result)
         return filtered_results
+    
+    def to_kanji_fields(self) -> ParsedKanjiFieldsList:
+        return ParsedKanjiFieldsList([result.to_kanji_fields() for result in self])
 
 class KoohiiParser:
     def __init__(self, username: str, password: str, showWindow: bool=False):

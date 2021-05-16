@@ -1,0 +1,148 @@
+{{kanji}}
+<hr id=answer>
+<p>Meaning: <span id="keyword">{{keyword}}</span></p>
+<p>Reading: <span id="reading">{{reading}}</span></p>
+
+<div style='font-size: 20px; color:navy; text-align:left;'>
+    {{#custom_story}}
+        <details open>
+            <summary>Custom Story</summary>
+            <p style="margin-left:5%">
+                {{custom_story}}
+            </p>
+        </details>
+    {{/custom_story}}
+    {{#new_shared_stories_show_idx}}
+        <details id="chosen_new_shared_stories_details" open>
+            <summary>Chosen Koohii New Stories</summary>
+            <p style="margin-left:5%">
+                <span id="chosen_new_shared_stories"></span>
+            </p>
+        </details>
+    {{/new_shared_stories_show_idx}}
+    {{#shared_stories_show_idx}}
+        <details id="chosen_shared_stories_details" open>
+            <summary>Chosen Koohii Stories</summary>
+            <p style="margin-left:5%">
+                <span id="chosen_shared_stories"></span>
+            </p>
+        </details>
+    {{/shared_stories_show_idx}}
+    {{#new_shared_stories}}
+        <details id="new_shared_stories_details">
+            <summary>Koohii New Stories</summary>
+            <p style="margin-left:5%">
+                <span id="new_shared_stories">{{new_shared_stories}}</span>
+            </p>
+        </details>
+    {{/new_shared_stories}}
+    {{#shared_stories}}
+        <details id="shared_stories_details">
+            <summary>Koohii Stories</summary>
+            <p style="margin-left:5%">
+                <span id="shared_stories">{{shared_stories}}</span>
+            </p>
+        </details>
+    {{/shared_stories}}
+</div>
+<hr id=info>
+<div style='font-size: 20px; color:black; text-align:left;'>
+    <details id="koohii_info_details">
+        <summary>Koohii Info</summary>
+        <p style="margin-left:5%">
+            {{lesson_name}}, Frame {{frame_num}}
+            <br>
+            Stroke Count: {{stroke_count}}
+            <br>
+            Show New Stories At Index: <span id="new_shared_stories_show_idx">{{new_shared_stories_show_idx}}</span>
+            <br>
+            Show Stories At Index: <span id="shared_stories_show_idx">{{shared_stories_show_idx}}</span>
+            <br>
+            Custom Keyword: <span id="custom_keyword">{{custom_keyword}}</span>
+            <br>
+            Custom Reading: <span id="custom_reading">{{custom_reading}}</span>
+        </p>
+    </details>
+</div>
+<div style='font-size: 20px; color:black; text-align:left;'>
+    <details id="statistics_details" open>
+        <summary>Statistics</summary>
+        <p style="margin-left:5%">
+            Hit Count: {{hit_count}}
+            <br>
+            Used In: {{used_in}}
+        </p>
+    </details>
+</div>
+
+<div id="debug_element"></div>
+
+<script>
+    function updateDebugElement(str)
+    {
+        document.getElementById("debug_element").innerHTML = str;
+    }
+
+    function fieldToOrderedList(fieldID, show_idx_list = null, dstElement = null)
+    {
+        var field_element = document.getElementById(fieldID);
+
+        if (!!field_element)
+        {
+            var field_list = field_element.innerHTML.split("<br>");
+            var field_html = "<ol>";
+            for(i = 0; i < field_list.length; i++)
+            {
+                if (!!show_idx_list && !(show_idx_list.length == 1 && !!!show_idx_list[0]) && !show_idx_list.includes((i + 1).toString()))
+                {
+                    continue;
+                }
+                var number_val = (i + 1).toString();
+                field_html += `<li value="${number_val}">${field_list[i]}</li>`;
+            }
+            field_html += "</ol>";
+            if (!!dstElement)
+            {
+                dstElement.innerHTML = field_html;
+            }
+            else
+            {
+                field_element.innerHTML = field_html;
+            }
+        }
+    }
+
+    function replaceIfNotBlank(src_element, dst_element)
+    {
+        if (!!src_element.innerHTML && !!dst_element.innerHTML)
+        {
+            dst_element.innerHTML = src_element.innerHTML;
+        }
+    }
+
+    var chosen_shared_stories_element = document.getElementById("chosen_shared_stories");
+    if (!!chosen_shared_stories_element)
+        fieldToOrderedList(
+            fieldID="shared_stories",
+            show_idx_list=document.getElementById("shared_stories_show_idx").innerHTML.replace(" ", "").split(","),
+            dstElement=chosen_shared_stories_element
+        );
+    fieldToOrderedList(fieldID="shared_stories");
+    var chosen_new_shared_stories_element = document.getElementById("chosen_new_shared_stories");
+    if (!!chosen_new_shared_stories_element)
+        fieldToOrderedList(
+            fieldID="new_shared_stories",
+            show_idx_list=document.getElementById("new_shared_stories_show_idx").innerHTML.replace(" ", "").split(","),
+            dstElement=chosen_new_shared_stories_element
+        );
+    fieldToOrderedList(fieldID="new_shared_stories");
+
+    replaceIfNotBlank(
+        src_element=document.getElementById("custom_keyword"),
+        dst_element=document.getElementById("keyword")
+    );
+    replaceIfNotBlank(
+        src_element=document.getElementById("custom_reading"),
+        dst_element=document.getElementById("reading")
+    );
+</script>

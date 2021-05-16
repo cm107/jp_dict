@@ -1,0 +1,15 @@
+.card {
+    font-family: arial;
+    font-size: 20px;
+    text-align: center;
+    color: black;
+    background-color: white;
+}
+
+/* ol {
+    list-style: none;
+}
+
+ol>li:before {
+    content: attr(seq) ". ";
+} */
