@@ -1,16 +1,31 @@
+import os
 import json
 import urllib.request
-from typing import List, Dict
+from typing import List, Dict, cast, Tuple
+from datetime import datetime, time
 from tqdm import tqdm
 from .note_structs import NoteAddParam, NoteAddParamList, \
     BaseFields, BasicFields, BasicFieldsList, \
     ParsedVocabularyFields, ParsedVocabularyFieldsList, \
     ParsedKanjiFields, ParsedKanjiFieldsList
 from .model_structs import CardTemplateList, CardTemplate
+from .change_logger import AnkiChangeList, AnkiChange
 
 class AnkiConnect:
-    def __init__(self, base_url: str='http://localhost:8765'):
+    def __init__(self, base_url: str='http://localhost:8765', changelog_path: str=None):
         self.base_url = base_url
+
+        self.changelog_path = changelog_path
+        self.changelog = cast(AnkiChangeList, None)
+        if changelog_path is not None:
+            if os.path.isfile(changelog_path):
+                self.changelog = AnkiChangeList.load_from_path(changelog_path)
+            else:
+                self.changelog = AnkiChangeList()
+
+    def save_changelog(self):
+        if self.changelog is not None:
+            self.changelog.save_to_path(self.changelog_path, overwrite=True)
 
     def request(self, action, **params):
         return {'action': action, 'params': params, 'version': 6}
@@ -28,10 +43,17 @@ class AnkiConnect:
             raise Exception(response['error'])
         return response['result']
     
-    def create_deck(self, deck: str, verbose: bool=True):
+    def create_deck(self, deck: str):
         self.invoke('createDeck', deck=deck)
-        if verbose:
-            print(f'Created deck: {deck}')
+        if self.changelog is not None:
+            self.changelog.append(
+                AnkiChange(
+                    timestamp=datetime.now(),
+                    category=AnkiChange.LogCategory.DECK,
+                    subcategory=AnkiChange.LogSubcategory.CREATE,
+                    deck_name=deck
+                )
+            )
     
     def get_deck_names(self, exclude_default: bool=False) -> List[str]:
         result = self.invoke('deckNames')
@@ -47,28 +69,26 @@ class AnkiConnect:
         result = self.invoke('getDecks', cards=cards)
         return result
     
-    def move_cards(self, cards: List[int], dst_deck: str, verbose: bool=True):
-        is_new_deck = not dst_deck in self.get_deck_names()
+    def move_cards(self, cards: List[int], dst_deck: str):
         self.invoke('changeDeck', cards=cards, deck=dst_deck)
-        if verbose:
-            if is_new_deck:
-                print(f'Moved cards {cards} to new deck: {dst_deck}')
-            else:
-                print(f'Moved cards {cards} to deck: {dst_deck}')
 
-    def delete_deck(self, deck: str, cards_too: bool=True, verbose: bool=True):
+    def delete_deck(self, deck: str, cards_too: bool=True):
         if not isinstance(deck, list):
             decks = [deck]
         else:
             decks = deck
+
+        if self.changelog is not None:
+            self.changelog.append(
+                AnkiChange(
+                    timestamp=datetime.now(),
+                    category=AnkiChange.LogCategory.DECK,
+                    subcategory=AnkiChange.LogSubcategory.DELETE,
+                    deck_name=deck
+                )
+            )
         
         self.invoke('deleteDecks', decks=decks, cardsToo=cards_too)
-
-        if verbose:
-            if not cards_too:
-                print(f'Deleted decks: {decks}')
-            else:
-                print(f'Deleted decks and cards: {decks}')
     
     def cards_are_due(self, cards: List[int]) -> List[bool]:
         result = self.invoke('are_Due', cards=cards)
@@ -99,7 +119,8 @@ class AnkiConnect:
         result = self.add_note(
             note=NoteAddParam.basic(
                 deck_name=deck_name,
-                fields=fields
+                fields=fields,
+                **kwargs
             )
         )
         return result
@@ -243,8 +264,15 @@ class AnkiConnect:
         return result
     
     def create_model(self, model_name: str, field_names: List[str], css: str, card_templates: CardTemplateList) -> dict:
-        # for field in card_templates.fields:
-        #     assert field in field_names
+        if self.changelog is not None:
+            self.changelog.append(
+                AnkiChange(
+                    timestamp=datetime.now(),
+                    category=AnkiChange.LogCategory.MODEL,
+                    subcategory=AnkiChange.LogSubcategory.CREATE,
+                    model_name=model_name
+                )
+            )
         result = self.invoke(
             'createModel',
             modelName=model_name,
@@ -259,6 +287,16 @@ class AnkiConnect:
         return result
 
     def update_model_templates(self, model_name: str, card_templates: CardTemplateList):
+        if self.changelog is not None:
+            self.changelog.append(
+                AnkiChange(
+                    timestamp=datetime.now(),
+                    category=AnkiChange.LogCategory.MODEL,
+                    subcategory=AnkiChange.LogSubcategory.UPDATE,
+                    model_name=model_name,
+                    comment='Updated model templates'
+                )
+            )
         self.invoke(
             'updateModelTemplates',
             model={
@@ -272,6 +310,16 @@ class AnkiConnect:
         return result
 
     def update_model_styling(self, model_name: str, css: str):
+        if self.changelog is not None:
+            self.changelog.append(
+                AnkiChange(
+                    timestamp=datetime.now(),
+                    category=AnkiChange.LogCategory.MODEL,
+                    subcategory=AnkiChange.LogSubcategory.UPDATE,
+                    model_name=model_name,
+                    comment='Updated model styling'
+                )
+            )
         self.invoke(
             'updateModelStyling',
             model={
@@ -328,7 +376,7 @@ class AnkiConnect:
             ])
         )
     
-    def _get_parsed_vocab_templates(self) -> (str, CardTemplateList):
+    def _get_parsed_vocab_templates(self) -> Tuple[str, CardTemplateList]:
         from textwrap import dedent
         from common_utils.path_utils import get_script_dir
         
@@ -360,7 +408,7 @@ class AnkiConnect:
             card_templates=card_templates
         )
     
-    def _get_parsed_kanji_templates(self) -> (str, CardTemplateList):
+    def _get_parsed_kanji_templates(self) -> Tuple[str, CardTemplateList]:
         from textwrap import dedent
         from common_utils.path_utils import get_script_dir
         
@@ -426,7 +474,63 @@ class AnkiConnect:
         searched_words: str, search_word_hit_count: str, # updated fields
         cumulative_search_localtimes: str, order_idx: str
     ) -> bool:
+        # TODO: Implement change logger
         def update_func(fields: ParsedVocabularyFields):
+            if self.changelog is not None:
+                timestamp = datetime.now()
+                if fields.searched_words != searched_words:
+                    self.changelog.append(
+                        AnkiChange(
+                            timestamp=timestamp,
+                            category=AnkiChange.LogCategory.NOTE,
+                            subcategory=AnkiChange.LogSubcategory.UPDATE,
+                            deck_name=deck_name, unique_id=unique_id,
+                            field_name='searched_words',
+                            previous_value=fields.searched_words,
+                            new_value=searched_words,
+                            show_values=True
+                        )
+                    )
+                if fields.search_word_hit_count != search_word_hit_count:
+                    self.changelog.append(
+                        AnkiChange(
+                            timestamp=timestamp,
+                            category=AnkiChange.LogCategory.NOTE,
+                            subcategory=AnkiChange.LogSubcategory.UPDATE,
+                            deck_name=deck_name, unique_id=unique_id,
+                            field_name='search_word_hit_count',
+                            previous_value=fields.search_word_hit_count,
+                            new_value=search_word_hit_count,
+                            show_values=True
+                        )
+                    )
+                if fields.cumulative_search_localtimes != cumulative_search_localtimes:
+                    self.changelog.append(
+                        AnkiChange(
+                            timestamp=timestamp,
+                            category=AnkiChange.LogCategory.NOTE,
+                            subcategory=AnkiChange.LogSubcategory.UPDATE,
+                            deck_name=deck_name, unique_id=unique_id,
+                            field_name='cumulative_search_localtimes',
+                            previous_value=fields.cumulative_search_localtimes,
+                            new_value=cumulative_search_localtimes,
+                            show_values=True
+                        )
+                    )
+                if fields.order_idx != order_idx:
+                    self.changelog.append(
+                        AnkiChange(
+                            timestamp=timestamp,
+                            category=AnkiChange.LogCategory.NOTE,
+                            subcategory=AnkiChange.LogSubcategory.UPDATE,
+                            deck_name=deck_name, unique_id=unique_id,
+                            field_name='order_idx',
+                            previous_value=fields.order_idx,
+                            new_value=order_idx,
+                            show_values=True
+                        )
+                    )
+
             fields.searched_words = searched_words
             fields.search_word_hit_count = search_word_hit_count
             fields.cumulative_search_localtimes = cumulative_search_localtimes
@@ -464,6 +568,19 @@ class AnkiConnect:
             )
             if not found:
                 note = NoteAddParam.parsed_vocab(deck_name=deck_name, fields=fields, **kwargs)
+                if self.changelog is not None:
+                    self.changelog.append(
+                        AnkiChange(
+                            timestamp=datetime.now(),
+                            category=AnkiChange.LogCategory.NOTE,
+                            subcategory=AnkiChange.LogSubcategory.ADD,
+                            deck_name=deck_name, unique_id=fields.unique_id,
+                            field_name='writing',
+                            previous_value='', new_value=fields.writing,
+                            show_values=True
+                        )
+                    )
+
                 result0 = self.add_note(note)
                 result.append(result0)
             if pbar is not None:
@@ -486,7 +603,50 @@ class AnkiConnect:
         I think this should typically only be used when updating existing cards in anki.
         The other fields probably shouldn't be modified.
         """
+        # TODO: Implement change logger
         def update_func(fields: ParsedKanjiFields):
+            if self.changelog is not None:
+                timestamp = datetime.now()
+                if fields.hit_count != hit_count:
+                    self.changelog.append(
+                        AnkiChange(
+                            timestamp=timestamp,
+                            category=AnkiChange.LogCategory.NOTE,
+                            subcategory=AnkiChange.LogSubcategory.UPDATE,
+                            deck_name=deck_name, unique_id=unique_id,
+                            field_name='hit_count',
+                            previous_value=fields.hit_count,
+                            new_value=hit_count,
+                            show_values=True
+                        )
+                    )
+                if fields.used_in != used_in:
+                    self.changelog.append(
+                        AnkiChange(
+                            timestamp=timestamp,
+                            category=AnkiChange.LogCategory.NOTE,
+                            subcategory=AnkiChange.LogSubcategory.UPDATE,
+                            deck_name=deck_name, unique_id=unique_id,
+                            field_name='used_in',
+                            previous_value=fields.used_in,
+                            new_value=used_in,
+                            show_values=True
+                        )
+                    )
+                if fields.order_idx != order_idx:
+                    self.changelog.append(
+                        AnkiChange(
+                            timestamp=timestamp,
+                            category=AnkiChange.LogCategory.NOTE,
+                            subcategory=AnkiChange.LogSubcategory.UPDATE,
+                            deck_name=deck_name, unique_id=unique_id,
+                            field_name='order_idx',
+                            previous_value=fields.order_idx,
+                            new_value=order_idx,
+                            show_values=True
+                        )
+                    )
+
             fields.hit_count = hit_count
             fields.used_in = used_in
             fields.order_idx = order_idx
@@ -521,6 +681,18 @@ class AnkiConnect:
             )
             if not found:
                 note = NoteAddParam.parsed_kanji(deck_name=deck_name, fields=fields, **kwargs)
+                if self.changelog is not None:
+                    self.changelog.append(
+                        AnkiChange(
+                            timestamp=datetime.now(),
+                            category=AnkiChange.LogCategory.NOTE,
+                            subcategory=AnkiChange.LogSubcategory.ADD,
+                            deck_name=deck_name, unique_id=fields.unique_id,
+                            field_name='kanji',
+                            previous_value='', new_value=fields.kanji,
+                            show_values=True
+                        )
+                    )
                 result0 = self.add_note(note)
                 result.append(result0)
             if pbar is not None:

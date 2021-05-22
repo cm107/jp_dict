@@ -414,8 +414,9 @@ class CombinedResultList(
         info_list.sort(attr_name='hit_count', reverse=True)
         return info_list
     
-    def add_or_update_anki(self, deck_name: str, open_browser: bool=False):
-        anki_connect = AnkiConnect()
+    def add_or_update_anki(self, deck_name: str, open_browser: bool=False, anki_connect: AnkiConnect=None):
+        if anki_connect is None:
+            anki_connect = AnkiConnect()
         if 'parsed_vocab' not in anki_connect.get_model_names():
             anki_connect.create_parsed_vocab_model()
         else:
