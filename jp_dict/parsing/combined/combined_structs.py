@@ -15,6 +15,7 @@ from ...util.time_utils import get_localtime_from_time_usec, \
 from ..anki.export_txt_parser import AnkiExportTextData
 from ...anki.note_structs import ParsedVocabularyFields, ParsedVocabularyFieldsList
 from .kanji_info import WritingKanjiInfo, WritingKanjiInfoList
+from ...anki.connect import AnkiConnect
 
 class CombinedResult(BasicLoadableObject['CombinedResult']):
     def __init__(self, jisho_result: JishoEntry, kotobank_result: KotobankResult=None):
@@ -28,7 +29,7 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
             kotobank_result=KotobankResult.from_dict(item_dict['kotobank_result']) if item_dict['kotobank_result'] is not None else None
         )
 
-    def to_vocabulary_fields(self) -> ParsedVocabularyFields:
+    def to_vocabulary_fields(self, order_idx: int=None) -> ParsedVocabularyFields:
         common = 'common' if self.jisho_result.entry.concept_labels.is_common else ''
         jlpt_level = self.jisho_result.entry.concept_labels.jlpt_level
         jlpt_level = str(jlpt_level) if jlpt_level is not None else ''
@@ -90,6 +91,8 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
             searched_words=searched_words,
             search_word_hit_count=str(self.search_word_hit_count),
             cumulative_search_localtimes=cumulative_search_localtimes,
+            order_idx=str(order_idx) if order_idx is not None else "",
+            unique_id=str(self.earliest_time_usec),
         )
 
     @property
@@ -370,8 +373,8 @@ class CombinedResultList(
     
     def to_vocabulary_fields_list(self) -> ParsedVocabularyFieldsList:
         fields_list = ParsedVocabularyFieldsList()
-        for result in self:
-            fields_list.append(result.to_vocabulary_fields())
+        for i, result in enumerate(self):
+            fields_list.append(result.to_vocabulary_fields(order_idx=i))
         return fields_list
     
     def get_all_writing_kanji(self, include_hit_count: bool=False, show_pbar: bool=True, leave_pbar: bool=True) -> WritingKanjiInfoList:
@@ -410,3 +413,18 @@ class CombinedResultList(
             pbar.close()
         info_list.sort(attr_name='hit_count', reverse=True)
         return info_list
+    
+    def add_or_update_anki(self, deck_name: str, open_browser: bool=False):
+        anki_connect = AnkiConnect()
+        if 'parsed_vocab' not in anki_connect.get_model_names():
+            anki_connect.create_parsed_vocab_model()
+        else:
+            anki_connect.update_parsed_vocab_templates_and_styling()
+        if deck_name not in anki_connect.get_deck_names():
+            anki_connect.create_deck(deck=deck_name)
+        anki_connect.add_or_update_parsed_vocab_notes(
+            deck_name=deck_name,
+            fields_list=self.to_vocabulary_fields_list()
+        )
+        if open_browser:
+            anki_connect.gui_card_browse(query=f'deck:{deck_name}')

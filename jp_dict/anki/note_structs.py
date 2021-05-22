@@ -103,10 +103,12 @@ class ParsedVocabularyFields(BasicLoadableObject['ParsedVocabularyFields']):
         ejje_sentence_search_link: str, weblio_search_link: str,
         searched_words: str, search_word_hit_count: str,
         cumulative_search_localtimes: str,
+        order_idx: str, unique_id: str,
         custom_definition: str='',
         auto_open_fields: str='',
         memo: str=''
     ):
+        # Defined only when adding new card
         self.writing = writing
         self.reading = reading
         self.common = common
@@ -121,9 +123,17 @@ class ParsedVocabularyFields(BasicLoadableObject['ParsedVocabularyFields']):
         self.kotobank_search_link = kotobank_search_link
         self.ejje_sentence_search_link = ejje_sentence_search_link
         self.weblio_search_link = weblio_search_link
+
+        # Updated Regularly
         self.searched_words = searched_words
         self.search_word_hit_count = search_word_hit_count
         self.cumulative_search_localtimes = cumulative_search_localtimes
+        self.order_idx = order_idx
+
+        # Should NEVER Change, EVER!
+        self.unique_id = unique_id
+
+        # For user input (Update From Anki Only)
         self.custom_definition = custom_definition
         self.auto_open_fields = auto_open_fields
         self.memo = memo

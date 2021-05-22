@@ -68,7 +68,6 @@ class KoohiiResult(BasicLoadableObject['KoohiiResult']):
         )
     
     def to_kanji_fields(self, order_idx: int=None) -> ParsedKanjiFields:
-        # TODO: Work in earliest_time_usec and earliest_pos_idx and use them as a unique identifier
         jisho_word_base_url = 'https://jisho.org/word'
         return ParsedKanjiFields(
             lesson_name=self.lesson_name,

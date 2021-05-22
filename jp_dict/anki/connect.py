@@ -3,7 +3,8 @@ import urllib.request
 from typing import List, Dict
 from tqdm import tqdm
 from .note_structs import NoteAddParam, NoteAddParamList, \
-    BaseFields, BasicFields, BasicFieldsList, ParsedVocabularyFields, \
+    BaseFields, BasicFields, BasicFieldsList, \
+    ParsedVocabularyFields, ParsedVocabularyFieldsList, \
     ParsedKanjiFields, ParsedKanjiFieldsList
 from .model_structs import CardTemplateList, CardTemplate
 
@@ -391,7 +392,7 @@ class AnkiConnect:
             card_templates=card_templates
         )
     
-    def _update_parsed_kanji_fields(self, deck_name: str, unique_id: str, update_func) -> bool:
+    def _update_fields(self, deck_name: str, unique_id: str, update_func, fields_class: type) -> bool:
         """
         Returns true if the note was found and the update was successful.
         If the note couldn't be found, returns false.
@@ -402,7 +403,7 @@ class AnkiConnect:
             note_id = note_ids[0]
             result = self.get_notes_info(note_ids=[note_id])[0]
             fields = {key: val['value'] for key, val in result['fields'].items()}
-            parsed_fields = ParsedKanjiFields(**fields)
+            parsed_fields = fields_class(**fields)
             update_func(parsed_fields)
             self.update_note_fields(
                 note_id=note_id,
@@ -413,6 +414,69 @@ class AnkiConnect:
             return False
         else:
             raise Exception(f'Found more than one result for deck_name: {deck_name}, unique_id: {unique_id}')
+
+    def _update_parsed_vocab_fields(self, deck_name: str, unique_id: str, update_func) -> bool:
+        return self._update_fields(
+            deck_name=deck_name, unique_id=unique_id,
+            update_func=update_func, fields_class=ParsedVocabularyFields
+        )
+    
+    def update_parsed_vocab_fields(
+        self, deck_name: str, unique_id: str, # search related
+        searched_words: str, search_word_hit_count: str, # updated fields
+        cumulative_search_localtimes: str, order_idx: str
+    ) -> bool:
+        def update_func(fields: ParsedVocabularyFields):
+            fields.searched_words = searched_words
+            fields.search_word_hit_count = search_word_hit_count
+            fields.cumulative_search_localtimes = cumulative_search_localtimes
+            fields.order_idx = order_idx
+
+        return self._update_parsed_vocab_fields(
+            deck_name=deck_name, unique_id=unique_id,
+            update_func=update_func
+        )
+    
+    def add_or_update_parsed_vocab_notes(
+        self, deck_name: str, fields_list: ParsedVocabularyFieldsList,
+        show_pbar: bool=True, leave_pbar: bool=True,
+        **kwargs
+    ) -> List[int]:
+        result = []
+        pbar = tqdm(total=len(fields_list), unit='note(s)', leave=leave_pbar) if show_pbar else None
+        if pbar is not None:
+            pbar.set_description('Adding Notes')
+        for fields in fields_list:
+            # try:
+            #     result0 = self.add_note(note)
+            # except:
+            #     print('Exception!')
+            #     if pbar is not None:
+            #         pbar.update()
+            #     continue
+            
+            found = self.update_parsed_vocab_fields(
+                deck_name=deck_name, unique_id=fields.unique_id,
+                searched_words=fields.searched_words,
+                search_word_hit_count=fields.search_word_hit_count,
+                cumulative_search_localtimes=fields.cumulative_search_localtimes,
+                order_idx=fields.order_idx
+            )
+            if not found:
+                note = NoteAddParam.parsed_vocab(deck_name=deck_name, fields=fields, **kwargs)
+                result0 = self.add_note(note)
+                result.append(result0)
+            if pbar is not None:
+                pbar.update()
+        if pbar is not None:
+            pbar.close()
+        return result
+
+    def _update_parsed_kanji_fields(self, deck_name: str, unique_id: str, update_func) -> bool:
+        return self._update_fields(
+            deck_name=deck_name, unique_id=unique_id,
+            update_func=update_func, fields_class=ParsedKanjiFields
+        )
 
     def update_parsed_kanji_fields(
         self, deck_name: str, unique_id: str, # search related

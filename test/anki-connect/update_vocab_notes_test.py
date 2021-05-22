@@ -1,8 +1,8 @@
-from jp_dict.parsing.koohii import KoohiiResultList
 from jp_dict.anki.connect import AnkiConnect
+from jp_dict.parsing.combined.combined_structs import CombinedResultList
 
-deck_name = 'new_kanji_deck'
-orig_results = KoohiiResultList.load_from_path('/home/clayton/workspace/prj/data_keep/data/study/parse_data/koohii_filtered.json')
+deck_name = 'parsed_vocab_test'
+orig_results = CombinedResultList.load_from_path('/home/clayton/workspace/prj/data_keep/data/study/parse_data/filter_sorted_results.json')
 
 anki_connect = AnkiConnect()
 # if deck_name in anki_connect.get_deck_names(exclude_default=True):
