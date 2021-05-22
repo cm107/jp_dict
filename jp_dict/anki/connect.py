@@ -34,12 +34,16 @@ class AnkiConnect:
         requestJson = json.dumps(self.request(action, **params)).encode('utf-8')
         response = json.load(urllib.request.urlopen(urllib.request.Request(self.base_url, requestJson)))
         if len(response) != 2:
+            self.save_changelog()
             raise Exception('response has an unexpected number of fields')
         if 'error' not in response:
+            self.save_changelog()
             raise Exception('response is missing required error field')
         if 'result' not in response:
+            self.save_changelog()
             raise Exception('response is missing required result field')
         if response['error'] is not None:
+            self.save_changelog()
             raise Exception(response['error'])
         return response['result']
     
@@ -461,6 +465,7 @@ class AnkiConnect:
         elif len(note_ids) == 0:
             return False
         else:
+            self.save_changelog()
             raise Exception(f'Found more than one result for deck_name: {deck_name}, unique_id: {unique_id}')
 
     def _update_parsed_vocab_fields(self, deck_name: str, unique_id: str, update_func) -> bool:
@@ -474,7 +479,6 @@ class AnkiConnect:
         searched_words: str, search_word_hit_count: str, # updated fields
         cumulative_search_localtimes: str, order_idx: str
     ) -> bool:
-        # TODO: Implement change logger
         def update_func(fields: ParsedVocabularyFields):
             if self.changelog is not None:
                 timestamp = datetime.now()
@@ -488,7 +492,8 @@ class AnkiConnect:
                             field_name='searched_words',
                             previous_value=fields.searched_words,
                             new_value=searched_words,
-                            show_values=True
+                            show_values=True,
+                            comment=f"Updated for '{fields.writing}'"
                         )
                     )
                 if fields.search_word_hit_count != search_word_hit_count:
@@ -501,7 +506,8 @@ class AnkiConnect:
                             field_name='search_word_hit_count',
                             previous_value=fields.search_word_hit_count,
                             new_value=search_word_hit_count,
-                            show_values=True
+                            show_values=True,
+                            comment=f"Updated for '{fields.writing}'"
                         )
                     )
                 if fields.cumulative_search_localtimes != cumulative_search_localtimes:
@@ -514,7 +520,8 @@ class AnkiConnect:
                             field_name='cumulative_search_localtimes',
                             previous_value=fields.cumulative_search_localtimes,
                             new_value=cumulative_search_localtimes,
-                            show_values=True
+                            show_values=True,
+                            comment=f"Updated for '{fields.writing}'"
                         )
                     )
                 if fields.order_idx != order_idx:
@@ -527,7 +534,8 @@ class AnkiConnect:
                             field_name='order_idx',
                             previous_value=fields.order_idx,
                             new_value=order_idx,
-                            show_values=True
+                            show_values=True,
+                            comment=f"Updated for '{fields.writing}'"
                         )
                     )
 
@@ -617,7 +625,8 @@ class AnkiConnect:
                             field_name='hit_count',
                             previous_value=fields.hit_count,
                             new_value=hit_count,
-                            show_values=True
+                            show_values=True,
+                            comment=f"Updated for '{fields.kanji}'"
                         )
                     )
                 if fields.used_in != used_in:
@@ -630,7 +639,8 @@ class AnkiConnect:
                             field_name='used_in',
                             previous_value=fields.used_in,
                             new_value=used_in,
-                            show_values=True
+                            show_values=True,
+                            comment=f"Updated for '{fields.kanji}'"
                         )
                     )
                 if fields.order_idx != order_idx:
@@ -643,7 +653,8 @@ class AnkiConnect:
                             field_name='order_idx',
                             previous_value=fields.order_idx,
                             new_value=order_idx,
-                            show_values=True
+                            show_values=True,
+                            comment=f"Updated for '{fields.kanji}'"
                         )
                     )
 

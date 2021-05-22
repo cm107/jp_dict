@@ -85,6 +85,7 @@ class AnkiChange(
         elif self.category == self.LogCategory.NOTE:
             if self.subcategory == self.LogSubcategory.UPDATE:
                 print_str += f'\nDeck: {self.deck_name}, Field: {self.field_name}'
+                print_str += f'\nUnique ID: {self.unique_id}'
                 if self.show_values:
                     print_str += f'\nPrevious Value: {self.previous_value}'
                     print_str += f"\nNew Value: {self.new_value}"

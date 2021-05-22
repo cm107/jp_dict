@@ -204,7 +204,7 @@ class ParsedKanjiFieldsList(
 class NoteAddOptions(BasicLoadableObject['NoteAddOptions']):
     def __init__(
         self,
-        allow_duplicate: bool=False, deck_name: str='Default',
+        allow_duplicate: bool=True, deck_name: str='Default',
         check_children: bool=False
     ):
         super().__init__()
@@ -283,7 +283,7 @@ class NoteAddParam(BasicLoadableObject['NoteAddParam']):
                 options = NoteAddOptions.from_dict(options)
         else:
             options = NoteAddOptions(
-                allow_duplicate=kwargs['allow_duplicate'] if 'allow_duplicate' in kwargs else False,
+                allow_duplicate=kwargs['allow_duplicate'] if 'allow_duplicate' in kwargs else True,
                 deck_name=deck_name,
                 check_children=kwargs['check_children'] if 'check_children' in kwargs else False
             )

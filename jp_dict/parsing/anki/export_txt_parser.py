@@ -29,8 +29,12 @@ class AnkiExportTextDatum(BasicLoadableObject['AnkiExportTextDatum']):
         elif len(parts) > 3:
             writing, reading = parts[:2]
             definition = '\t'.join(parts[2:])
+        elif len(parts) == 1:
+            print(f"Warning: Found line with only 1 part. Couldn't split into writing and reading: {parts}")
+            writing = parts[0]
+            reading = ''
+            definition = ''
         else:
-            print(text)
             raise Exception(f'len(parts) == {len(parts)} not in [2, 3]\nparts:\n{parts}')
         
         return AnkiExportTextDatum(
@@ -68,6 +72,7 @@ class AnkiExportTextData(
 
         data = AnkiExportTextData()
         for line in f.readlines():
+            line.replace('\n', '')
             datum = AnkiExportTextDatum.from_line(line)
             data.append(datum)
         f.close()
