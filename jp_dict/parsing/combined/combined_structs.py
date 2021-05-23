@@ -178,8 +178,6 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
     def from_match(cls, entry_match: JishoEntry, kotobank_dump_dir: str, verbose: bool=False) -> CombinedResult:
         assert dir_exists(kotobank_dump_dir)
         kotobank_results = KotobankResultList()
-        # print(entry_match.entry.word_representation.custom_str())
-        # print(f'entry_match.linked_kotobank_queries: {entry_match.linked_kotobank_queries}')
         for linked_query in entry_match.linked_kotobank_queries:
             kotobank_result = KotobankResult.load_from_path(f'{kotobank_dump_dir}/{linked_query}.json')
             kotobank_results.append(kotobank_result)

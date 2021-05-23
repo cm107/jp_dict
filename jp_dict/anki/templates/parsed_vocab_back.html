@@ -1,10 +1,10 @@
-{{writing}}
+<div style='font-family: Arial Black; font-size: 40px;'>{{writing}}</div>
 <hr id=answer>
-Reading: {{reading}}
+<div style='font-size: 30px;'>Reading: {{reading}}</div>
 {{#common}}<br>Common{{/common}}
 {{#jlpt_level}}<br>JLPT {{jlpt_level}}{{/jlpt_level}}
 {{#wanikani_level}}<br>Wanikani Level {{wanikani_level}}{{/wanikani_level}}
-<div style='font-size: 20px; color:navy; text-align:left;'>
+<div style='font-size: 20px; color:white; text-align:left;'>
     {{#custom_definition}}
         <details id="custom_definition_details">
             <summary>Custom Definition:</summary>
@@ -39,7 +39,7 @@ Reading: {{reading}}
     {{/ndz}}
 </div>
 <div style="text-align:left">
-        <div style="font-size: 20px; color:green;">
+        <div style="font-size: 20px; color:white;">
             <details id="eng_definition_details">
                 <summary>English Definition</summary>
                 <span id="eng_definition">
@@ -57,6 +57,7 @@ Reading: {{reading}}
             {{#kotobank_search_link}}<br>{{kotobank_search_link}}{{/kotobank_search_link}}
             {{#ejje_sentence_search_link}}<br>{{ejje_sentence_search_link}}{{/ejje_sentence_search_link}}
             {{#weblio_search_link}}<br>{{weblio_search_link}}{{/weblio_search_link}}
+            {{#writing}}<br><a href="https://www.google.com/search?hl=en&authuser=0&biw=1920&bih=979&site=imghp&tbm=isch&sa=1&q={{writing}}">Google Images</a>{{/writing}}
         </div>
     </details>
     <details>

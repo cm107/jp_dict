@@ -2,8 +2,11 @@
     font-family: arial;
     font-size: 20px;
     text-align: center;
-    color: black;
-    background-color: white;
+    color: white;
+    background-color: #009900;
+}
+a {
+    color:navy;
 }
 
 /* ol {

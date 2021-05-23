@@ -1,9 +1,9 @@
-{{kanji}}
+<div style='font-family: Arial Black; font-size: 50px;'>{{kanji}}</div>
 <hr id=answer>
 <p>Meaning: <span id="keyword">{{keyword}}</span></p>
 <p>Reading: <span id="reading">{{reading}}</span></p>
 
-<div style='font-size: 20px; color:navy; text-align:left;'>
+<div style='font-size: 20px; color:white; text-align:left;'>
     {{#custom_story}}
         <details open>
             <summary>Custom Story</summary>
@@ -46,7 +46,7 @@
     {{/shared_stories}}
 </div>
 <hr id=info>
-<div style='font-size: 20px; color:black; text-align:left;'>
+<div style='font-size: 20px; color:white; text-align:left;'>
     <details id="koohii_info_details">
         <summary>Koohii Info</summary>
         <p style="margin-left:5%">
@@ -64,7 +64,7 @@
         </p>
     </details>
 </div>
-<div style='font-size: 20px; color:black; text-align:left;'>
+<div style='font-size: 20px; color:white; text-align:left;'>
     <details id="statistics_details" open>
         <summary>Statistics</summary>
         <p style="margin-left:5%">
@@ -73,6 +73,8 @@
             Used In: {{used_in}}
             <br>
             Unique ID: {{unique_id}}
+            <br>
+            <a href="http://jisho.org/search/*{{text:kanji}}*">Related words</a>
         </p>
     </details>
 </div>

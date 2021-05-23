@@ -391,9 +391,7 @@ class AnkiConnect:
         return css_text, CardTemplateList([
             CardTemplate(
                 name='Card 1',
-                front=dedent("""
-                {{writing}}
-                """).replace('\n', ''),
+                front=dedent(back_text.split("<hr id=answer>")[0].replace('\n', '')),
                 back=back_text
             )
         ])
@@ -423,9 +421,7 @@ class AnkiConnect:
         return css_text, CardTemplateList([
             CardTemplate(
                 name='Card 1',
-                front=dedent("""
-                {{kanji}}
-                """).replace('\n', ''),
+                front=dedent(back_text.split("<hr id=answer>")[0].replace('\n', '')),
                 back=back_text
             )
         ])

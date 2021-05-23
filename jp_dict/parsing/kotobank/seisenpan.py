@@ -139,7 +139,6 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
         if type(self.obj) is PlainText:
             return self.obj.text
         elif type(self.obj) is StyledText:
-            print(self.obj)
             return self.obj.text
         elif type(self.obj) is BoldText:
             return f'<b>{self.obj.text}</b>'

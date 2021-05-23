@@ -2,8 +2,8 @@
     font-family: arial;
     font-size: 20px;
     text-align: center;
-    color: black;
-    background-color: white;
+    color: white;
+    background-color: #CC00FF;
 }
 img {
     width: 100%;
@@ -18,4 +18,7 @@ figcaption {
     display: block;
     margin-left: auto;
     margin-right: auto;
+}
+a {
+    color:navy;
 }
