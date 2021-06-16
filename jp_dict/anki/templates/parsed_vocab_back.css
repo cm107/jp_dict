@@ -1,0 +1,24 @@
+.card {
+    font-family: arial;
+    font-size: 20px;
+    text-align: center;
+    color: white;
+    background-color: #CC00FF;
+}
+img {
+    width: 100%;
+    max-width: 50%;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+figcaption {
+    width: 100%;
+    max-width: 50%;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+a {
+    color:navy;
+}

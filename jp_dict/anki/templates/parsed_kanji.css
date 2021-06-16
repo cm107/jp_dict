@@ -1,0 +1,18 @@
+.card {
+    font-family: arial;
+    font-size: 20px;
+    text-align: center;
+    color: white;
+    background-color: #009900;
+}
+a {
+    color:navy;
+}
+
+/* ol {
+    list-style: none;
+}
+
+ol>li:before {
+    content: attr(seq) ". ";
+} */
