@@ -30,12 +30,12 @@ def update_all_data(anki_connect: AnkiConnect, parse_data_dir: str):
     kanji_results.add_or_update_anki(deck_name='parsed_kanji', anki_connect=anki_connect)
 
 changelog_dump_dir = 'changelog_dump'
-anki_connect_session(
-    func=update_all_data,
-    parse_data_dir='/home/clayton/workspace/prj/data_keep/data/study/parse_data0',
-    changelog_dump_dir=changelog_dump_dir,
-    clear_data_first=True
-)()
+# anki_connect_session(
+#     func=update_all_data,
+#     parse_data_dir='/home/clayton/workspace/prj/data_keep/data/study/parse_data0',
+#     changelog_dump_dir=changelog_dump_dir,
+#     clear_data_first=True
+# )()
 anki_connect_session(
     func=update_all_data,
     parse_data_dir='/home/clayton/workspace/prj/data_keep/data/study/parse_data',

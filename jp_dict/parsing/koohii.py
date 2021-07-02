@@ -278,7 +278,9 @@ class KoohiiParser:
     def parse_and_save(
         self, kanji_info_list: WritingKanjiInfoList,
         save_dir: str='kanji_save',
-        force: bool=False, show_pbar: bool=True, leave_pbar: bool=True,
+        force: bool=False,
+        sort_by_hit_count: bool=False,
+        show_pbar: bool=True, leave_pbar: bool=True,
         combined_save_path: str=None,
         learned_kanji_txt_path: str=None, filtered_dump_path: str=None
     ):
@@ -311,7 +313,8 @@ class KoohiiParser:
         if pbar is not None:
             pbar.close()
         if combined_results is not None:
-            combined_results.sort(attr_name='hit_count', reverse=True)
+            if sort_by_hit_count:
+                combined_results.sort(attr_name='hit_count', reverse=True)
             combined_results.save_to_path(combined_save_path, overwrite=True)
             if learned_kanji_txt_path is not None and filtered_dump_path is not None:
                 f = open(learned_kanji_txt_path, 'r')

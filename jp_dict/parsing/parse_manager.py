@@ -547,13 +547,15 @@ class ParserManager(BasicLoadableObject['ParserManager']):
         if self._metadata.requires_parse_and_combine_koohii or force or not dir_exists(self.koohii_parse_dump_dir) or not file_exists(self.koohii_combined_dump_path):
             assert file_exists(self.filter_sorted_results_dump_path)
             results = CombinedResultList.load_from_path(self.filter_sorted_results_dump_path)
-            kanji_info_list = results.get_all_writing_kanji(include_hit_count=True, show_pbar=show_pbar, leave_pbar=True)
+            kanji_info_list = results.get_all_writing_kanji(include_hit_count=True, sort_by_hit_count=False, show_pbar=show_pbar, leave_pbar=True)
             parser = KoohiiParser(username='jpdict_scraper', password='password', showWindow=False)
             if verbose:
                 logger.cyan('Parsing and Combining Kanji Data From Koohii')
             parser.parse_and_save(
                 kanji_info_list=kanji_info_list,
-                save_dir=self.koohii_parse_dump_dir, combined_save_path=self.koohii_combined_dump_path,
+                save_dir=self.koohii_parse_dump_dir,
+                sort_by_hit_count=False,
+                combined_save_path=self.koohii_combined_dump_path,
                 learned_kanji_txt_path=self.learned_kanji_txt_path,
                 filtered_dump_path=self.filtered_koohii_dump_path
             )

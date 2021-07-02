@@ -375,7 +375,7 @@ class CombinedResultList(
             fields_list.append(result.to_vocabulary_fields(order_idx=i))
         return fields_list
     
-    def get_all_writing_kanji(self, include_hit_count: bool=False, show_pbar: bool=True, leave_pbar: bool=True) -> WritingKanjiInfoList:
+    def get_all_writing_kanji(self, include_hit_count: bool=False, sort_by_hit_count: bool=False, show_pbar: bool=True, leave_pbar: bool=True) -> WritingKanjiInfoList:
         info_list = WritingKanjiInfoList()
         pbar = tqdm(total=len(self), unit='result(s)', leave=leave_pbar) if show_pbar else None
         for result in self:
@@ -409,7 +409,8 @@ class CombinedResultList(
                 pbar.update()
         if pbar is not None:
             pbar.close()
-        info_list.sort(attr_name='hit_count', reverse=True)
+        if sort_by_hit_count:
+            info_list.sort(attr_name='hit_count', reverse=True)
         return info_list
     
     def add_or_update_anki(self, deck_name: str, open_browser: bool=False, anki_connect: AnkiConnect=None):
