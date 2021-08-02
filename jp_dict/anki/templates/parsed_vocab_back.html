@@ -68,6 +68,8 @@
             <b>Search Word Hit Count:</b> {{search_word_hit_count}}
             <br>
             <b>Local Times:</b> {{cumulative_search_localtimes}}
+            <br>
+            <b>Local Time Range:</b> {{localtime_range}}
             {{#auto_open_fields}}
                 <br>
                 <b>Automatically Open Fields:</b> <span id="auto_open_fields">{{auto_open_fields}}</span>
@@ -80,7 +82,7 @@
     <hr id=memo>
     <div style="text-align:left; font-size:20px;">
         <b>Memo:</b>
-        <div style="margin-left:5%; color:blueviolet">
+        <div style="margin-left:5%; color:white">
             {{memo}}
         </div>
     </div>
@@ -119,7 +121,8 @@
     {
         for(i = 0; i < arr.length; i++)
         {
-            var idx = str_ids.indexOf(arr[i]);
+            var arr_i = arr[i];
+            var idx = str_ids.indexOf(arr_i);
             var item_element = document.getElementById(str_ids[idx]);
             var item_details_element = document.getElementById(details_ids[idx]);
             if (!!item_element && !!item_details_element)
@@ -127,6 +130,140 @@
                 openIfNotEmpty(item_element, item_details_element);
             }
         }
+    }
+
+    function openFieldsInArrayBkSimple(arr, str_ids, details_ids)
+    {
+        for(i = 0; i < arr.length; i++)
+        {
+            var arr_i = arr[i];
+            var idx = str_ids.indexOf(arr_i);
+            if (idx === -1)
+                break;
+            var item_element = document.getElementById(str_ids[idx]);
+            var item_details_element = document.getElementById(details_ids[idx]);
+            if (!!item_element && !!item_details_element)
+            {
+                openIfNotEmpty(item_element, item_details_element);
+            }
+        }
+        updateDebugElement(
+            "str_ids: " + str_ids.join(", ")
+            + ";<br>arr: " + arr.join(", ")
+            + ";<br>arr_i: " + arr_i
+            + ";<br>idx: " + idx
+            + ";What on earth is going on here..."
+        );
+    }
+
+    function openFieldsInArrayBk(arr, str_ids, details_ids)
+    {
+        var i_list = [];
+        var arr_i_list = [];
+        var idx_list = [];
+        var arr_idx_list = [];
+        var failed_arr_i_list = [];
+        for(i = 0; i < arr.length; i++)
+        {
+            var arr_i = arr[i];
+            var idx = str_ids.indexOf(arr_i);
+            i_list.push(i);
+            arr_i_list.push(arr_i);
+            idx_list.push(idx);
+            arr_idx_list.push(arr[idx]);
+            if (idx === -1)
+                failed_arr_i_list.push(arr_i);
+            var item_element = document.getElementById(str_ids[idx]);
+            var item_details_element = document.getElementById(details_ids[idx]);
+            if (!!item_element && !!item_details_element)
+            {
+                openIfNotEmpty(item_element, item_details_element);
+            }
+        }
+        updateDebugElement(
+            "str_ids: " + str_ids.join(", ")
+            + ";<br>arr: " + arr.join(", ")
+            + ";<br>i_list: " +　i_list.join(", ")
+            + ";<br>arr_i_list: " +　arr_i_list.join(", ")
+            + ";<br>idx_list: " +　idx_list.join(", ")
+            + ";<br> arr_idx_list: " + arr_idx_list.join(", ")
+            + ";<br> arr[2]: " + arr[2]
+            + ";<br> str_ids.indexOf(arr[2]): " + str_ids.indexOf(arr[2])
+            + ";<br> str_ids.indexOf('eng_definition'): " + str_ids.indexOf("eng_definition")
+            + ";<br> arr_i: " + arr_i
+            + ";<br> failed_arr_i_list: " + failed_arr_i_list.join(", ")
+        );
+    }
+
+    function openFieldsInArrayBk0(arr, str_ids, details_ids)
+    {
+        var included_i_list = [];
+        for(i = 0; i < str_ids.length; i++)
+        {
+            if (arr.includes(str_ids[i]))
+            {
+                included_i_list.push(i);
+                var item_element = document.getElementById(str_ids[i]);
+                var item_details_element = document.getElementById(details_ids[i]);
+                if (!!item_element && !!item_details_element)
+                {
+                    openIfNotEmpty(item_element, item_details_element);
+                }
+            }
+        }
+        updateDebugElement(
+            "str_ids: " + str_ids.join(", ")
+            + ";<br>arr: " + arr.join(", ")
+            + ";<br>included_i_list: " +　included_i_list.join(", ")
+        );
+    }
+
+    function openFieldsInArrayBk1(arr, str_ids, details_ids)
+    {
+        var included_idx_list = [];
+        arr.forEach((val) => {
+            var idx = str_ids.indexOf(val);
+            var item_element = document.getElementById(str_ids[idx]);
+            var item_details_element = document.getElementById(details_ids[idx]);
+            if (!!item_element && !!item_details_element)
+            {
+                included_idx_list.push(idx);
+                openIfNotEmpty(item_element, item_details_element);
+            }
+        });
+        updateDebugElement(
+            "str_ids: " + str_ids.join(", ")
+            + ";<br>arr: " + arr.join(", ")
+            + ";<br>included_idx_list: " +included_idx_list.join(", ")
+        );
+    }
+
+    function openFieldsInArrayBk2(arr, str_ids, details_ids)
+    {
+        var val_list = [];
+        var included_val_list = [];
+        var typeof_val_list = [];
+        var item_element_list = [];
+        arr.forEach((val) => {
+            val_list.push(val);
+            typeof_val_list.push(typeof val);
+            var item_element = document.getElementById(val);
+            item_element_list.push(item_element);
+            var item_details_element = document.getElementById(val + "_details");
+            if (!!item_element && !!item_details_element)
+            {
+                included_val_list.push(val);
+                openIfNotEmpty(item_element, item_details_element);
+            }
+        });
+        updateDebugElement(
+            "str_ids: " + str_ids.join(", ")
+            + ";<br>arr: " + arr.join(", ")
+            + ";<br>val_list: " + val_list.join(", ")
+            + ";<br>typeof_val_list: " + typeof_val_list.join(", ")
+            + ";<br>item_element_list: " + item_element_list.join(", ")
+            + ";<br>included_val_list: " + included_val_list.join(", ")
+        );
     }
 
     var jp_str_ids = [

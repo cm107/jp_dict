@@ -28,5 +28,3 @@ if not file_exists(manager_save_path):
 else:
     manager = ParserManager.load_from_path(manager_save_path)
 manager.run(verbose=True, show_pbar=True)
-
-# TODO: After expanding on kotobank parser, some additional html cases need to be accounted for.

@@ -103,6 +103,7 @@ class ParsedVocabularyFields(BasicLoadableObject['ParsedVocabularyFields']):
         ejje_sentence_search_link: str, weblio_search_link: str,
         searched_words: str, search_word_hit_count: str,
         cumulative_search_localtimes: str,
+        localtime_range: str,
         order_idx: str, unique_id: str,
         custom_definition: str='',
         auto_open_fields: str='',
@@ -128,6 +129,7 @@ class ParsedVocabularyFields(BasicLoadableObject['ParsedVocabularyFields']):
         self.searched_words = searched_words
         self.search_word_hit_count = search_word_hit_count
         self.cumulative_search_localtimes = cumulative_search_localtimes
+        self.localtime_range = localtime_range
         self.order_idx = order_idx
 
         # Should NEVER Change, EVER!

@@ -1,5 +1,6 @@
 import os
 import json
+from threading import local
 import urllib.request
 from typing import List, Dict, cast, Tuple
 from datetime import datetime, time
@@ -473,7 +474,7 @@ class AnkiConnect:
     def update_parsed_vocab_fields(
         self, deck_name: str, unique_id: str, # search related
         searched_words: str, search_word_hit_count: str, # updated fields
-        cumulative_search_localtimes: str, order_idx: str
+        cumulative_search_localtimes: str, localtime_range: str, order_idx: str
     ) -> bool:
         def update_func(fields: ParsedVocabularyFields):
             if self.changelog is not None:
@@ -520,6 +521,20 @@ class AnkiConnect:
                             comment=f"Updated for '{fields.writing}'"
                         )
                     )
+                if fields.localtime_range != localtime_range:
+                    self.changelog.append(
+                        AnkiChange(
+                            timestamp=timestamp,
+                            category=AnkiChange.LogCategory.NOTE,
+                            subcategory=AnkiChange.LogSubcategory.UPDATE,
+                            deck_name=deck_name, unique_id=unique_id,
+                            field_name='localtime_range',
+                            previous_value=fields.localtime_range,
+                            new_value=localtime_range,
+                            show_values=True,
+                            comment=f"Updated for '{fields.writing}'"
+                        )
+                    )
                 if fields.order_idx != order_idx:
                     self.changelog.append(
                         AnkiChange(
@@ -538,6 +553,7 @@ class AnkiConnect:
             fields.searched_words = searched_words
             fields.search_word_hit_count = search_word_hit_count
             fields.cumulative_search_localtimes = cumulative_search_localtimes
+            fields.localtime_range = localtime_range
             fields.order_idx = order_idx
 
         return self._update_parsed_vocab_fields(
@@ -568,6 +584,7 @@ class AnkiConnect:
                 searched_words=fields.searched_words,
                 search_word_hit_count=fields.search_word_hit_count,
                 cumulative_search_localtimes=fields.cumulative_search_localtimes,
+                localtime_range=fields.localtime_range,
                 order_idx=fields.order_idx
             )
             if not found:

@@ -48,6 +48,8 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
                 cumulative_search_localtimes += localtime.strftime('%Y/%m/%d %H:%M:%S')
             else:
                 cumulative_search_localtimes += f", {localtime.strftime('%Y/%m/%d %H:%M:%S')}"
+        first_localtime, last_localtime = self.first_and_last_localtime
+        localtime_range = f"{first_localtime.strftime('%Y/%m/%d %H:%M:%S')} ~ {last_localtime.strftime('%Y/%m/%d %H:%M:%S')}" if first_localtime != last_localtime else first_localtime.strftime('%Y/%m/%d %H:%M:%S')
 
         if self.kotobank_result is not None:
             daijisen = self.kotobank_result.digital_daijisen_content
@@ -91,6 +93,7 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
             searched_words=searched_words,
             search_word_hit_count=str(self.search_word_hit_count),
             cumulative_search_localtimes=cumulative_search_localtimes,
+            localtime_range=localtime_range,
             order_idx=str(order_idx) if order_idx is not None else "",
             unique_id=str(self.earliest_time_usec),
         )
@@ -129,6 +132,7 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
         cumulative_localtimes = []
         for search_word, localtime_list in self.localtime_info.items():
             cumulative_localtimes.extend(localtime_list)
+        cumulative_localtimes.sort()
         return cumulative_localtimes
 
     @property
@@ -332,7 +336,8 @@ class CombinedResultList(
         pbar = tqdm(total=5, unit='sorts', leave=leave_pbar) if show_pbar else None
         if pbar is not None:
             pbar.set_description('Sorting by localtime')
-        self.sort(attr_name='first_search_localtime') # Initial order
+        # self.sort(attr_name='first_search_localtime') # Initial order
+        self.sort(attr_name='last_search_localtime', reverse=True) # Initial order
         if pbar is not None:
             pbar.update()
             pbar.set_description('Sorting by wanikani')
