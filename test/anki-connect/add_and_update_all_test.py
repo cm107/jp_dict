@@ -25,7 +25,10 @@ def anki_connect_session(func, parse_data_dir: str, changelog_dump_dir: str, cle
 
 def update_all_data(anki_connect: AnkiConnect, parse_data_dir: str):
     vocab_results = CombinedResultList.load_from_path(f'{parse_data_dir}/filter_sorted_results.json')
-    vocab_results.add_or_update_anki(deck_name='parsed_vocab', anki_connect=anki_connect)
+    vocab_results.add_or_update_anki(
+        deck_name='parsed_vocab', anki_connect=anki_connect,
+        # update_daijisen=True, update_seisenpan=True, update_ndz=True
+    )
     kanji_results = KoohiiResultList.load_from_path(f'{parse_data_dir}/koohii_filtered.json')
     kanji_results.add_or_update_anki(deck_name='parsed_kanji', anki_connect=anki_connect)
 

@@ -423,10 +423,17 @@ def get_parsed_items(tag: Tag) -> ParsedItemList:
 def parse(ex_cf_html_list: List[Tag]) -> ParsedArticleList:
     article_list = ParsedArticleList()
     for ex_cf_html in ex_cf_html_list:
+        container_list = ParsedContainerList()
+        heading_html = ex_cf_html.find(name='h3')
+        if heading_html is not None:
+            heading_text = heading_html.text.strip()
+            parsed_items = ParsedItemList([ParsedItem(BoldText(heading_text))])
+            container = ParsedContainer(container_type='Heading', parsed_items=parsed_items)
+            container_list.append(container)
         description_html = ex_cf_html.find(name='section', attrs={'class': 'description'})
         has_description = description_html is not None
         assert has_description, 'No description found.'
-        container_list = ParsedContainerList()
+        
         for child in description_html.children:
             if type(child) is NavigableString:
                 text = str(child).replace(' ', '').replace('\n', '')

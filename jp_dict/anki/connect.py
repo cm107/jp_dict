@@ -472,92 +472,140 @@ class AnkiConnect:
         )
     
     def update_parsed_vocab_fields(
-        self, deck_name: str, unique_id: str, # search related
-        searched_words: str, search_word_hit_count: str, # updated fields
-        cumulative_search_localtimes: str, localtime_range: str, order_idx: str
+        self, deck_name: str,
+        new_fields: ParsedVocabularyFields,
+        update_daijisen: bool=False,
+        update_seisenpan: bool=False,
+        update_ndz: bool=False
     ) -> bool:
         def update_func(fields: ParsedVocabularyFields):
             if self.changelog is not None:
                 timestamp = datetime.now()
-                if fields.searched_words != searched_words:
+                if fields.searched_words != new_fields.searched_words:
                     self.changelog.append(
                         AnkiChange(
                             timestamp=timestamp,
                             category=AnkiChange.LogCategory.NOTE,
                             subcategory=AnkiChange.LogSubcategory.UPDATE,
-                            deck_name=deck_name, unique_id=unique_id,
+                            deck_name=deck_name, unique_id=new_fields.unique_id,
                             field_name='searched_words',
                             previous_value=fields.searched_words,
-                            new_value=searched_words,
+                            new_value=new_fields.searched_words,
                             show_values=True,
                             comment=f"Updated for '{fields.writing}'"
                         )
                     )
-                if fields.search_word_hit_count != search_word_hit_count:
+                if fields.search_word_hit_count != new_fields.search_word_hit_count:
                     self.changelog.append(
                         AnkiChange(
                             timestamp=timestamp,
                             category=AnkiChange.LogCategory.NOTE,
                             subcategory=AnkiChange.LogSubcategory.UPDATE,
-                            deck_name=deck_name, unique_id=unique_id,
+                            deck_name=deck_name, unique_id=new_fields.unique_id,
                             field_name='search_word_hit_count',
                             previous_value=fields.search_word_hit_count,
-                            new_value=search_word_hit_count,
+                            new_value=new_fields.search_word_hit_count,
                             show_values=True,
                             comment=f"Updated for '{fields.writing}'"
                         )
                     )
-                if fields.cumulative_search_localtimes != cumulative_search_localtimes:
+                if fields.cumulative_search_localtimes != new_fields.cumulative_search_localtimes:
                     self.changelog.append(
                         AnkiChange(
                             timestamp=timestamp,
                             category=AnkiChange.LogCategory.NOTE,
                             subcategory=AnkiChange.LogSubcategory.UPDATE,
-                            deck_name=deck_name, unique_id=unique_id,
+                            deck_name=deck_name, unique_id=new_fields.unique_id,
                             field_name='cumulative_search_localtimes',
                             previous_value=fields.cumulative_search_localtimes,
-                            new_value=cumulative_search_localtimes,
+                            new_value=new_fields.cumulative_search_localtimes,
                             show_values=True,
                             comment=f"Updated for '{fields.writing}'"
                         )
                     )
-                if fields.localtime_range != localtime_range:
+                if fields.localtime_range != new_fields.localtime_range:
                     self.changelog.append(
                         AnkiChange(
                             timestamp=timestamp,
                             category=AnkiChange.LogCategory.NOTE,
                             subcategory=AnkiChange.LogSubcategory.UPDATE,
-                            deck_name=deck_name, unique_id=unique_id,
+                            deck_name=deck_name, unique_id=new_fields.unique_id,
                             field_name='localtime_range',
                             previous_value=fields.localtime_range,
-                            new_value=localtime_range,
+                            new_value=new_fields.localtime_range,
                             show_values=True,
                             comment=f"Updated for '{fields.writing}'"
                         )
                     )
-                if fields.order_idx != order_idx:
+                if fields.order_idx != new_fields.order_idx:
                     self.changelog.append(
                         AnkiChange(
                             timestamp=timestamp,
                             category=AnkiChange.LogCategory.NOTE,
                             subcategory=AnkiChange.LogSubcategory.UPDATE,
-                            deck_name=deck_name, unique_id=unique_id,
+                            deck_name=deck_name, unique_id=new_fields.unique_id,
                             field_name='order_idx',
                             previous_value=fields.order_idx,
-                            new_value=order_idx,
+                            new_value=new_fields.order_idx,
                             show_values=True,
                             comment=f"Updated for '{fields.writing}'"
                         )
                     )
+                if update_daijisen and fields.daijisen != new_fields.daijisen:
+                    self.changelog.append(
+                        AnkiChange(
+                            timestamp=timestamp,
+                            category=AnkiChange.LogCategory.NOTE,
+                            subcategory=AnkiChange.LogSubcategory.UPDATE,
+                            deck_name=deck_name, unique_id=new_fields.unique_id,
+                            field_name='daijisen',
+                            previous_value=fields.daijisen,
+                            new_value=new_fields.daijisen,
+                            show_values=True,
+                            comment=f"Updated for '{fields.writing}'"
+                        )
+                    )
+                if update_seisenpan and fields.seisenpan != new_fields.seisenpan:
+                    self.changelog.append(
+                        AnkiChange(
+                            timestamp=timestamp,
+                            category=AnkiChange.LogCategory.NOTE,
+                            subcategory=AnkiChange.LogSubcategory.UPDATE,
+                            deck_name=deck_name, unique_id=new_fields.unique_id,
+                            field_name='seisenpan',
+                            previous_value=fields.seisenpan,
+                            new_value=new_fields.seisenpan,
+                            show_values=True,
+                            comment=f"Updated for '{fields.writing}'"
+                        )
+                    )
+                if update_ndz and fields.ndz != new_fields.ndz:
+                    self.changelog.append(
+                        AnkiChange(
+                            timestamp=timestamp,
+                            category=AnkiChange.LogCategory.NOTE,
+                            subcategory=AnkiChange.LogSubcategory.UPDATE,
+                            deck_name=deck_name, unique_id=new_fields.unique_id,
+                            field_name='ndz',
+                            previous_value=fields.ndz,
+                            new_value=new_fields.ndz,
+                            show_values=True,
+                            comment=f"Updated for '{fields.writing}'"
+                        )
+                    )
+                
 
-            fields.searched_words = searched_words
-            fields.search_word_hit_count = search_word_hit_count
-            fields.cumulative_search_localtimes = cumulative_search_localtimes
-            fields.localtime_range = localtime_range
-            fields.order_idx = order_idx
+            fields.searched_words = new_fields.searched_words
+            fields.search_word_hit_count = new_fields.search_word_hit_count
+            fields.cumulative_search_localtimes = new_fields.cumulative_search_localtimes
+            fields.localtime_range = new_fields.localtime_range
+            fields.order_idx = new_fields.order_idx
+            if update_daijisen: fields.daijisen = new_fields.daijisen
+            if update_seisenpan: fields.seisenpan = new_fields.seisenpan
+            if update_ndz: fields.ndz = new_fields.ndz
 
         return self._update_parsed_vocab_fields(
-            deck_name=deck_name, unique_id=unique_id,
+            deck_name=deck_name, unique_id=new_fields.unique_id,
             update_func=update_func
         )
     
@@ -580,12 +628,11 @@ class AnkiConnect:
             #     continue
             
             found = self.update_parsed_vocab_fields(
-                deck_name=deck_name, unique_id=fields.unique_id,
-                searched_words=fields.searched_words,
-                search_word_hit_count=fields.search_word_hit_count,
-                cumulative_search_localtimes=fields.cumulative_search_localtimes,
-                localtime_range=fields.localtime_range,
-                order_idx=fields.order_idx
+                deck_name=deck_name,
+                new_fields=fields,
+                update_daijisen=kwargs['update_daijisen'] if 'update_daijisen' in kwargs else False,
+                update_seisenpan=kwargs['update_seisenpan'] if 'update_seisenpan' in kwargs else False,
+                update_ndz=kwargs['update_ndz'] if 'update_ndz' in kwargs else False,
             )
             if not found:
                 note = NoteAddParam.parsed_vocab(deck_name=deck_name, fields=fields, **kwargs)

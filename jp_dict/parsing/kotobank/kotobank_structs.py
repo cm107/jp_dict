@@ -45,11 +45,11 @@ class DictionaryContent(BasicLoadableObject['DictionaryContent']):
     def from_dict(cls, item_dict: dict) -> DictionaryContent:
         dictionary_name = item_dict['dictionary_name']
         if item_dict['content'] is not None:
-            if dictionary_name == 'デジタル大辞泉の解説':
+            if dictionary_name.startswith('デジタル大辞泉') and dictionary_name.endswith('の解説'):
                 content = DigitalDaijisenDataHandler.from_dict_list(item_dict['content'])
-            elif dictionary_name == '精選版 日本国語大辞典の解説':
+            elif dictionary_name.startswith('精選版 日本国語大辞典') and dictionary_name.endswith('の解説'):
                 content = SeisenpanDataHandler.from_dict_list(item_dict['content'])
-            elif dictionary_name == '日本大百科全書(ニッポニカ)の解説':
+            elif dictionary_name.startswith('日本大百科全書(ニッポニカ)') and dictionary_name.endswith('の解説'):
                 content = NDZ_ParsedItemList.from_dict_list(item_dict['content'])
             else:
                 raise Exception(f"Found non-None content for {dictionary_name}, but DictionaryContent.from_dict doesn't account for {dictionary_name}.")
@@ -186,25 +186,31 @@ class KotobankResult(BasicLoadableObject['KotobankResult']):
         else:
             return []
     
-    def _get_content(self, dictionary_name: str) -> Any:
+    def _get_content(self, dictionary_name: str=None, startswith: str=None, endswith: str=None) -> Any:
         if self.main_area is None or self.main_area.articles is None:
             return None
         for article in self.main_area.articles:
-            if article.dictionary_name == dictionary_name:
-                return article.content
+            relevant = True
+            if dictionary_name is not None and article.dictionary_name != dictionary_name:
+                continue
+            if startswith is not None and not article.dictionary_name.startswith(startswith):
+                continue
+            if endswith is not None and not article.dictionary_name.endswith(endswith):
+                continue
+            return article.content
         return None 
 
     @property
     def digital_daijisen_content(self) -> DigitalDaijisenDataHandler:
-        return self._get_content('デジタル大辞泉の解説')
+        return self._get_content(startswith='デジタル大辞泉', endswith='の解説')
     
     @property
     def seisenpan_content(self) -> SeisenpanDataHandler:
-        return self._get_content('精選版 日本国語大辞典の解説')
+        return self._get_content(startswith='精選版 日本国語大辞典', endswith='の解説')
     
     @property
     def ndz_content(self) -> NDZ_ParsedItemList:
-        return self._get_content('日本大百科全書(ニッポニカ)の解説')
+        return self._get_content(startswith='日本大百科全書(ニッポニカ)', endswith='の解説')
 
 class KotobankResultList(
     BasicLoadableHandler['KotobankResultList', 'KotobankResult'],
@@ -419,7 +425,7 @@ class KotobankWordHtmlParser:
         return main_area
 
     def parse_dictionary(self, dictionary_title_text: str, ex_cf_html_list: List[Tag], strict: bool=True) -> DictionaryContent:
-        if dictionary_title_text == 'デジタル大辞泉の解説':
+        if dictionary_title_text.startswith('デジタル大辞泉') and dictionary_title_text.endswith('の解説'):
             digital_daijisen_data_handler = parse_digital_daijisen(ex_cf_html_list)
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
@@ -433,7 +439,7 @@ class KotobankWordHtmlParser:
             #     content=None
             # )
             raise NotImplementedError(f'Daijirin seems to have been removed. If that is not the case, please fix this code.')
-        elif dictionary_title_text == '精選版 日本国語大辞典の解説':
+        elif dictionary_title_text.startswith('精選版 日本国語大辞典') and dictionary_title_text.endswith('の解説'):
             seisenpan_data_handler = parse_seisenpan(ex_cf_html_list)
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
@@ -446,7 +452,7 @@ class KotobankWordHtmlParser:
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '日本大百科全書(ニッポニカ)の解説':
+        elif dictionary_title_text.startswith('日本大百科全書(ニッポニカ)') and dictionary_title_text.endswith('の解説'):
             ndz_data = parse_ndz(ex_cf_html_list)
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import List, Any, cast
+from jp_dict.parsing.kotobank.seisenpan import LineBreak
 import pandas as pd
 from bs4.element import Tag, NavigableString
 
@@ -434,6 +435,10 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
             print_str = ''
             for table in obj:
                 print_str += f'\n{tab}' + table.to_df().__str__()
+        elif type(self.obj) is LineBreak:
+            obj = cast(LineBreak, self.obj)
+            use_tab, use_linebreak = True, True
+            print_str = ''
         else:
             print_str = f'TODO ({self.obj.__class__.__name__})'
         if first:
@@ -502,6 +507,8 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
             obj = Table.from_dict(item_dict['obj'])
         elif class_name == 'TableList':
             obj = TableList.from_dict_list(item_dict['obj'])
+        elif class_name == 'LineBreak':
+            obj = LineBreak.from_dict(item_dict['obj'])
         else:
             raise Exception(f'Cannot create ParsedItem from {class_name}.')
         return ParsedItem(obj=obj)
@@ -786,10 +793,15 @@ def parse(ex_cf_html_list: List[Tag]):
 
     item_list_handler = ParsedItemListHandler()
     for ex_cf_html in ex_cf_html_list:
+        item_list = ParsedItemList()
+        heading_html = ex_cf_html.find(name='h3')
+        if heading_html is not None:
+            heading_text = heading_html.text.strip()
+            item_list.append(BoldText(heading_text), is_obj=True)
+            item_list.append(LineBreak(), is_obj=True)
         description_html = ex_cf_html.find(name='section', attrs={'class': 'description'})
         has_description = description_html is not None
         assert has_description, 'No description found.'
-        item_list = ParsedItemList()
         for child in description_html.children:
             if type(child) is NavigableString:
                 text = str(child)

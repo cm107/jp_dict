@@ -418,7 +418,7 @@ class CombinedResultList(
             info_list.sort(attr_name='hit_count', reverse=True)
         return info_list
     
-    def add_or_update_anki(self, deck_name: str, open_browser: bool=False, anki_connect: AnkiConnect=None):
+    def add_or_update_anki(self, deck_name: str, open_browser: bool=False, anki_connect: AnkiConnect=None, **kwargs):
         if anki_connect is None:
             anki_connect = AnkiConnect()
         if 'parsed_vocab' not in anki_connect.get_model_names():
@@ -429,7 +429,8 @@ class CombinedResultList(
             anki_connect.create_deck(deck=deck_name)
         anki_connect.add_or_update_parsed_vocab_notes(
             deck_name=deck_name,
-            fields_list=self.to_vocabulary_fields_list()
+            fields_list=self.to_vocabulary_fields_list(),
+            **kwargs
         )
         if open_browser:
             anki_connect.gui_card_browse(query=f'deck:{deck_name}')

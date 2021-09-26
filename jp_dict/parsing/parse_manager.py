@@ -422,6 +422,8 @@ class ParserManager(BasicLoadableObject['ParserManager']):
 
     def parse_kotobank(self, force: bool=False, verbose: bool=False, show_pbar: bool=True):
         if force or self._metadata.requires_postmatching_redo:
+            make_dir_if_not_exists(self.kotobank_parse_dump_dir)
+            make_dir_if_not_exists(self.kotobank_temp_map_dir)
             if force:
                 delete_all_files_in_dir(self.kotobank_parse_dump_dir)
                 delete_all_files_in_dir(self.kotobank_temp_map_dir)
