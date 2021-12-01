@@ -475,6 +475,7 @@ class AnkiConnect:
         self, deck_name: str,
         new_fields: ParsedVocabularyFields,
         update_daijisen: bool=False,
+        update_daijisen_plus: bool=False,
         update_seisenpan: bool=False,
         update_ndz: bool=False
     ) -> bool:
@@ -565,6 +566,20 @@ class AnkiConnect:
                             comment=f"Updated for '{fields.writing}'"
                         )
                     )
+                if update_daijisen_plus and fields.daijisen_plus != new_fields.daijisen_plus:
+                    self.changelog.append(
+                        AnkiChange(
+                            timestamp=timestamp,
+                            category=AnkiChange.LogCategory.NOTE,
+                            subcategory=AnkiChange.LogSubcategory.UPDATE,
+                            deck_name=deck_name, unique_id=new_fields.unique_id,
+                            field_name='daijisen_plus',
+                            previous_value=fields.daijisen_plus,
+                            new_value=new_fields.daijisen_plus,
+                            show_values=True,
+                            comment=f"Updated for '{fields.writing}'"
+                        )
+                    )
                 if update_seisenpan and fields.seisenpan != new_fields.seisenpan:
                     self.changelog.append(
                         AnkiChange(
@@ -601,6 +616,7 @@ class AnkiConnect:
             fields.localtime_range = new_fields.localtime_range
             fields.order_idx = new_fields.order_idx
             if update_daijisen: fields.daijisen = new_fields.daijisen
+            if update_daijisen_plus: fields.daijisen_plus = new_fields.daijisen_plus
             if update_seisenpan: fields.seisenpan = new_fields.seisenpan
             if update_ndz: fields.ndz = new_fields.ndz
 
@@ -631,6 +647,7 @@ class AnkiConnect:
                 deck_name=deck_name,
                 new_fields=fields,
                 update_daijisen=kwargs['update_daijisen'] if 'update_daijisen' in kwargs else False,
+                update_daijisen_plus=kwargs['update_daijisen_plus'] if 'update_daijisen_plus' in kwargs else False,
                 update_seisenpan=kwargs['update_seisenpan'] if 'update_seisenpan' in kwargs else False,
                 update_ndz=kwargs['update_ndz'] if 'update_ndz' in kwargs else False,
             )

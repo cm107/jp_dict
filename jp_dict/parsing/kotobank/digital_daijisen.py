@@ -845,6 +845,19 @@ def parse(ex_cf_html_list: List[Tag]):
                     origin_word_text = child.text.strip()
                     origin_word = OriginWord(origin_word_text)
                     item_list.append(origin_word, is_obj=True)
+                elif child.name == 'spellout' and 'org' in child.attrs and child.attrs['org'] == '—':
+                    text = child.text.strip()
+                    bold_text = BoldText(text) # Too lazy to create a new class for this.
+                    item_list.append(bold_text, is_obj=True)
+                elif child.name == 'ruby':
+                    rb_html = child.find(name='rb')
+                    assert rb_html is not None
+                    rb_text = rb_html.text.strip()
+                    rt_html = child.find(name='rt')
+                    assert rt_html is not None
+                    rt_text = rt_html.text.strip()
+                    plain_text = PlainText(f'{rb_text}({rt_text})') # Might be worth making a class for this.
+                    item_list.append(plain_text, is_obj=True)
                 elif 'href' in child.attrs and child.name == 'a':
                     related_word_url = f"https://kotobank.jp{child['href']}"
                     related_word_text = child.text.strip()

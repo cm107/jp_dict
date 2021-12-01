@@ -21,6 +21,14 @@
             </p>
         </details>
     {{/daijisen}}
+    {{#daijisen_plus}}
+        <details id="daijisen_plus_details">
+            <summary>デジタル大辞泉プラスの解説:</summary>
+            <p style="margin-left:5%">
+                <span id="daijisen_plus">{{daijisen_plus}}</span>
+            </p>
+        </details>
+    {{/daijisen_plus}}
     {{#seisenpan}}
         <details id="seisenpan_details">
             <summary>精選版 日本国語大辞典の解説:</summary>
@@ -269,6 +277,7 @@
     var jp_str_ids = [
         "custom_definition",
         "daijisen",
+        "daijisen_plus",
         "seisenpan",
         "ndz",
         "eng_definition"
@@ -276,6 +285,7 @@
     var jp_details_ids = [
         "custom_definition_details",
         "daijisen_details",
+        "daijisen_plus_details",
         "seisenpan_details",
         "ndz_details",
         "eng_definition_details"

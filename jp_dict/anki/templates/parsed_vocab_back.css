@@ -20,5 +20,6 @@ figcaption {
     margin-right: auto;
 }
 a {
-    color:navy;
+    /* color:navy; */
+    color:white;
 }

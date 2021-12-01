@@ -202,8 +202,12 @@ class KotobankResult(BasicLoadableObject['KotobankResult']):
 
     @property
     def digital_daijisen_content(self) -> DigitalDaijisenDataHandler:
-        return self._get_content(startswith='デジタル大辞泉', endswith='の解説')
-    
+        return self._get_content(startswith='デジタル大辞泉「', endswith='」の解説')
+
+    @property
+    def digital_daijisen_plus_content(self) -> DigitalDaijisenDataHandler:
+        return self._get_content(startswith='デジタル大辞泉プラス「', endswith='」の解説')
+
     @property
     def seisenpan_content(self) -> SeisenpanDataHandler:
         return self._get_content(startswith='精選版 日本国語大辞典', endswith='の解説')
@@ -466,13 +470,6 @@ class KotobankWordHtmlParser:
                 content=None
             )
         elif dictionary_title_text == '世界大百科事典 第２版の解説':
-            if strict:
-                raise NotImplementedError
-            return DictionaryContent(
-                dictionary_name=dictionary_title_text,
-                content=None
-            )
-        elif dictionary_title_text == 'デジタル大辞泉プラスの解説':
             if strict:
                 raise NotImplementedError
             return DictionaryContent(

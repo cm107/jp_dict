@@ -438,9 +438,9 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             ]
 
             pbar = tqdm(total=len(entry_match_list), unit='entries', leave=True) if show_pbar else None
-            if pbar is not None:
-                pbar.set_description('Parsing Kotobank Results From Jisho Entries')
             for entry_match in entry_match_list:
+                if pbar is not None:
+                    pbar.set_description(f'Parsing Kotobank: {entry_match.entry.word_representation.writing}')
                 if entry_match.id in finished_entry_ids:
                     if pbar is not None:
                         pbar.update()

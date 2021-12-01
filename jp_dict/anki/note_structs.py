@@ -97,7 +97,7 @@ class ParsedVocabularyFields(BasicLoadableObject['ParsedVocabularyFields']):
         self,
         writing: str, reading: str,
         common: str, jlpt_level: str, wanikani_level: str,
-        eng_definition: str, daijisen: str, seisenpan: str, ndz: str,
+        eng_definition: str, daijisen: str, daijisen_plus: str, seisenpan: str, ndz: str,
         links: str,
         jisho_search_link: str, kotobank_search_link: str,
         ejje_sentence_search_link: str, weblio_search_link: str,
@@ -117,6 +117,7 @@ class ParsedVocabularyFields(BasicLoadableObject['ParsedVocabularyFields']):
         self.wanikani_level = wanikani_level
         self.eng_definition = eng_definition
         self.daijisen = daijisen
+        self.daijisen_plus = daijisen_plus
         self.seisenpan = seisenpan
         self.ndz = ndz
         self.links = links

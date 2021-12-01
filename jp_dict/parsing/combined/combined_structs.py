@@ -56,6 +56,10 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
             daijisen = daijisen.custom_str(indent=0) if daijisen is not None else ''
             daijisen = daijisen.replace('\n', '<br>')
 
+            daijisen_plus = self.kotobank_result.digital_daijisen_plus_content
+            daijisen_plus = daijisen_plus.custom_str(indent=0) if daijisen_plus is not None else ''
+            daijisen_plus = daijisen_plus.replace('\n', '<br>')
+
             seisenpan = self.kotobank_result.seisenpan_content
             seisenpan = seisenpan.custom_str(indent=0) if seisenpan is not None else ''
             seisenpan = seisenpan.replace('\n', '<br>')
@@ -65,6 +69,7 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
             ndz = ndz.replace('\n', '<br>')
         else:
             daijisen = ''
+            daijisen_plus = ''
             seisenpan = ''
             ndz = ''
         kotobank_search_link = f'<a href="https://kotobank.jp/word/{self.kotobank_result.search_word}">Kotobank search for {self.kotobank_result.search_word}</a>' \
@@ -83,6 +88,7 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
             wanikani_level=wanikani_level,
             eng_definition=self.jisho_result.entry.meaning_section.custom_str().replace('\n', '<br>'),
             daijisen=daijisen,
+            daijisen_plus=daijisen_plus,
             seisenpan=seisenpan,
             ndz=ndz,
             links=self.jisho_result.entry.supplementary_links.html,
