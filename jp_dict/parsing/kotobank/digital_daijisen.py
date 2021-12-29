@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Any, cast
+from typing import List, Any, Type, cast, Union, TypeVar
 from jp_dict.parsing.kotobank.seisenpan import LineBreak
 import pandas as pd
 from bs4.element import Tag, NavigableString
@@ -9,6 +9,9 @@ from common_utils.base.basic import BasicLoadableObject, BasicLoadableHandler, B
 from common_utils.path_utils import get_rootname_from_path
 
 from ..common import Link
+
+T = TypeVar('T')
+H = TypeVar('H')
 
 # Simple Text
 class PlainText(BasicLoadableObject['PlainText']):
@@ -47,6 +50,18 @@ class BoldText(PlainText):
     def plain_str(self) -> str:
         return self.text
 
+class HeaderText(BoldText):
+    def __init__(self, text: str):
+        super().__init__(text=text)
+    
+    @property
+    def plain_str(self) -> str:
+        return self.text
+    
+    @property
+    def html(self) -> str:
+        return f'<b>{self.text}</b>'
+
 class KigoWord(PlainText):
     def __init__(self, text: str):
         super().__init__(text=text)
@@ -79,6 +94,10 @@ class SuperscriptText(PlainText):
     def plain_str(self) -> str:
         return f'^{self.text}'
 
+    @property
+    def html(self) -> str:
+        return f'<sup>{self.text}</sup>'
+
 class RekishiText(PlainText):
     def __init__(self, text: str):
         super().__init__(text=text)
@@ -94,6 +113,10 @@ class ItalicText(PlainText):
     @property
     def plain_str(self) -> str:
         return self.text
+    
+    @property
+    def html(self) -> str:
+        return f'<i>{self.text}</i>'
 
 # Other
 class Gaiji(BasicLoadableObject['Gaiji']):
@@ -124,13 +147,70 @@ class DefinitionNumber(BasicLoadableObject['DefinitionNumber']):
     def plain_str(self) -> str:
         return f'{self.num}. '
 
-class RelatedWordLink(Link):
-    def __init__(self, url: str, text: str):
-        super().__init__(url=url, text=text)
+class RelatedWordLink(BasicLoadableObject['RelatedWordLink']):
+    def __init__(self, url: str, text: Union[str, RubyFuriganaWord]):
+        super().__init__()
+        self.url = url
+        self.text = text
+
+    def to_dict(self) -> dict:
+        if type(self.text) is str:
+            text_value = self.text
+        elif type(self.text) is RubyFuriganaWord:
+            text_value = self.text.to_dict()
+        else:
+            raise TypeError
+        return {
+            'url': self.url,
+            'text': text_value,
+            'text_type': type(self.text).__name__
+        }
+    
+    @classmethod
+    def from_dict(cls, item_dict: dict) -> RelatedWordLink:
+        if 'text_type' not in item_dict:
+            raise KeyError
+        if item_dict['text_type'] == 'str':
+            text_value = item_dict['text']
+        elif item_dict['text_type'] == 'RubyFuriganaWord':
+            text_value = RubyFuriganaWord.from_dict(item_dict['text'])
+        else:
+            raise ValueError
+        return RelatedWordLink(
+            url=item_dict['url'],
+            text=text_value
+        )
 
     @property
     def plain_str(self) -> str:
-        return f'[{self.text}]'
+        if type(self.text) is str:
+            return f'[{self.text}]'
+        elif type(self.text) is RubyFuriganaWord:
+            return f'[{self.text.plain_str}]'
+        else:
+            raise TypeError
+    
+    def custom_str(self, indent: int=0) -> str:
+        tab = '\t' * indent
+        return f'{tab}{self.plain_str}'
+    
+    @property
+    def markdown(self) -> str:
+        if type(self.text) is str:
+            return f'[{self.text}]({self.url})'
+        elif type(self.text) is RubyFuriganaWord:
+            return f'[{self.text.writing}]({self.url})' # I don't think I can do the furigana in markdown.
+        else:
+            raise ValueError
+    
+    @property
+    def html(self) -> str:
+        if type(self.text) is str:
+            return f'<a href="{self.url}">{self.text}</a>'
+        elif type(self.text) is RubyFuriganaWord:
+            return f'<a href="{self.url}">{self.text.html}</a>'
+        else:
+            raise TypeError
 
 class RelatedWordLinkList(
     BasicLoadableHandler['RelatedWordLinkList', 'RelatedWordLink'],
@@ -261,6 +341,50 @@ class SpecialString:
     def def_num(self) -> SpecialString:
         return SpecialString(f'{self.def_num_str}{self.text}')
 
+class RubyFuriganaWord(BasicLoadableObject['RubyFuriganaWord']):
+    def __init__(self, writing: str, reading: str):
+        self.writing = writing
+        self.reading = reading
+    
+    @property
+    def plain_str(self) -> str:
+        return f'{self.writing}({self.reading})'
+    
+    def custom_str(self, indent: int=0) -> str:
+        tab = '\t' * indent
+        print_str = f'{tab}{self.plain_str}'
+        return print_str
+    
+    @property
+    def html(self) -> str:
+        return f'<ruby><rb>{self.writing}</rb><rt>{self.reading}</rt></ruby>'
+
+class RuigigoList(
+    BasicLoadableHandler['RuigigoList', 'RelatedWordLink'],
+    BasicHandler['RuigigoList', 'RelatedWordLink']
+):
+    def __init__(self, ruigigo_list: List[RelatedWordLink]=None):
+        raise Exception("This class is obsolete now.")
+        super().__init__(obj_type=RelatedWordLink, obj_list=ruigigo_list)
+        self.ruigigo_list = self.obj_list
+    
+    @classmethod
+    def from_dict_list(cls, dict_list: List[dict]) -> RuigigoList:
+        return RuigigoList([RelatedWordLink.from_dict(item_dict) for item_dict in dict_list])
+
+    @property
+    def plain_str(self) -> str:
+        return '[類義語]\n' + '・'.join([link.plain_str for link in self])
+    
+    def custom_str(self, indent: int=0) -> str:
+        tab = '\t' * indent
+        return tab + '[類義語]\n' + tab + '・'.join([link.plain_str for link in self])
+
+    @property
+    def html(self) -> str:
+        hidden = '・'.join([link.html for link in self])
+        return f'<details><summary>[類義語]</summary>{hidden}</details>'
+
 class ParsedItem(BasicLoadableObject['ParsedItem']):
     def __init__(self, obj: Any):
         super().__init__()
@@ -274,7 +398,7 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
         if type(self.obj) in [PlainText, Hinshi, KigoWord, MotoTsudzuri, RekishiText]:
             obj = cast(PlainText, self.obj)
             return obj.text
-        elif type(self.obj) is BoldText:
+        elif type(self.obj) in [BoldText, HeaderText]:
             obj = cast(BoldText, self.obj)
             return SpecialString(obj.text).bold.end.text
         elif type(self.obj) is OriginWord:
@@ -294,7 +418,7 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
             return '\n' + SpecialString(f'{obj.num}').def_num.end.text
         elif type(self.obj) is RelatedWordLink:
             obj = cast(RelatedWordLink, self.obj)
-            return SpecialString(obj.text).bold.underline.end.text
+            return SpecialString(obj.plain_str).bold.underline.end.text
         elif type(self.obj) is RelatedWordLinkList:
             obj = cast(RelatedWordLinkList, self.obj)
             print_str = ''
@@ -313,6 +437,18 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
             for table in obj:
                 print_str += '\n' + table.to_df().__str__()
             return print_str
+        elif type(self.obj) is RubyFuriganaWord:
+            obj = cast(RubyFuriganaWord, self.obj)
+            return obj.plain_str
+        elif type(self.obj) is RuigigoList:
+            obj = cast(RuigigoList, self.obj)
+            return obj.plain_str
+        elif type(self.obj) is RuigigoParsedItemGroup:
+            obj = cast(RuigigoParsedItemGroup, self.obj)
+            return obj.plain_str
+        elif type(self.obj) is HeaderParsedItemGroup:
+            obj = cast(HeaderParsedItemGroup, self.obj)
+            return obj.plain_str
         else:
             return f'TODO ({self.obj.__class__.__name__})'
 
@@ -321,7 +457,7 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
         if type(self.obj) in [PlainText, Hinshi, KigoWord, MotoTsudzuri, RekishiText]:
             obj = cast(PlainText, self.obj)
             return obj.text
-        elif type(self.obj) is BoldText:
+        elif type(self.obj) in [BoldText, HeaderText]:
             obj = cast(BoldText, self.obj)
             return obj.text
         elif type(self.obj) is OriginWord:
@@ -341,12 +477,12 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
             return f'\n{obj.num}'
         elif type(self.obj) is RelatedWordLink:
             obj = cast(RelatedWordLink, self.obj)
-            return obj.text
+            return obj.plain_str
         elif type(self.obj) is RelatedWordLinkList:
             obj = cast(RelatedWordLinkList, self.obj)
             print_str = ''
             for link in obj:
-                print_str += f'\n{link.text}'
+                print_str += f'\n{link.plain_str}'
             return print_str
         elif type(self.obj) is Media:
             obj = cast(Media, self.obj)
@@ -360,12 +496,25 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
             for table in obj:
                 print_str += '\n' + table.to_df().__str__()
             return print_str
+        elif type(self.obj) is RubyFuriganaWord:
+            obj = cast(RubyFuriganaWord, self.obj)
+            return obj.plain_str
+        elif type(self.obj) is RuigigoList:
+            obj = cast(RuigigoList, self.obj)
+            return obj.plain_str
+        elif type(self.obj) is RuigigoParsedItemGroup:
+            obj = cast(RuigigoParsedItemGroup, self.obj)
+            return obj.plain_str
+        elif type(self.obj) is HeaderParsedItemGroup:
+            obj = cast(HeaderParsedItemGroup, self.obj)
+            return obj.plain_str
         else:
             return f'TODO ({self.obj.__class__.__name__})'
 
     def custom_str(
         self, indent: int=0, first: bool=False,
         link2html: bool=False, media2html: bool=False,
+        furigana2html: bool=False,
         all_html: bool=True
     ) -> str:
         tab = '\t' * indent
@@ -373,7 +522,7 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
         if type(self.obj) in [PlainText, Hinshi, KigoWord, MotoTsudzuri, RekishiText]:
             obj = cast(PlainText, self.obj)
             print_str = obj.text
-        elif type(self.obj) is BoldText:
+        elif type(self.obj) in [BoldText, HeaderText]:
             obj = cast(BoldText, self.obj)
             if not all_html:
                 print_str = obj.text
@@ -388,15 +537,15 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
         elif type(self.obj) is SuperscriptText:
             obj = cast(SuperscriptText, self.obj)
             if not all_html:
-                print_str = f'^{obj.text}'
+                print_str = obj.plain_str
             else:
-                print_str = f'<sup>{obj.text}</sup>'
+                print_str = obj.html
         elif type(self.obj) is ItalicText:
             obj = cast(ItalicText, self.obj)
             if not all_html:
-                print_str = obj.text
+                print_str = obj.plain_str
             else:
-                print_str = f'<i>{obj.text}</i>'
+                print_str = obj.html
         elif type(self.obj) is Gaiji:
             obj = cast(Gaiji, self.obj)
             use_tab, use_linebreak = True, not first
@@ -408,17 +557,27 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
         elif type(self.obj) is RelatedWordLink:
             obj = cast(RelatedWordLink, self.obj)
             if not (link2html or all_html):
-                print_str = obj.text
+                print_str = obj.plain_str
             else:
-                print_str = f'<a href="{obj.url}">{obj.text}</a>'
+                if type(obj.text) is str:
+                    print_str = f'<a href="{obj.url}">{obj.text}</a>'
+                elif type(obj.text) is RubyFuriganaWord:
+                    print_str = f'<a href="{obj.url}">{obj.text.html}</a>'
+                else:
+                    raise TypeError
         elif type(self.obj) is RelatedWordLinkList:
             obj = cast(RelatedWordLinkList, self.obj)
             print_str = ''
             for link in obj:
                 if not (link2html or all_html):
-                    print_str += f'\n{tab}{link.text}'
+                    print_str += f'\n{tab}{link.plain_str}'
                 else:
-                    print_str += f'\n{tab}<a href="{link.url}">{link.text}</a>'
+                    if type(link.text) is str:
+                        print_str += f'\n<a href="{link.url}">{link.text}</a>'
+                    elif type(link.text) is RubyFuriganaWord:
+                        print_str += f'\n<a href="{link.url}">{link.text.html}</a>'
+                    else:
+                        raise TypeError
         elif type(self.obj) is Media:
             obj = cast(Media, self.obj)
             use_tab, use_linebreak = True, True
@@ -439,6 +598,31 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
             obj = cast(LineBreak, self.obj)
             use_tab, use_linebreak = True, True
             print_str = ''
+        elif type(self.obj) is RubyFuriganaWord:
+            obj = cast(RubyFuriganaWord, self.obj)
+            if furigana2html or all_html:
+                print_str = obj.html
+            else:
+                print_str = obj.plain_str
+        elif type(self.obj) is RuigigoList:
+            obj = cast(RuigigoList, self.obj)
+            if link2html or all_html:
+                print_str = obj.html
+            else:
+                print_str = obj.plain_str
+        elif type(self.obj) is RuigigoParsedItemGroup:
+            obj = cast(RuigigoParsedItemGroup, self.obj)
+            print_str = obj.custom_str(
+                indent=indent, link2html=link2html,
+                media2html=media2html, furigana2html=furigana2html,
+                all_html=all_html
+            )
+        elif type(self.obj) is HeaderParsedItemGroup:
+            obj = cast(HeaderParsedItemGroup, self.obj)
+            return obj.custom_str(
+                indent=indent,
+                as_html=furigana2html or all_html
+            )
         else:
             print_str = f'TODO ({self.obj.__class__.__name__})'
         if first:
@@ -481,6 +665,8 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
             obj = Hinshi.from_dict(item_dict['obj'])
         elif class_name == 'BoldText':
             obj = BoldText.from_dict(item_dict['obj'])
+        elif class_name == 'HeaderText':
+            obj = HeaderText.from_dict(item_dict['obj'])
         elif class_name == 'KigoWord':
             obj = KigoWord.from_dict(item_dict['obj'])
         elif class_name == 'OriginWord':
@@ -509,13 +695,21 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
             obj = TableList.from_dict_list(item_dict['obj'])
         elif class_name == 'LineBreak':
             obj = LineBreak.from_dict(item_dict['obj'])
+        elif class_name == 'RubyFuriganaWord':
+            obj = RubyFuriganaWord.from_dict(item_dict['obj'])
+        elif class_name == 'RuigigoList':
+            obj = RuigigoList.from_dict_list(item_dict['obj'])
+        elif class_name == 'RuigigoParsedItemGroup':
+            obj = RuigigoParsedItemGroup.from_dict_list(item_dict['obj'])
+        elif class_name == 'HeaderParsedItemGroup':
+            obj = HeaderParsedItemGroup.from_dict_list(item_dict['obj'])
         else:
             raise Exception(f'Cannot create ParsedItem from {class_name}.')
         return ParsedItem(obj=obj)
 
-class ParsedItemList(
-    BasicLoadableHandler['ParsedItemList', 'ParsedItem'],
-    BasicHandler['ParsedItemList', 'ParsedItem']
+class BaseParsedItemList(
+    BasicLoadableHandler[H, 'ParsedItem'],
+    BasicHandler[H, 'ParsedItem']
 ):
     def __init__(self, item_list: List[ParsedItem]=None):
         super().__init__(obj_type=ParsedItem, obj_list=item_list)
@@ -547,8 +741,8 @@ class ParsedItemList(
         return print_str
 
     @classmethod
-    def from_dict_list(cls, dict_list: List[dict]) -> ParsedItemList:
-        return ParsedItemList([ParsedItem.from_dict(item_dict) for item_dict in dict_list])
+    def from_dict_list(cls, dict_list: List[dict]) -> H:
+        return cls([ParsedItem.from_dict(item_dict) for item_dict in dict_list])
     
     @property
     def class_name_list(self) -> List[str]:
@@ -573,6 +767,231 @@ class ParsedItemList(
             super().append(item)
         else:
             super().append(ParsedItem(item))
+
+class RuigigoParsedItemGroup(BaseParsedItemList['RuigigoParsedItemGroup']):
+    def __init__(self, item_list: List[ParsedItem]=None):
+        super().__init__(item_list=item_list)
+
+    @property
+    def plain_str(self) -> str:
+        return '[類義語]\n' + super().plain_str
+    
+    def custom_str(
+        self, indent: int=0,
+        link2html: bool=False, media2html: bool=False,
+        furigana2html: bool=False,
+        all_html: bool=True
+    ) -> str:
+        tab = '\t' * indent
+        print_str = ''
+        if all_html:
+            hidden_str = ''
+            for item in self:
+                if isinstance(item.obj, PlainText) and item.obj.is_empty:
+                    continue
+                hidden_str += item.custom_str(
+                    indent=indent, first=True,
+                    link2html=link2html,
+                    media2html=media2html,
+                    furigana2html=furigana2html,
+                    all_html=all_html
+                )
+            print_str += tab + f'<details><summary>[類義語]</summary>{hidden_str}</details>'
+        else:
+            print_str += tab + '[類義語]\n'
+            for item in self:
+                if isinstance(item.obj, PlainText) and item.obj.is_empty:
+                    continue
+                print_str += item.custom_str(
+                    indent=indent, first=True,
+                    link2html=link2html,
+                    media2html=media2html,
+                    furigana2html=furigana2html,
+                    all_html=all_html
+                )
+        return print_str
+
+class HeaderParsedItemGroup(BaseParsedItemList['HeaderParsedItemGroup']):
+    def __init__(self, item_list: List[ParsedItem]=None):
+        super().__init__(item_list=item_list)
+    
+    def check_validity(self):
+        invalid_class_names = []
+        for class_name in self.class_name_list:
+            if class_name not in ['PlainText', 'RubyFuriganaWord'] and class_name not in invalid_class_names:
+                invalid_class_names.append(class_name)
+        if len(invalid_class_names) > 0:
+            list_str = ', '.join(invalid_class_names)
+            raise TypeError(f"Invalid class names in HeaderParsedItemGroup: {list_str}")
+
+    @property
+    def plain_str(self) -> str:
+        self.check_validity()
+        return ''.join([obj.plain_str for obj in self])
+
+    def custom_str(
+        self, indent: int=0,
+        as_html: bool=True
+    ) -> str:
+        tab = '\t' * indent
+        print_str = tab
+        if as_html:
+            inner_str = ''
+            for item in self:
+                if isinstance(item.obj, PlainText):
+                    obj = cast(PlainText, item.obj)
+                    if obj.is_empty:
+                        continue
+                    else:
+                        inner_str += obj.text
+                elif isinstance(item.obj, RubyFuriganaWord):
+                    obj = cast(RubyFuriganaWord, item.obj)
+                    inner_str += obj.html
+                else:
+                    raise TypeError
+            print_str += HeaderText(inner_str).html
+        else:
+            print_str += self.plain_str
+        return print_str
+
+class ParsedItemList(BaseParsedItemList['ParsedItemList']):
+    def __init__(self, item_list: List[ParsedItem]=None):
+        super().__init__(item_list=item_list)
+
+    # def process_ruigigo_lists(self) -> ParsedItemList:
+    #     ruigigo_list = cast(RuigigoList, None)
+    #     is_ruigigo_list = False
+    #     skip_count = 0
+
+    #     result = ParsedItemList()
+
+    #     for i in range(len(self)):
+    #         if skip_count > 0:
+    #             skip_count -= 1
+    #             continue
+    #         if self[i].class_name == 'PlainText' and cast(PlainText, self[i].obj).text.startswith('[類語]'):
+    #             # remaining_text = cast(PlainText, self[i].obj).text.replace('[類語]', '')
+    #             # if remaining_text != '':
+    #             #     result.append(PlainText(remaining_text), is_obj=True)
+    #             is_ruigigo_list = True
+    #             ruigigo_list = RuigigoList()
+    #             continue
+    #         elif i < len(self) - 2 and self[i].class_name == 'PlainText' and self[i+2].class_name == 'PlainText' and self[i+1].class_name in ['PlainText', 'RelatedWordLink']:
+    #             plain_text0 = cast(PlainText, self[i].obj)
+    #             plain_text1 = cast(PlainText, self[i+2].obj)
+    #             if plain_text0.text == '[' and plain_text1.text == ']':
+    #                 if type(self[i+1].obj) is PlainText:
+    #                     plain_text_middle = cast(PlainText, self[i+1].obj)
+    #                     if plain_text_middle.text == '類語':
+    #                         is_ruigigo_list = True
+    #                         skip_count = 2
+    #                 elif type(self[i+1].obj) is RelatedWordLink:
+    #                     link = cast(RelatedWordLink, self[i+1].obj)
+    #                     if type(link.text) is str:
+    #                         if link.text == '類語':
+    #                             is_ruigigo_list = True
+    #                             skip_count = 2
+    #                     elif type(link.text) is RubyFuriganaWord:
+    #                         link_text = cast(RubyFuriganaWord, link.text)
+    #                         if link_text.writing == '類語':
+    #                             is_ruigigo_list = True
+    #                             skip_count = 2
+    #                     else:
+    #                         raise TypeError
+    #                 else:
+    #                     raise Exception
+    #             if is_ruigigo_list and ruigigo_list is None: # here
+    #                 ruigigo_list = RuigigoList()
+    #                 continue
+    #         if not is_ruigigo_list:
+    #             result.append(self[i])
+    #         else:
+    #             if self[i].class_name == 'RelatedWordLink':
+    #                 ruigigo_list.append(cast(RelatedWordLink, self[i].obj))
+    #             elif self[i].class_name == 'PlainText' and cast(PlainText, self[i].obj).text == '・':
+    #                 continue # Do nothing
+    #             elif self[i].class_name == 'DefinitionNumber':
+    #                 # result.append(PlainText(str(cast(DefinitionNumber, self[i].obj).num)), is_obj=True)
+    #                 continue
+    #             elif self[i].class_name == 'PlainText' and cast(PlainText, self[i].obj).text in ['）', '／', '(', ')', '／（', '（']:
+    #                 # result.append(self[i]) # Ignore these for now.
+    #                 continue
+    #             else:
+    #                 is_ruigigo_list = False
+    #                 if ruigigo_list is not None and len(ruigigo_list) > 0:
+    #                     result.append(ruigigo_list, is_obj=True)
+    #                     ruigigo_list = None
+    #                 result.append(self[i])
+    #     if ruigigo_list is not None and len(ruigigo_list) > 0:
+    #         result.append(ruigigo_list, is_obj=True)
+    #         ruigigo_list = None
+    #     return result
+
+    def process_ruigigo_group(self) -> ParsedItemList:
+        # New approach.
+        # Section Start at [類語] keyword
+        # ruigigo section always continues until end of parsed item list
+
+        ruigigo_group = cast(RuigigoParsedItemGroup, None)
+        is_ruigigo_group = False
+        skip_count = 0
+
+        result = ParsedItemList()
+
+        for i in range(len(self)):
+            if skip_count > 0:
+                skip_count -= 1
+                continue
+            if self[i].class_name == 'PlainText' and cast(PlainText, self[i].obj).text.startswith('[類語]'):
+                is_ruigigo_group = True
+                ruigigo_group = RuigigoParsedItemGroup()
+                continue
+            elif self[i].class_name == 'RelatedWordLink' \
+                and '類語' in self[i].plain_str and i > 0 \
+                and self[i-1].plain_str.endswith('[') \
+                and i < len(self) - 1 \
+                and self[i+1].plain_str.startswith(']'):
+                is_ruigigo_group = True
+                ruigigo_group = RuigigoParsedItemGroup()
+                del result[-1]
+                skip_count = 1
+                continue
+            elif i < len(self) - 2 and self[i].class_name == 'PlainText' and self[i+2].class_name == 'PlainText' and self[i+1].class_name in ['PlainText', 'RelatedWordLink']:
+                # Not sure if this condition is needed anymore.
+                plain_text0 = cast(PlainText, self[i].obj)
+                plain_text1 = cast(PlainText, self[i+2].obj)
+                if plain_text0.text == '[' and plain_text1.text == ']':
+                    if type(self[i+1].obj) is PlainText:
+                        plain_text_middle = cast(PlainText, self[i+1].obj)
+                        if plain_text_middle.text == '類語':
+                            is_ruigigo_group = True
+                            skip_count = 2
+                    elif type(self[i+1].obj) is RelatedWordLink:
+                        link = cast(RelatedWordLink, self[i+1].obj)
+                        if type(link.text) is str:
+                            if link.text == '類語':
+                                is_ruigigo_group = True
+                                skip_count = 2
+                        elif type(link.text) is RubyFuriganaWord:
+                            link_text = cast(RubyFuriganaWord, link.text)
+                            if link_text.writing == '類語':
+                                is_ruigigo_group = True
+                                skip_count = 2
+                        else:
+                            raise TypeError
+                    else:
+                        raise Exception
+                if is_ruigigo_group and ruigigo_group is None:
+                    ruigigo_group = RuigigoParsedItemGroup()
+                    continue
+            if not is_ruigigo_group:
+                result.append(self[i])
+            else:
+                ruigigo_group.append(self[i])
+        if ruigigo_group is not None and len(ruigigo_group) > 0:
+            result.append(ruigigo_group, is_obj=True)
+            ruigigo_group = None
+        return result
 
     def group_items(self) -> ParsedItemGroupList:
         groups = []
@@ -599,7 +1018,6 @@ class ParsedItemList(
                 if current_group_label is not None:
                     current_group.append(self[i])
                 else:
-                    # print(f'Ignoring: {self[i].class_name}')
                     current_group_label = 'misc'
                     current_group.append(self[i])
         if len(current_group) > 0:
@@ -777,27 +1195,177 @@ class ParsedItemListHandler(
     def contains_class_names(self, class_names: List[str], operator: str='and') -> bool:
         return any([item_list.contains_class_names(class_names, operator=operator) for item_list in self])
 
-def parse(ex_cf_html_list: List[Tag]):
-    gaiji_map = {
-        1: '一',
-        2: '二',
-        3: '三',
-        4: '四',
-        5: '五',
-        6: '六',
-        7: '七',
-        8: '八',
-        9: '九',
-        10: '十'
-    }
+def parse_ruby_html(ruby_html: Tag) -> RubyFuriganaWord:
+    rb_html = ruby_html.find(name='rb')
+    assert rb_html is not None
+    rb_text = rb_html.text.strip()
+    rt_html = ruby_html.find(name='rt')
+    assert rt_html is not None
+    rt_text = rt_html.text.strip()
+    ruby_furigana_word = RubyFuriganaWord(writing=rb_text, reading=rt_text)
+    return ruby_furigana_word
 
+def parse_heading_html(heading_html: Tag) -> HeaderParsedItemGroup:
+    group = HeaderParsedItemGroup()
+    for child in heading_html.children:
+        if type(child) is NavigableString:
+            group.append(PlainText(str(child)), is_obj=True)
+        elif type(child) is Tag:
+            parse_tag(item_list=group, child=child)
+        else:
+            raise TypeError
+    return group
+
+gaiji_map = {
+    1: '一',
+    2: '二',
+    3: '三',
+    4: '四',
+    5: '五',
+    6: '六',
+    7: '七',
+    8: '八',
+    9: '九',
+    10: '十'
+}
+
+def parse_tag(item_list: ParsedItemList, child: Tag):
+    if 'class' in child.attrs and child.attrs['class'] == ['gaiji']:
+        gaiji_url = child.attrs['src']
+        gaiji_root_int = int(get_rootname_from_path(gaiji_url))
+        if gaiji_root_int >= 2539 and gaiji_root_int <= 2546:
+            gaiji_type = 'black_gaiji_number'
+            gaiji_int_equivalent = gaiji_root_int - 2538
+        elif gaiji_root_int >= 2531 and gaiji_root_int <= 2538:
+            gaiji_type = 'white_gaiji_number'
+            gaiji_int_equivalent = gaiji_root_int - 2530
+        else:
+            raise Exception(
+                f"""
+                gaiji_root_int={gaiji_root_int} is not in an acceptable range.
+                """
+            )
+        assert gaiji_int_equivalent in gaiji_map, f'{gaiji_int_equivalent} not in gaiji_map.\nurl: {self.url}\ntitle: {self.title}'
+        gaiji_str_equivalent = gaiji_map[gaiji_int_equivalent]
+        gaiji = Gaiji(
+            url=gaiji_url,
+            int_equivalent=gaiji_int_equivalent,
+            str_equivalent=gaiji_str_equivalent
+        )
+        item_list.append(gaiji, is_obj=True)
+    elif 'class' in child.attrs and child.attrs['class'] == ['hinshi']:
+        hinshi_text = child.text.strip()
+        hinshi = Hinshi(text=hinshi_text)
+        item_list.append(hinshi, is_obj=True)
+    elif len(child.attrs) == 0 and child.text.strip() == '':
+        pass # Ignore. Usually just a <br> or <br/>
+        # item_list.append(LineBreak(), is_obj=True)
+    elif len(child.attrs) == 0 and str.isdigit(child.text.strip()):
+        definition_number_int = int(child.text.strip())
+        definition_number = DefinitionNumber(num=definition_number_int)
+        item_list.append(definition_number, is_obj=True)
+    elif 'org' in child.attrs and child.attrs['org'] == '―':
+        origin_word_text = child.text.strip()
+        origin_word = OriginWord(origin_word_text)
+        item_list.append(origin_word, is_obj=True)
+    elif child.name == 'spellout' and 'org' in child.attrs and child.attrs['org'] == '—':
+        text = child.text.strip()
+        bold_text = BoldText(text) # Too lazy to create a new class for this.
+        item_list.append(bold_text, is_obj=True)
+    elif child.name == 'ruby':
+        ruby_furigana_word = parse_ruby_html(child)
+        item_list.append(ruby_furigana_word, is_obj=True)
+    elif 'href' in child.attrs and child.name == 'a':
+        related_word_url = f"https://kotobank.jp{child['href']}"
+        ruby_html = child.find(name='ruby')
+        if ruby_html is None:
+            related_word_text = child.text.strip()
+        else:
+            related_word_text = parse_ruby_html(child)
+        related_word_link = RelatedWordLink(url=related_word_url, text=related_word_text)
+        item_list.append(related_word_link, is_obj=True)
+    elif len(child.attrs) == 0 and child.name == 'b' and len(child.text.strip()) > 0:
+        bold_text_str = child.text.strip()
+        bold_text = BoldText(bold_text_str)
+        item_list.append(bold_text, is_obj=True)
+    elif child.name == 'span' and 'class' in child.attrs and child['class'] == ['kigo']:
+        kigo_text = child.text.strip()
+        kigo_word = KigoWord(kigo_text)
+        item_list.append(kigo_word, is_obj=True)
+    elif 'class' in child.attrs and child['class'] == ['media'] and child.name == 'div':
+        fullsize_link_html = child.find(name='a', href=True)
+        assert fullsize_link_html is not None
+        fullsize_img_url = f"https://kotobank.jp{fullsize_link_html['href']}"
+        fullsize_img_link = Link(url=fullsize_img_url)
+        smallsize_img_html = (
+            fullsize_link_html
+            .find(name='p', attrs={'class': 'image'})
+            .find(name='img')
+        )
+        smallsize_img_url = f"https://kotobank.jp{smallsize_img_html['src']}"
+        smallsize_img_link = Link(url=smallsize_img_url)
+        media = Media(
+            fullsize_img_link=fullsize_img_link,
+            smallsize_img_link=smallsize_img_link
+        )
+        item_list.append(media, is_obj=True)
+    elif child.name == 'br' and 'clear' in child.attrs and child.attrs['clear'] == 'all':
+        pass # Ignore. Appears to come after a media tag.
+    elif child.name == 'span' and 'type' in child.attrs and child.attrs['type'] == '原綴':
+        mototsudzuri_text = child.text.strip()
+        mototsudzuri = MotoTsudzuri(mototsudzuri_text)
+        item_list.append(mototsudzuri, is_obj=True)
+    elif child.name == 'br' and len(child.attrs) == 0 and len(child.text.strip()) > 0 and len(child.find_all(name='a', href=True)) > 0:
+        related_word_html_list = child.find_all(name='a', href=True)
+        related_word_link_list = RelatedWordLinkList()
+        for related_word_html in related_word_html_list:
+            related_word_url = f"https://kotobank.jp{related_word_html['href']}"
+            related_word_text = related_word_html.text.strip()
+            related_word_link = RelatedWordLink(url=related_word_url, text=related_word_text)
+            related_word_link_list.append(related_word_link)
+        item_list.append(related_word_link_list, is_obj=True)
+    elif child.name == 'sup' and len(child.attrs) == 0 and len(child.text.strip()) > 0:
+        superscript_text_str = child.text.strip()
+        superscript_text = SuperscriptText(superscript_text_str)
+        item_list.append(superscript_text, is_obj=True)
+    elif child.name == 'br' and len(child.attrs) == 0 and child.find(name='table') is not None:
+        table_html = child.find(name='table')
+        table_dfs = pd.read_html(str(child))
+        table_dicts = [table_df.to_dict() for table_df in table_dfs]
+        table_list = TableList([Table(item_dict) for item_dict in table_dicts])
+        item_list.append(table_list, is_obj=True)
+    elif child.name == 'span' and 'type' in child.attrs and child.attrs['type'] == '歴史':
+        rekishi_text_str = child.text.strip()
+        rekishi_text = RekishiText(rekishi_text_str)
+        item_list.append(rekishi_text, is_obj=True)
+    elif child.name == 'i' and len(child.attrs) == 0 and len(child.text.strip()) > 0:
+        italic_text_str = child.text.strip()
+        italic_text = ItalicText(italic_text_str)
+        item_list.append(italic_text, is_obj=True)
+    elif child.name == 'br' and len(child.find_all(name='br')) > 1:
+        # Nested br block
+        # TODO: Might need to fix this later on.
+        item_list.append(PlainText(child.text.strip()), is_obj=True)
+    else:
+        logger.red(f'TODO')
+        logger.red(f'\tchild.text.strip(): {child.text.strip()}')
+        logger.red(f'\tchild.name: {child.name}')
+        logger.red(f'\tchild.attrs: {child.attrs}')
+        logger.red(child)
+        raise Exception
+
+def parse(ex_cf_html_list: List[Tag]):
     item_list_handler = ParsedItemListHandler()
-    for ex_cf_html in ex_cf_html_list:
+    for i, ex_cf_html in enumerate(ex_cf_html_list):
         item_list = ParsedItemList()
+        if i > 0:
+            item_list.append(LineBreak(), is_obj=True)
         heading_html = ex_cf_html.find(name='h3')
         if heading_html is not None:
-            heading_text = heading_html.text.strip()
-            item_list.append(BoldText(heading_text), is_obj=True)
+            heading_group = parse_heading_html(heading_html)
+            item_list.append(heading_group, is_obj=True)
+            # heading_text = heading_html.text.strip()
+            # item_list.append(HeaderText(heading_text), is_obj=True)
             item_list.append(LineBreak(), is_obj=True)
         description_html = ex_cf_html.find(name='section', attrs={'class': 'description'})
         has_description = description_html is not None
@@ -808,131 +1376,7 @@ def parse(ex_cf_html_list: List[Tag]):
                 plain_text = PlainText(text)
                 item_list.append(plain_text, is_obj=True)
             elif type(child) is Tag:
-                if 'class' in child.attrs and child.attrs['class'] == ['gaiji']:
-                    gaiji_url = child.attrs['src']
-                    gaiji_root_int = int(get_rootname_from_path(gaiji_url))
-                    if gaiji_root_int >= 2539 and gaiji_root_int <= 2546:
-                        gaiji_type = 'black_gaiji_number'
-                        gaiji_int_equivalent = gaiji_root_int - 2538
-                    elif gaiji_root_int >= 2531 and gaiji_root_int <= 2538:
-                        gaiji_type = 'white_gaiji_number'
-                        gaiji_int_equivalent = gaiji_root_int - 2530
-                    else:
-                        raise Exception(
-                            f"""
-                            gaiji_root_int={gaiji_root_int} is not in an acceptable range.
-                            """
-                        )
-                    assert gaiji_int_equivalent in gaiji_map, f'{gaiji_int_equivalent} not in gaiji_map.\nurl: {self.url}\ntitle: {self.title}'
-                    gaiji_str_equivalent = gaiji_map[gaiji_int_equivalent]
-                    gaiji = Gaiji(
-                        url=gaiji_url,
-                        int_equivalent=gaiji_int_equivalent,
-                        str_equivalent=gaiji_str_equivalent
-                    )
-                    item_list.append(gaiji, is_obj=True)
-                elif 'class' in child.attrs and child.attrs['class'] == ['hinshi']:
-                    hinshi_text = child.text.strip()
-                    hinshi = Hinshi(text=hinshi_text)
-                    item_list.append(hinshi, is_obj=True)
-                elif len(child.attrs) == 0 and child.text.strip() == '':
-                    pass # Ignore. Usually just a <br> or <br/>
-                elif len(child.attrs) == 0 and str.isdigit(child.text.strip()):
-                    definition_number_int = int(child.text.strip())
-                    definition_number = DefinitionNumber(num=definition_number_int)
-                    item_list.append(definition_number, is_obj=True)
-                elif 'org' in child.attrs and child.attrs['org'] == '―':
-                    origin_word_text = child.text.strip()
-                    origin_word = OriginWord(origin_word_text)
-                    item_list.append(origin_word, is_obj=True)
-                elif child.name == 'spellout' and 'org' in child.attrs and child.attrs['org'] == '—':
-                    text = child.text.strip()
-                    bold_text = BoldText(text) # Too lazy to create a new class for this.
-                    item_list.append(bold_text, is_obj=True)
-                elif child.name == 'ruby':
-                    rb_html = child.find(name='rb')
-                    assert rb_html is not None
-                    rb_text = rb_html.text.strip()
-                    rt_html = child.find(name='rt')
-                    assert rt_html is not None
-                    rt_text = rt_html.text.strip()
-                    plain_text = PlainText(f'{rb_text}({rt_text})') # Might be worth making a class for this.
-                    item_list.append(plain_text, is_obj=True)
-                elif 'href' in child.attrs and child.name == 'a':
-                    related_word_url = f"https://kotobank.jp{child['href']}"
-                    related_word_text = child.text.strip()
-                    related_word_link = RelatedWordLink(url=related_word_url, text=related_word_text)
-                    item_list.append(related_word_link, is_obj=True)
-                elif len(child.attrs) == 0 and child.name == 'b' and len(child.text.strip()) > 0:
-                    bold_text_str = child.text.strip()
-                    bold_text = BoldText(bold_text_str)
-                    item_list.append(bold_text, is_obj=True)
-                elif child.name == 'span' and 'class' in child.attrs and child['class'] == ['kigo']:
-                    kigo_text = child.text.strip()
-                    kigo_word = KigoWord(kigo_text)
-                    item_list.append(kigo_word, is_obj=True)
-                elif 'class' in child.attrs and child['class'] == ['media'] and child.name == 'div':
-                    fullsize_link_html = child.find(name='a', href=True)
-                    assert fullsize_link_html is not None
-                    fullsize_img_url = f"https://kotobank.jp{fullsize_link_html['href']}"
-                    fullsize_img_link = Link(url=fullsize_img_url)
-                    smallsize_img_html = (
-                        fullsize_link_html
-                        .find(name='p', attrs={'class': 'image'})
-                        .find(name='img')
-                    )
-                    smallsize_img_url = f"https://kotobank.jp{smallsize_img_html['src']}"
-                    smallsize_img_link = Link(url=smallsize_img_url)
-                    media = Media(
-                        fullsize_img_link=fullsize_img_link,
-                        smallsize_img_link=smallsize_img_link
-                    )
-                    item_list.append(media, is_obj=True)
-                elif child.name == 'br' and 'clear' in child.attrs and child.attrs['clear'] == 'all':
-                    pass # Ignore. Appears to come after a media tag.
-                elif child.name == 'span' and 'type' in child.attrs and child.attrs['type'] == '原綴':
-                    mototsudzuri_text = child.text.strip()
-                    mototsudzuri = MotoTsudzuri(mototsudzuri_text)
-                    item_list.append(mototsudzuri, is_obj=True)
-                elif child.name == 'br' and len(child.attrs) == 0 and len(child.text.strip()) > 0 and len(child.find_all(name='a', href=True)) > 0:
-                    related_word_html_list = child.find_all(name='a', href=True)
-                    related_word_link_list = RelatedWordLinkList()
-                    for related_word_html in related_word_html_list:
-                        related_word_url = f"https://kotobank.jp{related_word_html['href']}"
-                        related_word_text = related_word_html.text.strip()
-                        related_word_link = RelatedWordLink(url=related_word_url, text=related_word_text)
-                        related_word_link_list.append(related_word_link)
-                    item_list.append(related_word_link_list, is_obj=True)
-                elif child.name == 'sup' and len(child.attrs) == 0 and len(child.text.strip()) > 0:
-                    superscript_text_str = child.text.strip()
-                    superscript_text = SuperscriptText(superscript_text_str)
-                    item_list.append(superscript_text, is_obj=True)
-                elif child.name == 'br' and len(child.attrs) == 0 and child.find(name='table') is not None:
-                    table_html = child.find(name='table')
-                    table_dfs = pd.read_html(str(child))
-                    table_dicts = [table_df.to_dict() for table_df in table_dfs]
-                    table_list = TableList([Table(item_dict) for item_dict in table_dicts])
-                    item_list.append(table_list, is_obj=True)
-                elif child.name == 'span' and 'type' in child.attrs and child.attrs['type'] == '歴史':
-                    rekishi_text_str = child.text.strip()
-                    rekishi_text = RekishiText(rekishi_text_str)
-                    item_list.append(rekishi_text, is_obj=True)
-                elif child.name == 'i' and len(child.attrs) == 0 and len(child.text.strip()) > 0:
-                    italic_text_str = child.text.strip()
-                    italic_text = ItalicText(italic_text_str)
-                    item_list.append(italic_text, is_obj=True)
-                elif child.name == 'br' and len(child.find_all(name='br')) > 1:
-                    # Nested br block
-                    # TODO: Might need to fix this later on.
-                    item_list.append(PlainText(child.text.strip()), is_obj=True)
-                else:
-                    logger.red(f'TODO')
-                    logger.red(f'\tchild.text.strip(): {child.text.strip()}')
-                    logger.red(f'\tchild.name: {child.name}')
-                    logger.red(f'\tchild.attrs: {child.attrs}')
-                    logger.red(child)
-                    raise Exception
-            else:
-                raise Exception(f'Unknown type(child): {type(child)}')
+                parse_tag(item_list=item_list, child=child)
+        item_list = item_list.process_ruigigo_group()
         item_list_handler.append(item_list)
     return item_list_handler
