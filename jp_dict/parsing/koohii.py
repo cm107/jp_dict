@@ -210,13 +210,20 @@ class KoohiiParser:
             )
 
 
-        lesson_name_html = (
-            row_html
-            .find(name='div', class_='col-md-9')
-            .find(name='div', id='EditStoryComponent')
-            .find(name='div', style='position:relative;')
-            .find(name='h2')
-        )
+        # lesson_name_html = (
+        #     row_html
+        #     .find(name='div', class_='col-md-9')
+        #     .find(name='div', id='EditStoryComponent')
+        #     .find(name='div', style='position:relative;')
+        #     .find(name='h2')
+        # )
+        col_whatever_html = row_html.find(name='div', class_='col-md-9')
+        if col_whatever_html is None:
+            col_whatever_html = row_html.find(name='div', class_='col-lg-9') # Are they all like this now?
+        edit_story_component_html = col_whatever_html.find(name='div', id='EditStoryComponent')
+        position_relative_html = edit_story_component_html.find(name='div', style='position:relative;')
+        lesson_name_html = position_relative_html.find(name='h2')
+
         lesson_name = lesson_name_html.text.strip()
         frame_num_html = row_html.find(name='div', title='Frame number', class_='framenum')
         frame_num = frame_num_html.text.strip()

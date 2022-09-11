@@ -32,9 +32,10 @@ setup(
         'lxml',
         'tzlocal',
         'seaborn',
+	    'selenium==3.141.0',
         'webbot',
         'pyclay-common_utils @ https://github.com/cm107/common_utils/archive/master.zip',
         'pyclay-logger @ https://github.com/cm107/logger/archive/master.zip'
     ],
-    python_requires='>=3.7'
+    python_requires='>=3.9'
 )

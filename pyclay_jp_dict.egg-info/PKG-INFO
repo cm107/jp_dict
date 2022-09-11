@@ -6,16 +6,16 @@ Home-page: https://github.com/cm107/jp_dict
 Author: Clayton Mork
 Author-email: mork.clayton3@gmail.com
 License: MIT License
-Description: # jp_dict
-        For parsing dictionary data and creating flashcards.
-        
-        ## Installation
-        ```bash
-        pip install -e /path/to/jp_dict
-        ```
-Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
-Requires-Python: >=3.7
+Requires-Python: >=3.9
 Description-Content-Type: text/markdown
+
+# jp_dict
+For parsing dictionary data and creating flashcards.
+
+## Installation
+```bash
+pip install -e /path/to/jp_dict
+```
