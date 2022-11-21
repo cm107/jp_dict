@@ -333,9 +333,29 @@ class ImageBackupHandler:
         tags = soup.findAll('img')
         return [tag['src'] for tag in tags]
 
+    def _get_existing_unique_names(self, unique_name_prefix: str="") -> list[str]:
+        relevant_paths = glob.glob(f"{self.dump_folder}/{unique_name_prefix}*")
+        return [
+            os.path.splitext(path[len(f"{self.dump_folder}/"):])[0]
+            for path in relevant_paths
+        ]
+    
+    def _get_existing_backups(self, unique_name_prefix: str="") -> list[ImageBackup]:
+        existing_unique_names = self._get_existing_unique_names(unique_name_prefix=unique_name_prefix)
+        relevant_existing_backups: list[ImageBackup] = []
+        for existing_unique_name in existing_unique_names:
+            existing_backup = self.find(existing_unique_name)
+            if existing_backup is None:
+                msg = f"Failed to find existing_backup match for unique_name: {existing_unique_name}"
+                self.logger.error(msg)
+                raise Exception(msg)
+            relevant_existing_backups.append(existing_backup)
+        return relevant_existing_backups
+
     def process_with_anki(
         self, text: str, update_text: Callable[[str],], unique_name_prefix: str,
-        missing_map: dict[str, str]=None, max_retry_count: int=5
+        missing_map: dict[str, str]=None, max_retry_count: int=5,
+        fixBrokenLinks: bool=True
     ) -> bool:
         """Replaces text in anki field.
 
@@ -365,16 +385,18 @@ class ImageBackupHandler:
         updated_unique_names: list[str] = []
         
         # TODO: Modularize this?
-        relevant_paths = glob.glob(f"{self.dump_folder}/{unique_name_prefix}*")
-        existing_unique_names = [os.path.splitext(path[len(f"{self.dump_folder}/"):])[0] for path in relevant_paths]
-        relevant_existing_backups: list[ImageBackup] = []
-        for existing_unique_name in existing_unique_names:
-            existing_backup = self.find(existing_unique_name)
-            if existing_backup is None:
-                msg = f"Failed to find existing_backup match for unique_name: {existing_unique_name}"
-                self.logger.error(msg)
-                raise Exception(msg)
-            relevant_existing_backups.append(existing_backup)
+        # relevant_paths = glob.glob(f"{self.dump_folder}/{unique_name_prefix}*")
+        # existing_unique_names = [os.path.splitext(path[len(f"{self.dump_folder}/"):])[0] for path in relevant_paths]
+        # existing_unique_names = self._get_existing_unique_names(unique_name_prefix=unique_name_prefix)
+        # relevant_existing_backups: list[ImageBackup] = []
+        # for existing_unique_name in existing_unique_names:
+        #     existing_backup = self.find(existing_unique_name)
+        #     if existing_backup is None:
+        #         msg = f"Failed to find existing_backup match for unique_name: {existing_unique_name}"
+        #         self.logger.error(msg)
+        #         raise Exception(msg)
+        #     relevant_existing_backups.append(existing_backup)
+        relevant_existing_backups = self._get_existing_backups(unique_name_prefix)
         
         for img_url in img_urls:
             if img_url in self.missing_urls:
@@ -437,22 +459,22 @@ class ImageBackupHandler:
                     self.logger.warning(f"Link for {backup.unique_name} is missing. {backup.working_url=}")
                     continue
                 else:
-                    retry_count = 0 # TODO: Need to modularize this.
-                    link_is_working = True
-                    while retry_count < max_retry_count:
-                        status_code, data = backup.download_image(logger=self.logger)
-                        link_is_working = status_code == 200
-                        if not link_is_working:
-                            self.logger.info(f"Attempt {retry_count}: Failed to confirm image at {backup.working_url}")
-                            retry_count += 1
-                        else:
-                            if retry_count > 0:
-                                self.logger.info(f"Attempt {retry_count}: Successfully confirmed image at {backup.working_url}")
-                            break
-                    # link_is_working, data = backup.download_image_and_retry(
-                    #     logger=self.logger, max_retry_count=max_retry_count
-                    # )
-                    if link_is_working:
+                    # retry_count = 0 # TODO: Need to modularize this.
+                    # link_is_working = True
+                    # while retry_count < max_retry_count:
+                    #     status_code, data = backup.download_image(logger=self.logger)
+                    #     link_is_working = status_code == 200
+                    #     if not link_is_working:
+                    #         self.logger.info(f"Attempt {retry_count}: Failed to confirm image at {backup.working_url}")
+                    #         retry_count += 1
+                    #     else:
+                    #         if retry_count > 0:
+                    #             self.logger.info(f"Attempt {retry_count}: Successfully confirmed image at {backup.working_url}")
+                    #         break
+                    link_is_working, data = backup.download_image_and_retry(
+                        logger=self.logger, max_retry_count=max_retry_count
+                    )
+                    if link_is_working or not fixBrokenLinks:
                         continue
                     else: # TODO: Need to add to a retry queue and try again later.
                         # Upload local copy of image to imgur.
