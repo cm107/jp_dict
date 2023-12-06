@@ -98,6 +98,18 @@ class SuperscriptText(PlainText):
     def html(self) -> str:
         return f'<sup>{self.text}</sup>'
 
+class SubscriptText(PlainText):
+    def __init__(self, text: str):
+        super().__init__(text=text)
+
+    @property
+    def plain_str(self) -> str:
+        return f'_{self.text}'
+
+    @property
+    def html(self) -> str:
+        return f'<sub>{self.text}</sub>'
+
 class RekishiText(PlainText):
     def __init__(self, text: str):
         super().__init__(text=text)
@@ -407,6 +419,9 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
         elif type(self.obj) is SuperscriptText:
             obj = cast(SuperscriptText, self.obj)
             return f'^{obj.text}'
+        elif type(self.obj) is SubscriptText:
+            obj = cast(SubscriptText, self.obj)
+            return f'_{obj.text}'
         elif type(self.obj) is ItalicText:
             obj = cast(ItalicText, self.obj)
             return SpecialString(obj.text).italic.end.text
@@ -466,6 +481,9 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
         elif type(self.obj) is SuperscriptText:
             obj = cast(SuperscriptText, self.obj)
             return f'^{obj.text}'
+        elif type(self.obj) is SubscriptText:
+            obj = cast(SubscriptText, self.obj)
+            return f'_{obj.text}'
         elif type(self.obj) is ItalicText:
             obj = cast(ItalicText, self.obj)
             return obj.text
@@ -536,6 +554,12 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
                 print_str = f'<strong>{obj.text}</strong>'
         elif type(self.obj) is SuperscriptText:
             obj = cast(SuperscriptText, self.obj)
+            if not all_html:
+                print_str = obj.plain_str
+            else:
+                print_str = obj.html
+        elif type(self.obj) is SubscriptText:
+            obj = cast(SubscriptText, self.obj)
             if not all_html:
                 print_str = obj.plain_str
             else:
@@ -675,6 +699,8 @@ class ParsedItem(BasicLoadableObject['ParsedItem']):
             obj = MotoTsudzuri.from_dict(item_dict['obj'])
         elif class_name == 'SuperscriptText':
             obj = SuperscriptText.from_dict(item_dict['obj'])
+        elif class_name == 'SubscriptText':
+            obj = SubscriptText.from_dict(item_dict['obj'])
         elif class_name == 'RekishiText':
             obj = RekishiText.from_dict(item_dict['obj'])
         elif class_name == 'ItalicText':
@@ -1328,6 +1354,10 @@ def parse_tag(item_list: ParsedItemList, child: Tag):
         superscript_text_str = child.text.strip()
         superscript_text = SuperscriptText(superscript_text_str)
         item_list.append(superscript_text, is_obj=True)
+    elif child.name == 'sub' and len(child.attrs) == 0 and len(child.text.strip()) > 0:
+        subscript_text_str = child.text.strip()
+        subscript_text = SubscriptText(subscript_text_str)
+        item_list.append(subscript_text, is_obj=True)
     elif child.name == 'br' and len(child.attrs) == 0 and child.find(name='table') is not None:
         table_html = child.find(name='table')
         table_dfs = pd.read_html(str(child))
