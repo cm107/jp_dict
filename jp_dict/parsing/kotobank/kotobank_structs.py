@@ -45,11 +45,14 @@ class DictionaryContent(BasicLoadableObject['DictionaryContent']):
     def from_dict(cls, item_dict: dict) -> DictionaryContent:
         dictionary_name = item_dict['dictionary_name']
         if item_dict['content'] is not None:
-            if dictionary_name.startswith('デジタル大辞泉') and dictionary_name.endswith('の解説'):
+            # if dictionary_name.startswith('デジタル大辞泉') and dictionary_name.endswith('の解説'):
+            if dictionary_name.startswith('デジタル大辞泉'):
                 content = DigitalDaijisenDataHandler.from_dict_list(item_dict['content'])
-            elif dictionary_name.startswith('精選版 日本国語大辞典') and dictionary_name.endswith('の解説'):
+            # elif dictionary_name.startswith('精選版 日本国語大辞典') and dictionary_name.endswith('の解説'):
+            elif dictionary_name.startswith('精選版 日本国語大辞典'):
                 content = SeisenpanDataHandler.from_dict_list(item_dict['content'])
-            elif dictionary_name.startswith('日本大百科全書(ニッポニカ)') and dictionary_name.endswith('の解説'):
+            # elif dictionary_name.startswith('日本大百科全書(ニッポニカ)') and dictionary_name.endswith('の解説'):
+            elif dictionary_name.startswith('日本大百科全書(ニッポニカ)'):
                 content = NDZ_ParsedItemList.from_dict_list(item_dict['content'])
             else:
                 raise Exception(f"Found non-None content for {dictionary_name}, but DictionaryContent.from_dict doesn't account for {dictionary_name}.")
@@ -186,7 +189,7 @@ class KotobankResult(BasicLoadableObject['KotobankResult']):
         else:
             return []
     
-    def _get_content(self, dictionary_name: str=None, startswith: str=None, endswith: str=None) -> Any:
+    def _get_content(self, dictionary_name: str=None, startswith: str=None, notstartswith: str=None, endswith: str=None) -> Any:
         if self.main_area is None or self.main_area.articles is None:
             return None
         for article in self.main_area.articles:
@@ -195,6 +198,8 @@ class KotobankResult(BasicLoadableObject['KotobankResult']):
                 continue
             if startswith is not None and not article.dictionary_name.startswith(startswith):
                 continue
+            if notstartswith is not None and article.dictionary_name.startswith(notstartswith):
+                continue
             if endswith is not None and not article.dictionary_name.endswith(endswith):
                 continue
             return article.content
@@ -202,19 +207,23 @@ class KotobankResult(BasicLoadableObject['KotobankResult']):
 
     @property
     def digital_daijisen_content(self) -> DigitalDaijisenDataHandler:
-        return self._get_content(startswith='デジタル大辞泉「', endswith='」の解説')
+        # return self._get_content(startswith='デジタル大辞泉「', endswith='」の解説')
+        return self._get_content(startswith='デジタル大辞泉', notstartswith='デジタル大辞泉プラス')
 
     @property
     def digital_daijisen_plus_content(self) -> DigitalDaijisenDataHandler:
-        return self._get_content(startswith='デジタル大辞泉プラス「', endswith='」の解説')
+        # return self._get_content(startswith='デジタル大辞泉プラス「', endswith='」の解説')
+        return self._get_content(startswith='デジタル大辞泉プラス')
 
     @property
     def seisenpan_content(self) -> SeisenpanDataHandler:
-        return self._get_content(startswith='精選版 日本国語大辞典', endswith='の解説')
+        # return self._get_content(startswith='精選版 日本国語大辞典', endswith='の解説')
+        return self._get_content(startswith='精選版 日本国語大辞典')
     
     @property
     def ndz_content(self) -> NDZ_ParsedItemList:
-        return self._get_content(startswith='日本大百科全書(ニッポニカ)', endswith='の解説')
+        # return self._get_content(startswith='日本大百科全書(ニッポニカ)', endswith='の解説')
+        return self._get_content(startswith='日本大百科全書')
 
 class KotobankResultList(
     BasicLoadableHandler['KotobankResultList', 'KotobankResult'],
@@ -429,13 +438,15 @@ class KotobankWordHtmlParser:
         return main_area
 
     def parse_dictionary(self, dictionary_title_text: str, ex_cf_html_list: List[Tag], strict: bool=True) -> DictionaryContent:
-        if dictionary_title_text.startswith('デジタル大辞泉') and dictionary_title_text.endswith('の解説'):
+        # if dictionary_title_text.startswith('デジタル大辞泉') and dictionary_title_text.endswith('の解説'):
+        if dictionary_title_text.startswith('デジタル大辞泉'):
             digital_daijisen_data_handler = parse_digital_daijisen(ex_cf_html_list)
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=digital_daijisen_data_handler
             )
-        elif dictionary_title_text == '大辞林 第三版の解説': # TODO
+        # elif dictionary_title_text == '大辞林 第三版の解説': # TODO
+        elif dictionary_title_text.startswith('大辞林 第三版'): # TODO
             # if strict:
             #     raise NotImplementedError
             # return DictionaryContent(
@@ -443,180 +454,206 @@ class KotobankWordHtmlParser:
             #     content=None
             # )
             raise NotImplementedError(f'Daijirin seems to have been removed. If that is not the case, please fix this code.')
-        elif dictionary_title_text.startswith('精選版 日本国語大辞典') and dictionary_title_text.endswith('の解説'):
+        # elif dictionary_title_text.startswith('精選版 日本国語大辞典') and dictionary_title_text.endswith('の解説'):
+        elif dictionary_title_text.startswith('精選版 日本国語大辞典'):
             seisenpan_data_handler = parse_seisenpan(ex_cf_html_list)
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=seisenpan_data_handler
             )
-        elif dictionary_title_text == 'ブリタニカ国際大百科事典 小項目事典の解説':
+        # elif dictionary_title_text == 'ブリタニカ国際大百科事典 小項目事典の解説':
+        elif dictionary_title_text.startswith('ブリタニカ国際大百科事典 小項目事典'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text.startswith('日本大百科全書(ニッポニカ)') and dictionary_title_text.endswith('の解説'):
+        # elif dictionary_title_text.startswith('日本大百科全書(ニッポニカ)') and dictionary_title_text.endswith('の解説'):
+        elif dictionary_title_text.startswith('日本大百科全書(ニッポニカ)'):
             ndz_data = parse_ndz(ex_cf_html_list)
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=ndz_data
             )
-        elif dictionary_title_text == '百科事典マイペディアの解説':
+        # elif dictionary_title_text == '百科事典マイペディアの解説':
+        elif dictionary_title_text.startswith('百科事典マイペディア'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典 第２版の解説':
+        # elif dictionary_title_text == '世界大百科事典 第２版の解説':
+        elif dictionary_title_text.startswith('世界大百科事典 第２版'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == 'ナビゲート ビジネス基本用語集の解説':
+        # elif dictionary_title_text == 'ナビゲート ビジネス基本用語集の解説':
+        elif dictionary_title_text.startswith('ナビゲート ビジネス基本用語集'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典内の夢遊病の言及':
+        # elif dictionary_title_text == '世界大百科事典内の夢遊病の言及':
+        elif dictionary_title_text.startswith('世界大百科事典内の夢遊病'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典内の賃金の言及':
+        # elif dictionary_title_text == '世界大百科事典内の賃金の言及':
+        elif dictionary_title_text.startswith('世界大百科事典内の賃金'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '動植物名よみかた辞典　普及版の解説':
+        # elif dictionary_title_text == '動植物名よみかた辞典　普及版の解説':
+        elif dictionary_title_text.startswith('動植物名よみかた辞典　普及版'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == 'デジタル版 日本人名大辞典+Plusの解説':
+        # elif dictionary_title_text == 'デジタル版 日本人名大辞典+Plusの解説':
+        elif dictionary_title_text.startswith('デジタル版 日本人名大辞典+Plus'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '朝日日本歴史人物事典の解説':
+        # elif dictionary_title_text == '朝日日本歴史人物事典の解説':
+        elif dictionary_title_text.startswith('朝日日本歴史人物事典'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典内の微妙の言及':
+        # elif dictionary_title_text == '世界大百科事典内の微妙の言及':
+        elif dictionary_title_text.startswith('世界大百科事典内の微妙'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典内の投網の言及':
+        # elif dictionary_title_text == '世界大百科事典内の投網の言及':
+        elif dictionary_title_text.startswith('世界大百科事典内の投網'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典内の異端審問の言及':
+        # elif dictionary_title_text == '世界大百科事典内の異端審問の言及':
+        elif dictionary_title_text.startswith('世界大百科事典内の異端審問'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典内の寝室の言及':
+        # elif dictionary_title_text == '世界大百科事典内の寝室の言及':
+        elif dictionary_title_text.startswith('世界大百科事典内の寝室'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '防府市歴史用語集の解説':
+        # elif dictionary_title_text == '防府市歴史用語集の解説':
+        elif dictionary_title_text.startswith('防府市歴史用語集'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典内の経典の言及':
+        # elif dictionary_title_text == '世界大百科事典内の経典の言及':
+        elif dictionary_title_text.startswith('世界大百科事典内の経典'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典内の相方の言及':
+        # elif dictionary_title_text == '世界大百科事典内の相方の言及':
+        elif dictionary_title_text.startswith('世界大百科事典内の相方'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典内の声帯模写の言及':
+        # elif dictionary_title_text == '世界大百科事典内の声帯模写の言及':
+        elif dictionary_title_text.startswith('世界大百科事典内の声帯模写'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典内の消火の言及':
+        # elif dictionary_title_text == '世界大百科事典内の消火の言及':
+        elif dictionary_title_text.startswith('世界大百科事典内の消火'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典内のpassageの言及':
+        # elif dictionary_title_text == '世界大百科事典内のpassageの言及':
+        elif dictionary_title_text.startswith('世界大百科事典内のpassage'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == 'リフォーム用語集の解説':
+        # elif dictionary_title_text == 'リフォーム用語集の解説':
+        elif dictionary_title_text.startswith('リフォーム用語集'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典内のお盆の言及':
+        # elif dictionary_title_text == '世界大百科事典内のお盆の言及':
+        elif dictionary_title_text.startswith('世界大百科事典内のお盆'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '栄養・生化学辞典の解説':
+        # elif dictionary_title_text == '栄養・生化学辞典の解説':
+        elif dictionary_title_text.startswith('栄養・生化学辞典'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典内の授乳の言及':
+        # elif dictionary_title_text == '世界大百科事典内の授乳の言及':
+        elif dictionary_title_text.startswith('世界大百科事典内の授乳'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(
                 dictionary_name=dictionary_title_text,
                 content=None
             )
-        elif dictionary_title_text == '世界大百科事典内の共謀の言及':
+        # elif dictionary_title_text == '世界大百科事典内の共謀の言及':
+        elif dictionary_title_text.startswith('世界大百科事典内の共謀'):
             if strict:
                 raise NotImplementedError
             return DictionaryContent(

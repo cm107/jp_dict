@@ -144,6 +144,7 @@ class KoohiiParser:
 
     def login(self):
         self.web.go_to('https://kanji.koohii.com/account')
+        print(f"{self.web.driver.get_cookies()=}")
         self.web.type(self._username, into='Username')
         self.web.type(self._password, into='Password')
         self.web.click('Sign In')

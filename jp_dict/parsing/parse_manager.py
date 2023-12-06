@@ -160,7 +160,7 @@ class ParserManager(BasicLoadableObject['ParserManager']):
     def combine_history(self, force: bool=False, verbose: bool=False, show_pbar: bool=True):
         browser_history_paths = recursively_get_all_matches_under_dirpath(
             dirpath=self.browser_history_dir,
-            target_name='BrowserHistory.json',
+            target_name=['BrowserHistory.json', 'History.json'],
             target_type='file'
         )
         browser_history_paths.sort()
@@ -550,7 +550,7 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             assert file_exists(self.filter_sorted_results_dump_path)
             results = CombinedResultList.load_from_path(self.filter_sorted_results_dump_path)
             kanji_info_list = results.get_all_writing_kanji(include_hit_count=True, sort_by_hit_count=False, show_pbar=show_pbar, leave_pbar=True)
-            parser = KoohiiParser(username='jpdict_scraper', password='password', showWindow=False)
+            parser = KoohiiParser(username='jpdict_scraper', password='password', showWindow=True)
             if verbose:
                 logger.cyan('Parsing and Combining Kanji Data From Koohii')
             parser.parse_and_save(

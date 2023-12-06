@@ -1797,6 +1797,8 @@ class JishoSearchHtmlParser:
         for sentence_html in sentence_html_list:
             sentence_text = sentence_html.text.strip()
             english_translation_html = sentence_html.find(name='li', attrs={'class': 'english'})
+            if english_translation_html is None:
+                english_translation_html = sentence_html.find(name='span', attrs={'class': 'english'})
             english_translation_text = english_translation_html.text.strip()
             sentence_text = sentence_text.replace(english_translation_text, '')
             sentence_clearfix_html_list = sentence_html.find_all(name='li', attrs={'class': 'clearfix'})
