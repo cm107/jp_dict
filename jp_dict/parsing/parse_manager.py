@@ -158,10 +158,32 @@ class ParserManager(BasicLoadableObject['ParserManager']):
         return self._metadata.browser_history_paths
 
     def combine_history(self, force: bool=False, verbose: bool=False, show_pbar: bool=True):
-        browser_history_paths = recursively_get_all_matches_under_dirpath(
-            dirpath=self.browser_history_dir,
-            target_name=['BrowserHistory.json', 'History.json'],
-            target_type='file'
+        import glob
+        import os
+        from typing import Callable
+        def get_all_files(dirPath: str, is_relevant_file: Callable[[str], bool], recursive: bool=True) -> list[str]:
+            if not os.path.isdir(dirPath):
+                raise FileNotFoundError
+            results: list[str] = []
+            for path in glob.glob(f"{dirPath}/*"):
+                if os.path.isfile(path):
+                    filename = os.path.basename(path)
+                    if is_relevant_file(filename):
+                        results.append(path)
+                elif os.path.isdir(path):
+                    if recursive:
+                        results.extend(get_all_files(path, is_relevant_file, recursive))
+            return results
+        
+        # browser_history_paths = recursively_get_all_matches_under_dirpath(
+        #     dirpath=self.browser_history_dir,
+        #     target_name=['BrowserHistory.json', 'History.json'],
+        #     target_type='file'
+        # )
+        browser_history_paths = get_all_files(
+            dirPath=self.browser_history_dir,
+            is_relevant_file=lambda filename: filename in ['BrowserHistory.json', 'History.json'],
+            recursive=True
         )
         browser_history_paths.sort()
         if self._metadata.browser_history_paths != browser_history_paths or not file_exists(self.combined_history_path) or force:
