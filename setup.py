@@ -33,7 +33,7 @@ setup(
         'tzlocal',
         'seaborn',
 	    'selenium==3.141.0',
-        'webbot',
+        'webbot==0.34',
         'pyclay-common_utils @ https://github.com/cm107/common_utils/archive/master.zip',
         'pyclay-logger @ https://github.com/cm107/logger/archive/master.zip'
     ],
