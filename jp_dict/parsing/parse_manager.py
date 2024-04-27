@@ -244,7 +244,7 @@ class ParserManager(BasicLoadableObject['ParserManager']):
                     """
                 )
             skip = False
-            for invalid_str in ['#kanji', '#sentences', '#names']:
+            for invalid_str in ['#kanji', '#sentences', '#names', '*', '?']:
                 if invalid_str in decoded_search_word:
                     skip = True
                     break

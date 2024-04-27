@@ -43,6 +43,41 @@ class DictionaryEntryMatch(BasicLoadableIdObject['DictionaryEntryMatch']):
             history_item_matches = browser_history.get(id=history_id)
             assert len(history_item_matches) == 1, f'len(history_item_matches): {len(history_item_matches)} != 1'
             history_item = history_item_matches[0]
+            # print(f"{search_word=}, {history_item.title=}")
+            # TODO: search_word isn't matching up with word representation. e.g. 握り込む is being matched up with 幕切れ.
+            # search_word 戦火 is being matched with history_item id=14360, which corresponds to 団子虫.
+            # 戦火 is actually 14379 in the history. So there seems to be an index deviation of some sorts.
+            # Where is the id value being set in the first place?
+            # jisho_grouped_history.json is created first, and then pruned_jisho_entries.json after that.
+            # Check how id is being defined in pruned_jisho_entries.json first.
+            # It looks like the id in pruned_jisho_entries.json is originating from jisho_matches.json.
+            # The id in jisho_matches.json in turn is originating from the json files in the jisho_parse_dump folder.
+            # 戦火.json also has history_group_id=14360 in it.
+            # 戦火.json was created on 12/6, which was one of last month's new words.
+            # The problem seems to only be affecting the new words that were added last month.
+            # The id reflected in 戦火.json should be coming directly from jisho_grouped_history.json.
+            # It seems like the only possible explanation for this is that last month,
+            # 戦火 had an id of 14360, and that's why 戦火.json says 14360,
+            # but this month it changed to 14379 for some reason.
+            # Why would it change? It shouldn't be possible for the id to change.
+            # I need to investigate the logic that generates jisho_grouped_history.json
+            # and look for something that might cause the id to change.
+            # The id is decided in search_by_url_base_and_group_by_url based on the length of the groups list as it is being loaded up.
+            # The groups are loaded up from the items in the common_url_dict, so if the
+            # number of entries in the common_url_dict changed, that would affect the id
+            # allocated to the history item group.
+            # Is it possible that one of the history.json files wasn't included
+            # when parsing on 12/6? Or perhaps one of the history.json files is being
+            # processed twice right now, causing duplicate items to exist?
+            # I can't seem to find any evidence of either of those scenarios.
+            # I may just need to re-parse the jisho_parse_dump directory from scratch.
+            if type(history_item.title) is str:
+                if history_item.title != "": # Is this really okay?
+                    assert search_word in history_item.title, f"{search_word=} not in {history_item.title=}, {history_item.url=}" # something might be messed up here...
+            elif type(history_item.title) is list:
+                assert any([search_word in part for part in history_item.title]), f"{search_word=} not in {history_item.title=}"
+            else:
+                raise TypeError
             if self.search_words_time_usec is None:
                 self.search_words_time_usec = {search_word: history_item.time_usec}
             else:

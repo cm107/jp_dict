@@ -11,5 +11,6 @@
 venv
 logs
 .vscode
+pyclay_jp_dict*
 
 # Exceptions

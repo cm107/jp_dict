@@ -1,13 +1,15 @@
 from common_utils.file_utils import make_dir_if_not_exists, file_exists
 from jp_dict.parsing.parse_manager import ParserManager
 
-parse_data_dir = '/home/clayton/workspace/prj/data_keep/data/study/parse_data'
+# studyDir = "/home/clayton/workspace/prj/data_keep/data/study"
+studyDir = "/media/clayton/Data/study"
+parse_data_dir = f'{studyDir}/parse_data'
 make_dir_if_not_exists(parse_data_dir)
 manager_save_path = f'{parse_data_dir}/manager.json'
 
 if not file_exists(manager_save_path):
     manager = ParserManager(
-        browser_history_dir='/home/clayton/workspace/prj/data_keep/data/study/jp_dict_data/browser_history',
+        browser_history_dir=f'{studyDir}/jp_dict_data/browser_history',
         combined_history_path=f'{parse_data_dir}/combined_history.json',
         jisho_grouped_history_path=f'{parse_data_dir}/jisho_grouped_history.json',
         jisho_parse_dump_dir=f'{parse_data_dir}/jisho_parse_dump',
@@ -17,12 +19,12 @@ if not file_exists(manager_save_path):
         kotobank_temp_map_dir=f'{parse_data_dir}/kotobank_temp_map',
         combined_kotobank_dump_path=f'{parse_data_dir}/kotobank_combined.json',
         jisho_kotobank_combined_dump_path=f'{parse_data_dir}/jisho_kotobank_combined_results.json',
-        anki_export_dir_for_filter='/home/clayton/workspace/prj/data_keep/data/study/anki/vocab',
+        anki_export_dir_for_filter=f'{studyDir}/anki/vocab',
         filter_sorted_results_dump_path=f'{parse_data_dir}/filter_sorted_results.json',
         koohii_parse_dump_dir=f'{parse_data_dir}/koohii_parse_dump',
         koohii_combined_dump_path=f'{parse_data_dir}/koohii_combined.json',
         filtered_koohii_dump_path=f'{parse_data_dir}/koohii_filtered.json',
-        learned_kanji_txt_path=f'/home/clayton/workspace/prj/data_keep/data/study/anki/kanji/learned_kanji_combined.txt',
+        learned_kanji_txt_path=f'{studyDir}/anki/kanji/learned_kanji_combined.txt',
         manager_save_path=manager_save_path
     )
 else:
