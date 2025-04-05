@@ -1,0 +1,11 @@
+jpdict history print-entries \
+--value "lambda entry: entry['title']" \
+--get "lambda entry: 'myanimelist' in entry['url']" \
+--get "lambda entry: not entry['title'].endswith('- Panel')" \
+--get "lambda entry: not entry['title'].endswith('- Anime - MyAnimeList.net')" \
+--get "lambda entry: not entry['title'].startswith('My Notifications')" \
+--get "lambda entry: not entry['title'].startswith('Search Anime')" \
+--get "lambda entry: not entry['title'] == ''" \
+--get "lambda entry: not entry['title'].lower().startswith('login')" \
+--get "lambda entry: not entry['title'].endswith('Profile - MyAnimeList.net')" \
+--tail 50

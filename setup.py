@@ -35,7 +35,13 @@ setup(
 	    'selenium==3.141.0',
         'webbot==0.34',
         'pyclay-common_utils @ https://github.com/cm107/common_utils/archive/master.zip',
-        'pyclay-logger @ https://github.com/cm107/logger/archive/master.zip'
+        'pyclay-logger @ https://github.com/cm107/logger/archive/master.zip',
+        'html5lib',
     ],
+    entry_points={
+        'console_scripts': [
+            'jpdict=jp_dict.v2.cli.jpdict:main',
+        ]
+    },
     python_requires='>=3.9'
 )
