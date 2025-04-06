@@ -7,7 +7,6 @@ class GuiSettings:
     windowTitle = "JP Dict"
     windowSize = (1280, 720)
     windowPos = (100, 100)
-    historyDir = "/home/clayton/workspace/data/study/jp_dict_data/browser_history"
     fontSize = 20
     invalidSearchStrList = [
         '#kanji', '#sentences', '#names', '*', '?',
@@ -21,6 +20,14 @@ class GuiSettings:
         return MetaUtil.get_meta_dir(
             self.metaDirName, localFlag=self.metaDirIsLocal
         )
+
+    @property
+    def historySettingsPath(self) -> str:
+        return f"{self.metaDirPath}/historySettings.json"
+
+    @property
+    def jishoParsingSettingsPath(self) -> str:
+        return f"{self.metaDirPath}/jishoParsingSettings.json"
 
     @property
     def jishoDataDir(self) -> str:

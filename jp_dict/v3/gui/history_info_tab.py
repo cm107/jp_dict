@@ -1,11 +1,12 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import json
+import os
 from typing import TYPE_CHECKING, Any
 from PyQt5.QtWidgets import QApplication, QMainWindow, \
     QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QLabel, \
     QTabWidget, QTabBar, QProgressBar, QTableWidget, QTableWidgetItem, \
-    QTableView, QTableWidgetSelectionRange, QCheckBox
+    QTableView, QTableWidgetSelectionRange, QCheckBox, QDialog, QDialogButtonBox
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtBoundSignal, \
     QObject, QThread, QThreadPool, QRunnable, QTimer
 
@@ -16,8 +17,65 @@ import urllib.parse
 from ...util.time_utils import get_localtime_from_time_usec
 from .gui_settings import guiSettings
 from ..history_util import HistoryUtil
+from ..serializable_obj import SettingsObj
+from .widgets.path_selection import DirectorySelectButton
 if TYPE_CHECKING:
     from .main_window import MainWindow
+
+@dataclass
+class HistoryInfoSettings(SettingsObj):
+    historyDir: str | None = None
+
+    def save_to_meta(self):
+        self.save(guiSettings.historySettingsPath)
+        assert os.path.isfile(guiSettings.historySettingsPath)
+    
+    @classmethod
+    def load_from_meta(cls):
+        if not os.path.isfile(guiSettings.historySettingsPath):
+            return cls()
+        return cls.load(guiSettings.historySettingsPath)
+
+class HistoryInfoSettingsDialog(QDialog):
+    def __init__(self, parent: QWidget | None=None):
+        super().__init__(parent)
+
+        # Widgets
+        self.historyDir = DirectorySelectButton(
+            self, buttonText="Select History Directory"
+        )
+        self.buttonBox = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            self
+        )
+
+        # Signals
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.accepted.connect(self.save)
+        self.buttonBox.rejected.connect(self.reject)
+
+        # Layout
+        layout = QVBoxLayout()
+        layout.addWidget(self.historyDir)
+        layout.addWidget(self.buttonBox)
+        self.setLayout(layout)
+
+        # Start
+        self.load()
+
+    def get_data(self) -> HistoryInfoSettings:
+        return HistoryInfoSettings(
+            historyDir=self.historyDir.path
+        )
+    
+    def apply_data(self, data: HistoryInfoSettings):
+        self.historyDir.path = data.historyDir
+    
+    def save(self):
+        self.get_data().save_to_meta()
+    
+    def load(self):
+        self.apply_data(HistoryInfoSettings.load_from_meta())
 
 class CalcHistoryEntriesThread(QThread):
     combiningHistoryStart = pyqtSignal(int)
@@ -80,7 +138,11 @@ class HistoryInfoObj(QObject):
         self.wordDfUpdated.connect(lambda: print(self.wordDf))
 
     def find_history_paths(self):
-        self.historyPaths = HistoryUtil.get_history_paths(guiSettings.historyDir)
+        settings = HistoryInfoSettings.load_from_meta()
+        historyDir = settings.historyDir
+        assert os.path.isdir(historyDir), \
+            f"{historyDir} is not a directory"
+        self.historyPaths = HistoryUtil.get_history_paths(historyDir)
     
     def _calc_history_entries(self):
         thread = CalcHistoryEntriesThread(self.historyPaths)
@@ -202,6 +264,9 @@ class HistoryInfoObj(QObject):
         self.wordDfChanged.emit(value)
 
 class HistoryInfoTab(QWidget):
+    settingsUpdated = pyqtSignal()
+    settingsChanged = pyqtSignal(HistoryInfoSettings)
+
     def __init__(self, mainWindow: MainWindow=None):
         self._mainWindow = mainWindow
         super().__init__(mainWindow)
@@ -220,6 +285,13 @@ class HistoryInfoTab(QWidget):
         self.currentSortOrder: Qt.SortOrder | None = None
 
         # Signals
+        def is_valid_history_dir() -> bool:
+            return self.settings.historyDir is not None
+        self.calcHistoryInfoButton.setEnabled(is_valid_history_dir())
+        self.settingsUpdated.connect(
+            lambda: self.calcHistoryInfoButton.setEnabled(is_valid_history_dir())
+        )
+
         self.calcHistoryInfoButton.clicked.connect(self.historyInfo.find_history_paths)
         self.historyInfo.combiningHistoryStart.connect(self.combiningHistoryProgress.show)
         self.historyInfo.combiningHistoryStart.connect(
@@ -260,6 +332,10 @@ class HistoryInfoTab(QWidget):
         layout.addWidget(self.numSearchedWordsLabel, alignment=Qt.AlignmentFlag.AlignLeft, stretch=0)
         layout.addWidget(self.wordTable, stretch=1)
 
+    @property
+    def settings(self) -> HistoryInfoSettings:
+        return HistoryInfoSettings.load_from_meta()
+
     def populate_table(self):
         df = self.historyInfo.wordDf
         self.wordTable.setRowCount(df.shape[0])
@@ -290,3 +366,10 @@ class HistoryInfoTab(QWidget):
 
     def start(self):
         pass
+
+    def open_settings_dialog(self):
+        dialog = HistoryInfoSettingsDialog(self)
+        ret = dialog.exec()
+        if ret == QDialog.DialogCode.Accepted:
+            self.settingsUpdated.emit()
+            self.settingsChanged.emit(self.settings)

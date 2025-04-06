@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 import enum
 import os
 from typing import TYPE_CHECKING
@@ -6,14 +7,72 @@ import multiprocessing as mp
 from PyQt5.QtWidgets import QApplication, QMainWindow, \
     QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QLabel, \
     QTabWidget, QTabBar, QProgressBar, QTableWidget, QTableWidgetItem, \
-    QTableView, QTableWidgetSelectionRange, QCheckBox
+    QTableView, QTableWidgetSelectionRange, QCheckBox, \
+    QDialog, QDialogButtonBox
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtBoundSignal, \
     QObject, QThread, QThreadPool, QRunnable, QTimer
 
+from ..serializable_obj import SettingsObj
 from ...parsing.jisho.jisho_structs import JishoSearchHtmlParser, JishoSearchQuery
 from .gui_settings import guiSettings
 if TYPE_CHECKING:
     from .main_window import MainWindow
+
+@dataclass
+class JishoParsingSettings(SettingsObj):
+    skipContentForExisting: bool = False
+
+    def save_to_meta(self):
+        self.save(guiSettings.jishoParsingSettingsPath)
+        assert os.path.isfile(guiSettings.jishoParsingSettingsPath)
+    
+    @classmethod
+    def load_from_meta(cls):
+        if not os.path.isfile(guiSettings.jishoParsingSettingsPath):
+            return cls()
+        return cls.load(guiSettings.jishoParsingSettingsPath)
+
+class JishoParsingSettingsDialog(QDialog):
+    def __init__(self, parent: QWidget | None=None):
+        super().__init__(parent)
+
+        # Widgets
+        self.skipContentForExisting = QCheckBox(
+            "Skip content for existing entries",
+            self
+        )
+        self.buttonBox = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            self
+        )
+
+        # Signals
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.accepted.connect(self.save)
+        self.buttonBox.rejected.connect(self.reject)
+
+        # Layout
+        layout = QVBoxLayout()
+        layout.addWidget(self.skipContentForExisting)
+        layout.addWidget(self.buttonBox)
+        self.setLayout(layout)
+
+        # Start
+        self.load()
+
+    def get_data(self) -> JishoParsingSettings:
+        return JishoParsingSettings(
+            skipContentForExisting=self.skipContentForExisting.isChecked()
+        )
+    
+    def apply_data(self, data: JishoParsingSettings):
+        self.skipContentForExisting.setChecked(data.skipContentForExisting)
+    
+    def save(self):
+        self.get_data().save_to_meta()
+    
+    def load(self):
+        self.apply_data(JishoParsingSettings.load_from_meta())
 
 class JishoParsingThread(QThread): # Single thread implementation
     def __init__(
@@ -226,6 +285,9 @@ class JishoParsingData(QObject):
         self.parsedSearchQueriesChanged.emit(self._parsedSearchQueries)
 
 class JishoParsingTab(QWidget):
+    settingsUpdated = pyqtSignal()
+    settingsChanged = pyqtSignal(JishoParsingSettings)
+
     tableUpdateScheduled = pyqtSignal()
     tableUpdateTriggered = pyqtSignal()
     tableUpdateFinished = pyqtSignal()
@@ -247,7 +309,6 @@ class JishoParsingTab(QWidget):
         self.parseJishoProgress = QProgressBar(self)
         self.parseJishoProgress.hide()
         self.numParsedJishoWordsLabel = QLabel("Number of Parsed Jisho Words: N/A")
-        self.skipContentForExistingCheckbox = QCheckBox("Skip displaying content for existing parsed data")
         self.jishoParseTable = QTableWidget(self)
         self.sortLocked: bool = True
         self.currentSortColumn: int | None = None
@@ -293,17 +354,21 @@ class JishoParsingTab(QWidget):
         parseButtonRow.addStretch(1)
         layout.addLayout(parseButtonRow, stretch=0)
         layout.addWidget(self.numParsedJishoWordsLabel, alignment=Qt.AlignmentFlag.AlignLeft, stretch=0)
-        layout.addWidget(self.skipContentForExistingCheckbox, alignment=Qt.AlignmentFlag.AlignLeft, stretch=0)
         layout.addWidget(self.jishoParseTable, stretch=1)
 
+    @property
+    def settings(self) -> JishoParsingSettings:
+        return JishoParsingSettings.load_from_meta()
+
     def add_query_to_table(self, searchQuery: JishoSearchQuery, wordStatus: JishoParsedWordStatus):
+        s = self.settings
         _data = {}
         _data['ID'] = searchQuery.history_group_id
         _data['Title'] = searchQuery.title
         _data['Exact Matches'] = len(searchQuery.exact_matches)
         _data['Nonexact Matches'] = len(searchQuery.nonexact_matches)
         _data['Result Count'] = searchQuery.result_count
-        if self.skipContentForExistingCheckbox.isChecked() and wordStatus == JishoParsedWordStatus.EXISTING:
+        if s.skipContentForExisting and wordStatus == JishoParsedWordStatus.EXISTING:
             _data['Contents'] = "(Skipped existing)"
         elif len(searchQuery.nonexact_matches) == 0 and len(searchQuery.exact_matches) == 0:
             _data['Contents'] = "None"
@@ -371,3 +436,10 @@ class JishoParsingTab(QWidget):
     def on_finished_parsing(self):
         self.sortLocked = False
         self.sort_table(0)
+
+    def open_settings_dialog(self):
+        dialog = JishoParsingSettingsDialog(self)
+        ret = dialog.exec()
+        if ret == QDialog.DialogCode.Accepted:
+            self.settingsUpdated.emit()
+            self.settingsChanged.emit(self.settings)
