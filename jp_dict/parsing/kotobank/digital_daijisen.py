@@ -1374,7 +1374,7 @@ def parse_tag(item_list: ParsedItemList, child: Tag):
         item_list.append(italic_text, is_obj=True)
     elif child.name == 'br' and len(child.find_all(name='br')) > 1:
         # Nested br block
-        # TODO: Might need to fix this later on.
+        # Todo: Might need to fix this later on.
         item_list.append(PlainText(child.text.strip()), is_obj=True)
     else:
         logger.red(f'TODO')

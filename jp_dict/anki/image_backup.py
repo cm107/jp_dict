@@ -313,7 +313,7 @@ class ImageBackupHandler:
     def contains(self, unique_name: str) -> bool:
         return self.find(unique_name) is not None
 
-    def process(self, url: str, unique_name: str): # TODO: Need to combine with anki logic.
+    def process(self, url: str, unique_name: str):
         if not self.contains(unique_name):
             backup = ImageBackup(unique_name, urls=[url])
             backup.save_image(self.dump_folder, logger=self.logger)
@@ -384,7 +384,6 @@ class ImageBackupHandler:
         img_urls = self._parse_img_src(text)
         updated_unique_names: list[str] = []
         
-        # TODO: Modularize this?
         # relevant_paths = glob.glob(f"{self.dump_folder}/{unique_name_prefix}*")
         # existing_unique_names = [os.path.splitext(path[len(f"{self.dump_folder}/"):])[0] for path in relevant_paths]
         # existing_unique_names = self._get_existing_unique_names(unique_name_prefix=unique_name_prefix)
@@ -459,7 +458,7 @@ class ImageBackupHandler:
                     self.logger.warning(f"Link for {backup.unique_name} is missing. {backup.working_url=}")
                     continue
                 else:
-                    # retry_count = 0 # TODO: Need to modularize this.
+                    # retry_count = 0
                     # link_is_working = True
                     # while retry_count < max_retry_count:
                     #     status_code, data = backup.download_image(logger=self.logger)
@@ -476,7 +475,7 @@ class ImageBackupHandler:
                     )
                     if link_is_working or not fixBrokenLinks:
                         continue
-                    else: # TODO: Need to add to a retry queue and try again later.
+                    else: # Need to add to a retry queue and try again later.
                         # Upload local copy of image to imgur.
                         self.logger.warning(f"Link for {backup.unique_name} is broken. {backup.working_url=}")
                         matches = glob.glob(f"{self.dump_folder}/{backup.unique_name}.*")

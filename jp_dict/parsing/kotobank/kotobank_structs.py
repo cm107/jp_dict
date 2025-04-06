@@ -445,8 +445,8 @@ class KotobankWordHtmlParser:
                 dictionary_name=dictionary_title_text,
                 content=digital_daijisen_data_handler
             )
-        # elif dictionary_title_text == '大辞林 第三版の解説': # TODO
-        elif dictionary_title_text.startswith('大辞林 第三版'): # TODO
+        # elif dictionary_title_text == '大辞林 第三版の解説': # Todo
+        elif dictionary_title_text.startswith('大辞林 第三版'): # Todo
             # if strict:
             #     raise NotImplementedError
             # return DictionaryContent(

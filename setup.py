@@ -37,10 +37,12 @@ setup(
         'pyclay-common_utils @ https://github.com/cm107/common_utils/archive/master.zip',
         'pyclay-logger @ https://github.com/cm107/logger/archive/master.zip',
         'html5lib',
+        'PyQt5>=5.15.11'
     ],
     entry_points={
         'console_scripts': [
-            'jpdict=jp_dict.v2.cli.jpdict:main',
+            # 'jpdict=jp_dict.v2.cli.jpdict:main',
+            'jpdict=jp_dict.v3.cli.jpdict:main',
         ]
     },
     python_requires='>=3.9'

@@ -5,8 +5,6 @@ from datetime import datetime
 from common_utils.base.basic import BasicObject, BasicLoadableObject, \
     BasicLoadableHandler, BasicHandler
 
-# TODO: Create an enum for category
-
 class AnkiChange(
     BasicLoadableObject['AnkiChange'],
     BasicObject['AnkiChange']

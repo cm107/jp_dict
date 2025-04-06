@@ -44,7 +44,7 @@ class DictionaryEntryMatch(BasicLoadableIdObject['DictionaryEntryMatch']):
             assert len(history_item_matches) == 1, f'len(history_item_matches): {len(history_item_matches)} != 1'
             history_item = history_item_matches[0]
             # print(f"{search_word=}, {history_item.title=}")
-            # TODO: search_word isn't matching up with word representation. e.g. 握り込む is being matched up with 幕切れ.
+            # Todo: search_word isn't matching up with word representation. e.g. 握り込む is being matched up with 幕切れ.
             # search_word 戦火 is being matched with history_item id=14360, which corresponds to 団子虫.
             # 戦火 is actually 14379 in the history. So there seems to be an index deviation of some sorts.
             # Where is the id value being set in the first place?

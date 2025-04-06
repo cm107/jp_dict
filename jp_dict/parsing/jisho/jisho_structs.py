@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import time
 from typing import List, Any, cast
 import urllib3
 from bs4 import BeautifulSoup
@@ -795,7 +796,8 @@ class MeaningTags(BasicLoadableObject['MeaningTags']):
                 if raise_exception_on_fail:
                     raise Exception(message)
                 else:
-                    print(message)
+                    # print(message)
+                    pass
             elif not getattr(tag, self.known_tags_dict[tag.meaning_tag_text]):
                 message = f"""
                 Found '{tag.meaning_tag_text}' in MeaningTags.known_tags_dict.keys(),
@@ -1407,7 +1409,26 @@ class JishoSearchHtmlParser:
         return JishoSearchHtmlParser(url=search_url)
 
     def parse(self, history_group_id: int=None) -> JishoSearchQuery:
-        main_results_html = self._soup.find(name='div', attrs={'id': 'main_results'})
+        success = False
+        retryCount = 1
+        while retryCount <= 3:
+            try:
+                main_results_html = self._soup.find(name='div', attrs={'id': 'main_results'})
+                if main_results_html is None:
+                    raise Exception(f"Couldn't find main results for url: {self.url}")
+                else:
+                    success = True
+                    break
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                retryCount += 1
+                time.sleep(3) # Wait 3 seconds
+                page = self._http.request(method='GET', url=self.url)
+                self._soup = BeautifulSoup(page.data, 'html.parser')
+        if not success:
+            raise Exception(f"Couldn't parse main results for url: {self.url} after {retryCount} tries.")
+
         matches_exist, result_area = self.parse_result_area(main_results_html)
         primary_html = main_results_html.find(name='div', attrs={'id': 'primary'}) if matches_exist else None
         has_primary = primary_html is not None

@@ -10,7 +10,7 @@ from common_utils.path_utils import recursively_get_all_matches_under_dirpath, \
     get_all_files_of_extension, get_rootname_from_path, get_all_files_of_extension
 from logger import logger
 
-from .browser_history import BrowserHistoryHandler, BrowserHistory, \
+from .browser_history import BrowserHistoryHandler, BrowserHistory, CommonBrowserHistoryItemGroup, \
     CommonBrowserHistoryItemGroupList
 from .jisho.jisho_structs import JishoSearchHtmlParser, JishoSearchQuery
 from .jisho.jisho_matches import SearchWordMatchesHandler, \
@@ -200,7 +200,7 @@ class ParserManager(BasicLoadableObject['ParserManager']):
     def group_jisho_history(self, force: bool=False, verbose: bool=False):
         assert file_exists(self.combined_history_path), f"Couldn't find combined history at: {self.combined_history_path}"
         if self._metadata.requires_jisho_grouping or force or not file_exists(self.jisho_grouped_history_path):
-            browser_history = BrowserHistory.load_from_path(self.combined_history_path)
+            browser_history: BrowserHistory = BrowserHistory.load_from_path(self.combined_history_path)
             group_list = browser_history.browser_history_item_list.search_by_url_base_and_group_by_url('https://jisho.org/search/')
             group_list.sort(attr_name='item_count', reverse=True)
             group_list.save_to_path(self.jisho_grouped_history_path, overwrite=True)
@@ -225,6 +225,7 @@ class ParserManager(BasicLoadableObject['ParserManager']):
             logger.cyan(f'Parsing Jisho Data')
         pbar = tqdm(total=len(group_list), unit='word(s)') if show_pbar else None
         for group in group_list:
+            group: CommonBrowserHistoryItemGroup
             encoded_search_word = group.url.replace('https://jisho.org/search/', '')
             decoded_search_word = urllib.parse.unquote(encoded_search_word)
             if pbar is not None:

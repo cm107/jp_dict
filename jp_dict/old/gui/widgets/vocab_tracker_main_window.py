@@ -8,7 +8,7 @@ from common_utils.file_utils import file_exists
 from ...gui.widgets.browser_history_load_popup import BrowserHistoryLoadPopup
 from ...gui.widgets.tabbed_window import VocabTrackerTabbedWindow
 
-# TODO: Implement VocabTrackerTabedWindow
+# Todo: Implement VocabTrackerTabedWindow
 
 class QVocabTracker(QMainWindow):
     def __init__(self, app):

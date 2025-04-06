@@ -1,0 +1,373 @@
+from __future__ import annotations
+import enum
+import os
+from typing import TYPE_CHECKING
+import multiprocessing as mp
+from PyQt5.QtWidgets import QApplication, QMainWindow, \
+    QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QLabel, \
+    QTabWidget, QTabBar, QProgressBar, QTableWidget, QTableWidgetItem, \
+    QTableView, QTableWidgetSelectionRange, QCheckBox
+from PyQt5.QtCore import Qt, pyqtSignal, pyqtBoundSignal, \
+    QObject, QThread, QThreadPool, QRunnable, QTimer
+
+from ...parsing.jisho.jisho_structs import JishoSearchHtmlParser, JishoSearchQuery
+from .gui_settings import guiSettings
+if TYPE_CHECKING:
+    from .main_window import MainWindow
+
+class JishoParsingThread(QThread): # Single thread implementation
+    def __init__(
+        self,
+        jishoParsingData: JishoParsingData,
+        words: list[tuple[int, str]],
+        dumpDir: str
+    ):
+        self._jishoParsingData = jishoParsingData
+        super().__init__(jishoParsingData)
+        self.words: list[tuple[int, str]] = words
+        self.dumpDir = dumpDir
+
+    def run(self):
+        data = self._jishoParsingData
+
+        os.makedirs(self.dumpDir, exist_ok=True)
+        data.jishoParsingStarted.emit(len(self.words))
+        for i, (id, word) in enumerate(self.words):
+            data.jishoParsingWord.emit(word)
+
+            wordStatus: JishoParsedWordStatus = None
+            savePath = f"{self.dumpDir}/{word}.json"
+            if not os.path.isfile(savePath):
+                url = f"https://jisho.org/search/{word}"
+                parser = JishoSearchHtmlParser(url=url)
+                try:
+                    searchQuery = parser.parse(history_group_id=id)
+                except Exception as e:
+                    import traceback
+                    traceback.print_exc()
+                    print(f"Failed to parse: {word}")
+                    print(f"Refer to: {url}")
+                    raise
+                searchQuery.save_to_path(savePath, overwrite=True)
+                data.jishoWordSaved.emit(savePath)
+                wordStatus = JishoParsedWordStatus.NEW
+            else:
+                searchQuery: JishoSearchQuery = JishoSearchQuery.load_from_path(savePath)
+                assert searchQuery.history_group_id == id, \
+                    f"history_group_id mismatch: {searchQuery.history_group_id} != {id}"
+                wordStatus = JishoParsedWordStatus.EXISTING
+
+            data.jishoParsedWordAndStatus.emit(searchQuery, wordStatus)
+            data.jishoParsedWord.emit(searchQuery)
+            data.jishoParsingProgress.emit(i+1)
+        data.jishoParsingFinished.emit()
+
+class JishoParsingTask(QRunnable):
+    def __init__(
+        self, id: int, word: str, dumpDir: str,
+        savedSignal: pyqtBoundSignal,
+        parsedWordAndStatusSignal: pyqtBoundSignal,
+        parsedWordSignal: pyqtBoundSignal,
+        taskFinishedSignal: pyqtBoundSignal
+    ):
+        super().__init__()
+        self.id = id
+        self.word = word
+        self.dumpDir = dumpDir
+
+        self.savedSignal = savedSignal
+        self.parsedWordAndStatusSignal = parsedWordAndStatusSignal
+        self.parsedWordSignal = parsedWordSignal
+        self.progressSignal = taskFinishedSignal
+    
+    def run(self):
+        wordStatus: JishoParsedWordStatus = None
+        savePath = f"{self.dumpDir}/{self.word}.json"
+        if not os.path.isfile(savePath):
+            url = f"https://jisho.org/search/{self.word}"
+            parser = JishoSearchHtmlParser(url=url)
+            try:
+                searchQuery = parser.parse(history_group_id=self.id)
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                print(f"Failed to parse: {self.word}")
+                print(f"Refer to: {url}")
+                raise
+            searchQuery.save_to_path(savePath, overwrite=True)
+            self.savedSignal.emit(savePath)
+            wordStatus = JishoParsedWordStatus.NEW
+        else:
+            searchQuery: JishoSearchQuery = JishoSearchQuery.load_from_path(savePath)
+            assert searchQuery.history_group_id == self.id, \
+                f"history_group_id mismatch: {searchQuery.history_group_id} != {self.id}"
+            wordStatus = JishoParsedWordStatus.EXISTING
+        
+        self.parsedWordAndStatusSignal.emit(searchQuery, wordStatus)
+        self.parsedWordSignal.emit(searchQuery)
+        self.progressSignal.emit()
+
+class JishoParsingTaskManager(QObject): # Parallel implementation
+    taskFinished = pyqtSignal()
+    busySignalChanged = pyqtSignal(bool)
+    def __init__(self, jishoParsingData: JishoParsingData):
+        self._jishoParsingData = jishoParsingData
+        super().__init__(jishoParsingData)
+
+        self.finishedTaskCount: int | None = None
+        self.nTasks: int | None = None
+        self._isBusy: bool = False
+        self.taskFinished.connect(self.on_task_finished)
+
+    @property
+    def isBusy(self):
+        return self._isBusy
+    
+    @isBusy.setter
+    def isBusy(self, value: bool):
+        if self._isBusy != value:
+            self._isBusy = value
+            self.busySignalChanged.emit(self._isBusy)
+
+    def start_tasks(self, words: list[tuple[int, str]], dumpDir: str):
+        self.isBusy = True
+        self._jishoParsingData.jishoParsingStarted.emit(len(words))
+        pool = QThreadPool.globalInstance()
+        assert pool is not None
+        nThreads = min(mp.cpu_count() - 2, 5)
+        pool.setMaxThreadCount(nThreads)
+        tasks: list[JishoParsingTask] = []
+        for i, (id, word) in enumerate(words):
+            task = JishoParsingTask(
+                id=id,
+                word=word,
+                dumpDir=dumpDir,
+                savedSignal=self._jishoParsingData.jishoWordSaved,
+                parsedWordAndStatusSignal=self._jishoParsingData.jishoParsedWordAndStatus,
+                parsedWordSignal=self._jishoParsingData.jishoParsedWord,
+                taskFinishedSignal=self.taskFinished
+            )
+            tasks.append(task)
+        
+        self.nTasks = len(tasks)
+        self.finishedTaskCount = 0
+        for i, task in enumerate(tasks):
+            pool.start(task)
+    
+    def on_task_finished(self):
+        self.finishedTaskCount += 1
+        self._jishoParsingData.jishoParsingProgress.emit(self.finishedTaskCount)
+        if self.finishedTaskCount == self.nTasks:
+            self._jishoParsingData.jishoParsingFinished.emit()
+            self.isBusy = False
+
+class JishoParsedWordStatus(enum.Enum):
+    EXISTING = 0
+    NEW = 1
+
+class JishoParsingData(QObject):
+    jishoParsingStarted = pyqtSignal(int)
+    jishoParsingWord = pyqtSignal(str)
+    jishoParsedWord = pyqtSignal(JishoSearchQuery)
+    jishoParsedWordAndStatus = pyqtSignal(JishoSearchQuery, JishoParsedWordStatus)
+    jishoWordSaved = pyqtSignal(str)
+    jishoParsingProgress = pyqtSignal(int)
+    jishoParsingFinished = pyqtSignal()
+
+    parsedSearchQueriesUpdated = pyqtSignal()
+    parsedSearchQueriesChanged = pyqtSignal(list)
+    def __init__(self, jishoParsingTab: JishoParsingTab):
+        self._jishoParsingTab = jishoParsingTab
+        self._parsedSearchQueries: list[JishoSearchQuery] | None = None
+        self._parsingThread: JishoParsingThread | None = None
+        self._parsingTaskManager: JishoParsingTaskManager | None = None
+        super().__init__(jishoParsingTab)
+
+        self.jishoParsedWord.connect(self.add_parsed_search_query)
+
+    @property
+    def parsedSearchQueries(self):
+        return self._parsedSearchQueries
+
+    def parse_jisho_data(self):
+        jishoSearchWords = self._jishoParsingTab._mainWindow.historyInfoTab.historyInfo.jishoSearchWords
+        words = [
+            (min(usec_times), word)
+            for word, usec_times in jishoSearchWords.items()
+        ]
+        thread = JishoParsingThread(
+            jishoParsingData=self,
+            words=words,
+            dumpDir=guiSettings.jishoDataDir
+        )
+        thread.started.connect(self._jishoParsingTab.parseJishoButton.setEnabled(False))
+        thread.finished.connect(self._jishoParsingTab.parseJishoButton.setEnabled(True))
+        thread.start()
+        thread.finished.connect(thread.deleteLater)
+        self._parsingThread = thread
+    
+    def parse_jisho_data_in_parallel(self):
+        jishoSearchWords = self._jishoParsingTab._mainWindow.historyInfoTab.historyInfo.jishoSearchWords
+        words = [
+            (min(usec_times), word)
+            for word, usec_times in jishoSearchWords.items()
+        ]
+        self._parsingTaskManager = JishoParsingTaskManager(self)
+        self._parsingTaskManager.busySignalChanged.connect(
+            lambda isBusy: self._jishoParsingTab.parseJishoButton.setEnabled(not isBusy)
+        )
+        self._parsingTaskManager.start_tasks(words, guiSettings.jishoDataDir)
+
+    def add_parsed_search_query(self, searchQuery: JishoSearchQuery):
+        if self._parsedSearchQueries is None:
+            self._parsedSearchQueries = []
+        self._parsedSearchQueries.append(searchQuery)
+        self.parsedSearchQueriesUpdated.emit()
+        self.parsedSearchQueriesChanged.emit(self._parsedSearchQueries)
+
+class JishoParsingTab(QWidget):
+    tableUpdateScheduled = pyqtSignal()
+    tableUpdateTriggered = pyqtSignal()
+    tableUpdateFinished = pyqtSignal()
+    def __init__(self, mainWindow: MainWindow=None):
+        self._mainWindow = mainWindow
+        super().__init__(mainWindow)
+        self.data = JishoParsingData(self)
+
+        self._tableDataBuffer: list[dict] = []
+        self._tableMaxNewRowsPerStep: int = 5000
+        self._tableUpdateDelay: int = 3 # seconds
+        self._tableUpdateScheduledTimer: QTimer = QTimer(self)
+        self._tableUpdateScheduledTimer.setInterval(int(self._tableUpdateDelay * 1000))
+        self._tableUpdateScheduledTimer.timeout.connect(self.on_table_update_timer_timeout)
+
+
+        # Widgets
+        self.parseJishoButton = QPushButton("Parse Jisho Data")
+        self.parseJishoProgress = QProgressBar(self)
+        self.parseJishoProgress.hide()
+        self.numParsedJishoWordsLabel = QLabel("Number of Parsed Jisho Words: N/A")
+        self.skipContentForExistingCheckbox = QCheckBox("Skip displaying content for existing parsed data")
+        self.jishoParseTable = QTableWidget(self)
+        self.sortLocked: bool = True
+        self.currentSortColumn: int | None = None
+        self.currentSortOrder: Qt.SortOrder | None = None
+
+        # Signals
+        self.parseJishoButton.setEnabled(False)
+        self._mainWindow.historyInfoTab.historyInfo.jishoSearchWordsUpdated.connect(
+            lambda: self.parseJishoButton.setEnabled(
+                self._mainWindow.historyInfoTab.historyInfo.jishoSearchWords is not None
+                and len(self._mainWindow.historyInfoTab.historyInfo.jishoSearchWords) > 0
+            )
+        )
+        self.parseJishoButton.clicked.connect(self.data.parse_jisho_data_in_parallel)
+        self.data.jishoParsingStarted.connect(self.parseJishoProgress.show)
+        self.data.jishoParsingStarted.connect(
+            lambda total: self.parseJishoProgress.setMaximum(total)
+        )
+        self.data.jishoParsingProgress.connect(
+            lambda value: self.parseJishoProgress.setValue(value)
+        )
+        self.data.jishoParsingFinished.connect(self.parseJishoProgress.hide)
+        self.data.jishoParsingStarted.connect(
+            lambda: self.jishoParseTable.clearContents()
+        )
+        self.data.jishoParsedWordAndStatus.connect(self.add_query_to_table)
+        self.data.parsedSearchQueriesUpdated.connect(
+            lambda: self.numParsedJishoWordsLabel.setText(
+                f"Number of Parsed Jisho Words: {len(self.data.parsedSearchQueries)}"
+            )
+        )
+        self.jishoParseTable.horizontalHeader().sectionClicked.connect(self.sort_table)
+        self.data.jishoParsingFinished.connect(self.on_finished_parsing)
+
+        # Layout
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        parseButtonRow = QHBoxLayout()
+        self.parseJishoButton.setFixedWidth(200)
+        self.parseJishoProgress.setFixedWidth(400)
+        parseButtonRow.addWidget(self.parseJishoButton, stretch=0)
+        parseButtonRow.addWidget(self.parseJishoProgress, stretch=0)
+        parseButtonRow.addStretch(1)
+        layout.addLayout(parseButtonRow, stretch=0)
+        layout.addWidget(self.numParsedJishoWordsLabel, alignment=Qt.AlignmentFlag.AlignLeft, stretch=0)
+        layout.addWidget(self.skipContentForExistingCheckbox, alignment=Qt.AlignmentFlag.AlignLeft, stretch=0)
+        layout.addWidget(self.jishoParseTable, stretch=1)
+
+    def add_query_to_table(self, searchQuery: JishoSearchQuery, wordStatus: JishoParsedWordStatus):
+        _data = {}
+        _data['ID'] = searchQuery.history_group_id
+        _data['Title'] = searchQuery.title
+        _data['Exact Matches'] = len(searchQuery.exact_matches)
+        _data['Nonexact Matches'] = len(searchQuery.nonexact_matches)
+        _data['Result Count'] = searchQuery.result_count
+        if self.skipContentForExistingCheckbox.isChecked() and wordStatus == JishoParsedWordStatus.EXISTING:
+            _data['Contents'] = "(Skipped existing)"
+        elif len(searchQuery.nonexact_matches) == 0 and len(searchQuery.exact_matches) == 0:
+            _data['Contents'] = "None"
+        elif len(searchQuery.exact_matches) == 1:
+            _data['Contents'] = searchQuery.exact_matches[0].custom_str(indent=0)
+        else:
+            _data['Contents'] = '(omitted)'
+
+        self._tableDataBuffer.append(_data)
+        if not self._tableUpdateScheduledTimer.isActive():
+            self._tableUpdateScheduledTimer.start()
+
+    def on_table_update_timer_timeout(self):
+        self.update_table()
+        if len(self._tableDataBuffer) == 0:
+            self._tableUpdateScheduledTimer.stop()
+
+
+    def update_table(self):
+        if len(self._tableDataBuffer) == 0:
+            return
+
+        _dataList: list[dict] = []
+        for i in range(self._tableMaxNewRowsPerStep):
+            if len(self._tableDataBuffer) == 0:
+                break
+            _data = self._tableDataBuffer.pop(0)
+            _dataList.append(_data)
+
+        if self.jishoParseTable.rowCount() == 0:
+            self.jishoParseTable.setColumnCount(len(_dataList[0]))
+            self.jishoParseTable.setHorizontalHeaderLabels(list(_dataList[0].keys()))
+
+        scrollToBottomFlag = self.jishoParseTable.verticalScrollBar().value() \
+            == self.jishoParseTable.verticalScrollBar().maximum()
+
+        for _data in _dataList:
+            row = self.jishoParseTable.rowCount()
+            self.jishoParseTable.insertRow(row)
+            for col, val in enumerate(_data.values()):
+                if type(val) is int:
+                    val = f"{val:05d}"
+                item = QTableWidgetItem(str(val))
+                self.jishoParseTable.setItem(row, col, item)
+
+        self.jishoParseTable.resizeColumnsToContents()
+        self.jishoParseTable.resizeRowsToContents()
+
+        # Scroll to bottom if was already scrolled to bottom
+        if scrollToBottomFlag:
+            self.jishoParseTable.scrollToBottom()
+
+    def sort_table(self, column: int):
+        if self.sortLocked:
+            return
+        if self.currentSortColumn is None or self.currentSortColumn != column:
+            self.currentSortColumn = column
+            self.currentSortOrder = Qt.SortOrder.AscendingOrder
+        elif self.currentSortOrder == Qt.SortOrder.AscendingOrder:
+            self.currentSortOrder = Qt.SortOrder.DescendingOrder
+        else:
+            self.currentSortOrder = Qt.SortOrder.AscendingOrder
+        self.jishoParseTable.sortItems(column, self.currentSortOrder)
+
+    def on_finished_parsing(self):
+        self.sortLocked = False
+        self.sort_table(0)

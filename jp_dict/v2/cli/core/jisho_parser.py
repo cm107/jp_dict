@@ -53,7 +53,7 @@ class SearchWordParser(Parser, Generic[SWPD]):
         raise NotImplementedError
 
 class JishoSearchWordParsedData(SearchWordParsedData):
-    pass # TODO
+    pass # Todo
 
 class JishoSearchParser(SearchWordParser[JishoSearchWordParsedData]):
     def __init__(self):

@@ -688,7 +688,6 @@ class AnkiConnect:
         I think this should typically only be used when updating existing cards in anki.
         The other fields probably shouldn't be modified.
         """
-        # TODO: Implement change logger
         def update_func(fields: ParsedKanjiFields):
             if self.changelog is not None:
                 timestamp = datetime.now()

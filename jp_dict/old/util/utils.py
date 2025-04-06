@@ -39,7 +39,7 @@ def reverse_union(a, b):
 
 def recursively_get_all_matches_under_dirpath(dirpath: str, target_name: str, target_type: str) -> list:
     """
-    TODO: Add this method to common_utils package.
+    Todo: Add this method to common_utils package.
 
     target_type
     'directory' or 'd': Recursively search for directory names that match target_name
@@ -73,18 +73,18 @@ def recursively_get_all_matches_under_dirpath(dirpath: str, target_name: str, ta
 
 def get_indent_str(indent: int) -> str:
     """
-    TODO: Add this method to common_utils package.
+    Todo: Add this method to common_utils package.
     """
     return ' ' * indent
 
 def get_method_name() -> str:
     """
-    TODO: Add this method to common_utils package.
+    Todo: Add this method to common_utils package.
     """
     return inspect.getframeinfo(inspect.currentframe().f_back).function
 
 def get_method_name_through_wrapper() -> str:
     """
-    TODO: Add this method to common_utils package.
+    Todo: Add this method to common_utils package.
     """
     return inspect.getframeinfo(inspect.currentframe().f_back.f_back).code_context[0].replace(' ', '').replace('self.', '').replace('()\n', '')

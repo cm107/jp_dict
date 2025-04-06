@@ -303,7 +303,7 @@ class KotobankUsageHandler:
 class KotobankDictionary(metaclass=ABCMeta):
     def __init__(self, specific_writing: str, specific_reading: str, usage_handler: KotobankUsageHandler=None):
         """
-        TODO: Model after the following structure:
+        Todo: Model after the following structure:
         {
             usage_number: {
                 'usage_text': usage_text,
@@ -711,7 +711,7 @@ class KotobankContent:
                     description_html=description
                 )
 
-                # TODO: KotobankContent only comes in when I start parsing the definition_dict.
+                # Todo: KotobankContent only comes in when I start parsing the definition_dict.
                 #       Need to move all of these static methods to a different class.
 
                 # if dictionary_name == 'デジタル大辞泉':
@@ -829,7 +829,7 @@ def parse_seisenpan_nihonkokugodaijisho(description_html: bs4.element.Tag) -> di
             }
         }
     }
-    TODO: I think I might just have to turn this into a class.
+    Todo: I think I might just have to turn this into a class.
           It's hard to keep track of what's going on otherwise.
     """
     children = [child for child in list(description_html.children) if type(child) is bs4.element.Tag]
@@ -913,7 +913,7 @@ def parse_seisenpan_nihonkokugodaijisho(description_html: bs4.element.Tag) -> di
         #         if '〘' in child.text and '〙' in child.text:
         #             logger.purple(f'Found usage')
         #             current_usage = child.text[:child.text.index('〙')+1].replace(' ', '')
-        #             # TODO: Need to parse usage number
+        #             # Todo: Need to parse usage number
         #             possible_definition = child.text[child.text.index('〙')+1:].replace(' ', '')
         #             if possible_definition != '':
         #                 logger.purple(f'Found non-empty definition -> new dictionary')

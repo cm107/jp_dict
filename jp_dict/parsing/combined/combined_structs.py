@@ -77,7 +77,7 @@ class CombinedResult(BasicLoadableObject['CombinedResult']):
         jisho_search_link = f'<a href="https://jisho.org/search/{self.jisho_result.entry.word_representation.writing}">Jisho search for {self.jisho_result.entry.word_representation.writing}</a>' \
             if self.jisho_result.entry.word_representation is not None else ''
         ejje_sentence_search_link = f'<a href="https://ejje.weblio.jp/sentence/content/{self.jisho_result.entry.word_representation.writing}">Weblio sentence search for {self.jisho_result.entry.word_representation.writing}</a>' \
-            if self.jisho_result.entry.word_representation is not None else '' #TODO
+            if self.jisho_result.entry.word_representation is not None else '' #Todo
         weblio_search_link = f'<a href="https://www.weblio.jp/content/{self.jisho_result.entry.word_representation.writing}">Weblio search for {self.jisho_result.entry.word_representation.writing}</a>' \
             if self.jisho_result.entry.word_representation is not None else ''
         return ParsedVocabularyFields(

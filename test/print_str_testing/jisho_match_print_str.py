@@ -1,6 +1,6 @@
 from jp_dict.parsing.jisho.jisho_matches import SearchWordMatchesHandler
 
-# TODO: Add id to CommonBrowserHistoryItemGroup and reference this id in constructor for JishoSearchQuery.
+# Todo: Add id to CommonBrowserHistoryItemGroup and reference this id in constructor for JishoSearchQuery.
 # This is necessary for efficiently counting the number of searches for a given word.
 # JishoSearchQuery corresponds to the CommonBrowserHistoryItemGroup id, so JishoSearchQuery doesn't need an id.
 # However, SearchWordMatch does need an id, since it is used for deciding what kotobank words to parse.

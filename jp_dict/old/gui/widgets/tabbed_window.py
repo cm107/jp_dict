@@ -1,7 +1,7 @@
 from qtpy.QtCore import Slot
 from qtpy.QtWidgets import QWidget, QVBoxLayout, QTabWidget, QPushButton
 
-# TODO: Add tabs to QVocabTracker window.
+# Todo: Add tabs to QVocabTracker window.
 # Check Word List / Preview Definitions / ...
 # Refer to: https://pythonspot.com/pyqt5-tabs/
 
