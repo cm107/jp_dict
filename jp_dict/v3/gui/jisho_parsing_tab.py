@@ -13,6 +13,7 @@ from PyQt5.QtCore import Qt, pyqtSignal, pyqtBoundSignal, \
     QObject, QThread, QThreadPool, QRunnable, QTimer
 
 from ..serializable_obj import SettingsObj
+from .widgets.data_table import BufferedDataTable
 from ...parsing.jisho.jisho_structs import JishoSearchHtmlParser, JishoSearchQuery
 from .gui_settings import guiSettings
 if TYPE_CHECKING:
@@ -288,31 +289,19 @@ class JishoParsingTab(QWidget):
     settingsUpdated = pyqtSignal()
     settingsChanged = pyqtSignal(JishoParsingSettings)
 
-    tableUpdateScheduled = pyqtSignal()
-    tableUpdateTriggered = pyqtSignal()
-    tableUpdateFinished = pyqtSignal()
     def __init__(self, mainWindow: MainWindow=None):
         self._mainWindow = mainWindow
         super().__init__(mainWindow)
         self.data = JishoParsingData(self)
-
-        self._tableDataBuffer: list[dict] = []
-        self._tableMaxNewRowsPerStep: int = 5000
-        self._tableUpdateDelay: int = 3 # seconds
-        self._tableUpdateScheduledTimer: QTimer = QTimer(self)
-        self._tableUpdateScheduledTimer.setInterval(int(self._tableUpdateDelay * 1000))
-        self._tableUpdateScheduledTimer.timeout.connect(self.on_table_update_timer_timeout)
-
 
         # Widgets
         self.parseJishoButton = QPushButton("Parse Jisho Data")
         self.parseJishoProgress = QProgressBar(self)
         self.parseJishoProgress.hide()
         self.numParsedJishoWordsLabel = QLabel("Number of Parsed Jisho Words: N/A")
-        self.jishoParseTable = QTableWidget(self)
-        self.sortLocked: bool = True
-        self.currentSortColumn: int | None = None
-        self.currentSortOrder: Qt.SortOrder | None = None
+        self.jishoParseTable = BufferedDataTable(
+            self, tableMaxNewRowsPerStep=5000, tableUpdateDelay=3.0
+        )
 
         # Signals
         self.parseJishoButton.setEnabled(False)
@@ -340,7 +329,6 @@ class JishoParsingTab(QWidget):
                 f"Number of Parsed Jisho Words: {len(self.data.parsedSearchQueries)}"
             )
         )
-        self.jishoParseTable.horizontalHeader().sectionClicked.connect(self.sort_table)
         self.data.jishoParsingFinished.connect(self.on_finished_parsing)
 
         # Layout
@@ -377,65 +365,11 @@ class JishoParsingTab(QWidget):
         else:
             _data['Contents'] = '(omitted)'
 
-        self._tableDataBuffer.append(_data)
-        if not self._tableUpdateScheduledTimer.isActive():
-            self._tableUpdateScheduledTimer.start()
-
-    def on_table_update_timer_timeout(self):
-        self.update_table()
-        if len(self._tableDataBuffer) == 0:
-            self._tableUpdateScheduledTimer.stop()
-
-
-    def update_table(self):
-        if len(self._tableDataBuffer) == 0:
-            return
-
-        _dataList: list[dict] = []
-        for i in range(self._tableMaxNewRowsPerStep):
-            if len(self._tableDataBuffer) == 0:
-                break
-            _data = self._tableDataBuffer.pop(0)
-            _dataList.append(_data)
-
-        if self.jishoParseTable.rowCount() == 0:
-            self.jishoParseTable.setColumnCount(len(_dataList[0]))
-            self.jishoParseTable.setHorizontalHeaderLabels(list(_dataList[0].keys()))
-
-        scrollToBottomFlag = self.jishoParseTable.verticalScrollBar().value() \
-            == self.jishoParseTable.verticalScrollBar().maximum()
-
-        for _data in _dataList:
-            row = self.jishoParseTable.rowCount()
-            self.jishoParseTable.insertRow(row)
-            for col, val in enumerate(_data.values()):
-                if type(val) is int:
-                    val = f"{val:05d}"
-                item = QTableWidgetItem(str(val))
-                self.jishoParseTable.setItem(row, col, item)
-
-        self.jishoParseTable.resizeColumnsToContents()
-        self.jishoParseTable.resizeRowsToContents()
-
-        # Scroll to bottom if was already scrolled to bottom
-        if scrollToBottomFlag:
-            self.jishoParseTable.scrollToBottom()
-
-    def sort_table(self, column: int):
-        if self.sortLocked:
-            return
-        if self.currentSortColumn is None or self.currentSortColumn != column:
-            self.currentSortColumn = column
-            self.currentSortOrder = Qt.SortOrder.AscendingOrder
-        elif self.currentSortOrder == Qt.SortOrder.AscendingOrder:
-            self.currentSortOrder = Qt.SortOrder.DescendingOrder
-        else:
-            self.currentSortOrder = Qt.SortOrder.AscendingOrder
-        self.jishoParseTable.sortItems(column, self.currentSortOrder)
+        self.jishoParseTable.add_data_to_buffer(_data)
 
     def on_finished_parsing(self):
-        self.sortLocked = False
-        self.sort_table(0)
+        self.jishoParseTable._sortLocked = False
+        self.jishoParseTable._sort_table(0)
 
     def open_settings_dialog(self):
         dialog = JishoParsingSettingsDialog(self)
